@@ -1,2 +1,2 @@
-# Manipulator_dynamics
+# manipulator_dynamics
 test
