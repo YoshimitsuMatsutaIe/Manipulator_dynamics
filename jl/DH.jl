@@ -1,6 +1,9 @@
 
 
 using Symbolics
+using LinearAlgebra
+
+n = 7
 
 Ixx = (
     0.0470910226,
@@ -137,13 +140,31 @@ Q = [
     1 0 0 0
     0 0 0 0
     0 0 0 0
-]
+]  # 偏微分演算行列
 
+g = [
+    0
+    0
+    -9.81
+    0
+]  # 重力加速度
 
 @variables q[1:7]
+@variables dq[1:7]
 
 
-function T(i, theta,)
+function r_bar(i)
+    [
+        x_bar[i]
+        y_bar[i]
+        z_bar[i]
+        1
+    ]
+end
+
+
+function T(i)
+    theta = q[i]
     [
         cos(theta) -cos(alpha[i])*sin(theta) sin(alpha[i])*sin(theta) a[i]*cos(theta)
         sin(theta) cos(alpha[i])*cos(theta) -sin(alpha[i])*cos(theta) a[i]*sin(theta)
@@ -151,6 +172,17 @@ function T(i, theta,)
         0 0 0 1
     ]
 end
+
+function T(i, j)
+    z = T(i)
+    for k in i+1:j
+        z *= T(k)
+    end
+    z
+end
+
+#println(T(1, 5))
+
 
 function J(i)
     [
@@ -161,4 +193,73 @@ function J(i)
     ]
 end
 
-print(J(1))
+
+function U(i, j)
+    if j <= i
+        T(1, j-1) * Q * T(j, i)
+    else
+        zeros(4, 4)
+    end
+end
+
+function U(i, j, k)
+    if i >= k >= j
+        T(1, j-1) * Q * T(j, k-1) * Q * T(k, i)
+    elseif i >= j >= k
+        T(1, k-1) * Q * T(k, j-1) * Q * T(j, i)
+    else
+        zeros(4, 4)
+    end
+end
+
+
+### 慣性，コリオリ，重力 ###
+
+function M(i, k)
+    j_start = max(i, k)
+    z = 0
+    for j in j_start:n
+        z += tr(U(j, k) * J(j) * U(j, i)')
+    end
+    z
+end
+
+
+function h(i, k, m)
+    j_start = max(i, k, m)
+    z = 0
+    for j in j_start:n
+        z += tr(U(j, k, m) * J(i) * U(j, i)')
+    end
+    z
+end
+
+
+function C(i)
+    z = 0
+    for k in 1:n
+        for m = 1:n
+            z += h(i, k, m) * dq[k] * dq[m]
+        end
+    end
+    z
+end
+
+
+function G(i)
+    z = 0
+    for j in i:n
+        z += -m(j) * g * U(j, i) * r_bar(j)
+    end
+    z
+end
+
+#println(h(5, 7, 1))
+#println(C(5))
+#println(r_bar(4))
+
+#hoge = C(5)
+### モジュール化テスト ###
+open("test.txt", "w+") do f
+    println(f, string(C(5)))
+end
