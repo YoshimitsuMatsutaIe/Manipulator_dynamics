@@ -1,6 +1,6 @@
 
-
-using Symbolics
+using CPUTime
+#using Symbolics
 using LinearAlgebra
 
 n = 7
@@ -147,11 +147,40 @@ g = [
     0
     -9.81
     0
-]  # 重力加速度
+]'  # 重力加速度
 
-@variables q[1:7]
-@variables dq[1:7]
+#@variables q[1:7]
+#@variables dq[1:7]
 
+q = [
+    1
+    2
+    3
+    4
+    5
+    6
+    7
+]
+
+dq = [
+    1
+    2
+    3
+    4
+    5
+    6
+    7
+]
+
+ddq = [
+    1
+    2
+    3
+    4
+    5
+    6
+    7
+]
 
 function r_bar(i)
     [
@@ -242,6 +271,7 @@ function C(i)
             z += h(i, k, m) * dq[k] * dq[m]
         end
     end
+    #simplify(z)
     z
 end
 
@@ -249,17 +279,57 @@ end
 function G(i)
     z = 0
     for j in i:n
-        z += -m(j) * g * U(j, i) * r_bar(j)
+        z += -m[j] * g * U(j, i) * r_bar(j)
     end
     z
 end
 
 #println(h(5, 7, 1))
-#println(C(5))
+#@time println(C(5))
 #println(r_bar(4))
 
 #hoge = C(5)
-### モジュール化テスト ###
-open("test.txt", "w+") do f
-    println(f, string(C(5)))
+
+
+
+# ### モジュール化テスト ###
+# open("test.txt", "w+") do f
+#     println(f, string(C(5)))
+# end
+
+
+### 目的の行列作成 ###
+
+# 慣性行列
+function M()
+    z = zeros(7, 7)
+    for i in 1:7
+        for j in 1:7
+            z[i, j] = M(i, j)
+        end
+    end
+    z
 end
+
+function C()
+    z = zeros(7, 1)
+    for i in 1:7
+        z[i] = C(i)
+    end
+    z
+end
+
+function G()
+    z = zeros(7, 1)
+    for i in 1:7
+        z[i] = G(i)
+    end
+    z
+end
+
+
+function test_calc_torq()
+    M()*ddq + C() + G()
+end
+
+@time for i in 1:100; test_calc_torq(); end
