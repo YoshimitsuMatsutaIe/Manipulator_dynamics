@@ -1,3 +1,5 @@
+"""ラグランジュ法による入力計算（テスト）
+"""
 
 using CPUTime
 #using Symbolics
