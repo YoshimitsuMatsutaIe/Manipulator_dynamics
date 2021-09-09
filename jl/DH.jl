@@ -328,8 +328,9 @@ function G()
 end
 
 
-function test_calc_torq()
+function calc_torque()
     M()*ddq + C() + G()
 end
 
-@time for i in 1:100; test_calc_torq(); end
+@time println(calc_torque())
+#@time for i in 1:10; calc_torq(); end
