@@ -155,14 +155,14 @@ g = [
 #@variables dq[1:7]
 
 q = [
-    1
-    2
-    3
-    4
-    5
-    6
-    7
-]
+    0
+    -31
+    0
+    43
+    0
+    72
+    0
+] * pi / 180
 
 dq = [
     1
@@ -195,6 +195,7 @@ end
 
 
 function T(i)
+    """(i-1)T(i)"""
     theta = q[i]
     [
         cos(theta) -cos(alpha[i])*sin(theta) sin(alpha[i])*sin(theta) a[i]*cos(theta)
@@ -334,5 +335,5 @@ function calc_torque()
     M()*ddq + C() + G()
 end
 
-@time println(calc_torque())
+#@time println(calc_torque())
 #@time for i in 1:10; calc_torq(); end
