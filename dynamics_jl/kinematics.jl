@@ -1,7 +1,7 @@
 using CPUTime
 using Plots
 
-include(".\\lagrange.jl")
+include("./lagrange.jl")
 
 
 joint_positions = Matrix(undef, 3, n)
