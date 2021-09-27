@@ -1,5 +1,7 @@
 using CPUTime
 using Plots
+using PyCall
+@pyimport matplotlib.pyplot as plt
 using LinearAlgebra
 using StaticArrays
 using ArraysOfArrays
@@ -26,18 +28,28 @@ L6 = 368.3e-3
 
 q_neutral = [0; -31; 0; 43; 0; 72; 0] * pi/180  # ニュートラルの姿勢
 
-q = q_neutral
+qr = q_neutral  # 右手の関節角度ベクトル
+ql = q_neutral  # 左手の関節角度ベクトル
 
-DHparams = [
-    DHparam(0, 0, 0, q[1])
-    DHparam(-pi/2, L1, 0, q[2]+pi/2)
-    DHparam(pi/2, 0, L2, q[3])
-    DHparam(-pi/2, L3, 0, q[4])
-    DHparam(pi/2, 0, L4, q[5])
-    DHparam(-pi/2, L5, 0, q[6])
-    DHparam(pi/2, 0, 0, q[7])
+DHparams_r = [
+    DHparam(0, 0, 0, qr[1])
+    DHparam(-pi/2, L1, 0, qr[2]+pi/2)
+    DHparam(pi/2, 0, L2, qr[3])
+    DHparam(-pi/2, L3, 0, qr[4])
+    DHparam(pi/2, 0, L4, qr[5])
+    DHparam(-pi/2, L5, 0, qr[6])
+    DHparam(pi/2, 0, 0, qr[7])
 ]
 
+DHparams_l = [
+    DHparam(0, 0, 0, ql[1])
+    DHparam(-pi/2, L1, 0, ql[2]+pi/2)
+    DHparam(pi/2, 0, L2, ql[3])
+    DHparam(-pi/2, L3, 0, ql[4])
+    DHparam(pi/2, 0, L4, ql[5])
+    DHparam(-pi/2, L5, 0, ql[6])
+    DHparam(pi/2, 0, 0, ql[7])
+]
 
 # 制御点
 c_points_1 = (
@@ -88,7 +100,7 @@ c_points_7 = (
 )
 
 c_points_GL = (
-    [0; 0; 0; 1]
+    [0; 0; L6/3; 1]
 )
 
 c_points_all = (
@@ -96,10 +108,10 @@ c_points_all = (
 )
 
 
-
+# 右手
 T_BR_Wo = [
     -sqrt(2)/2 sqrt(2)/2 0 -L
-    -sqrt(2)/2 -sqrt(2)/2 0 -H
+    -sqrt(2)/2 -sqrt(2)/2 0 -h
     0 0 1 H
     0 0 0 1
 ]
@@ -111,6 +123,17 @@ T_0_BR = [
     0 0 0 1
 ]
 
+# 左手
+T_BL_Wo = [
+    sqrt(2)/2 sqrt(2)/2 0 L
+    -sqrt(2)/2 sqrt(2)/2 0 -h
+    0 0 1 H
+    0 0 0 1
+]
+
+T_0_BL = T_0_BR
+
+
 T_GR_7 = [
     1 0 0 0
     0 1 0 0
@@ -118,7 +141,7 @@ T_GR_7 = [
     0 0 0 1
 ]
 
-function update_DHparams(q, DHparams)
+function update_DHparams(DHparams, q)
     q[2] = q[2] + pi/2
     for i in 1:7
         DHparams[i].theta = q[i]
@@ -145,67 +168,172 @@ function T(p::DHparam)
 end
 
 
-### neutralを図示 ###
-os = []
-Ts = []
-push!(os, [0.0, 0.0, 0.0])
 
-T_temp = T_BR_Wo
-push!(Ts, T_temp)
-push!(os, T_temp[1:3, 4])
+function draw_arm(fig, q, DHparams, name)
+    """アームをplot by Plots
+    name : trueならright、falseならleft
+    """
+    DHparams = update_DHparams(DHparams, q)
+    os = []
+    Ts = []
+    push!(os, [0.0, 0.0, 0.0])
 
-T_temp = T_temp * T_0_BR
-push!(Ts, T_temp)
-push!(os, T_temp[1:3, 4])
+    if name
+        T_temp = T_BR_Wo
+        push!(Ts, T_temp)
+        push!(os, T_temp[1:3, 4])
 
-for i in 1:7
-    global T_temp = T_temp * T(DHparams[i])
+        T_temp = T_temp * T_0_BR
+        push!(Ts, T_temp)
+        push!(os, T_temp[1:3, 4])
+    else
+        T_temp = T_BL_Wo
+        push!(Ts, T_temp)
+        push!(os, T_temp[1:3, 4])
+
+        T_temp = T_temp * T_0_BL
+        push!(Ts, T_temp)
+        push!(os, T_temp[1:3, 4])
+    end
+
+    for i in 1:7
+        T_temp = T_temp * T(DHparams[i])
+        push!(Ts, T_temp)
+        push!(os, T_temp[1:3, 4])
+    end
+
+    T_temp = T_temp * T_GR_7
     push!(Ts, T_temp)
     push!(os, T_temp[1:3, 4])
-end
+    println(T_temp[1:3, 4])
 
-T_temp = T_temp * T_GR_7
-push!(Ts, T_temp)
-push!(os, T_temp[1:3, 4])
-
-x, y, z = split_vec_of_arrays(os)
-fig = plot(
-    x, y, z,
-    aspect_ratio = 1,
-    marker=:circle, label = "joints",
-    )
-
-cs_global_all = []
-for (i, cs_local) in enumerate(c_points_all)
-    cs_global = []
-    for r in cs_local
-        o = Ts[i+2] * r
-        push!(cs_global, o[1:3, :])
+    x, y, z = split_vec_of_arrays(os)
+    if name
+        s = "R-"
+    else
+        s = "L-"
     end
-    push!(cs_global_all, cs_global)
-end
 
-# for r in c_points_1
-#     o = Ts[3] * r
-#     push!(c1s, o[1:3, :])
-# end
+    plot!(
+        fig,
+        x, y, z,
+        aspect_ratio = 1,
+        marker=:circle,
+        markeralpha = 0.5,
+        label = s * "joints",
+        )
 
-# x, y, z = split_vec_of_arrays(r1s)
-# scatter!(
-#     x, y, z,
-#     label = "cpoints",
-#     )
-
-cname = (
-    "1", "2", "3", "4", "5", "6", "7", "GL"
-)
-
-for (i, cs) in enumerate(cs_global_all)
-    x, y, z = split_vec_of_arrays(cs)
-    scatter!(
-        fig, 
-        x, y, z, label = cname[i],
+    cs_global_all = []
+    for (i, cs_local) in enumerate(c_points_all)
+        cs_global = []
+        for r in cs_local
+            o = Ts[i+2] * r
+            push!(cs_global, o[1:3, :])
+        end
+        push!(cs_global_all, cs_global)
+    end
+    cname = (
+        "1", "2", "3", "4", "5", "6", "7", "GL"
     )
+
+    for (i, cs) in enumerate(cs_global_all)
+        if i == 8
+            continue
+        else
+            x, y, z = split_vec_of_arrays(cs)
+            scatter!(
+                fig, 
+                x, y, z, label = s * cname[i],
+                aspect_ratio = 1,
+            )
+        end
+    end
+    fig
 end
 
-fig
+# ### neutralを図示 ###
+# fig = plot(aspect_ratio = 1,)
+# fig = draw_arm(fig, qr, DHparams_r, true)
+# fig = draw_arm(fig, ql, DHparams_l, false)
+
+
+function draw_arm(ax, q, DHparams, name)
+    """アームをplot by PyPlot
+    name : trueならright、falseならleft
+    """
+    DHparams = update_DHparams(DHparams, q)
+    os = []
+    Ts = []
+    push!(os, [0.0, 0.0, 0.0])
+
+    if name
+        T_temp = T_BR_Wo
+        push!(Ts, T_temp)
+        push!(os, T_temp[1:3, 4])
+
+        T_temp = T_temp * T_0_BR
+        push!(Ts, T_temp)
+        push!(os, T_temp[1:3, 4])
+    else
+        T_temp = T_BL_Wo
+        push!(Ts, T_temp)
+        push!(os, T_temp[1:3, 4])
+
+        T_temp = T_temp * T_0_BL
+        push!(Ts, T_temp)
+        push!(os, T_temp[1:3, 4])
+    end
+
+    for i in 1:7
+        T_temp = T_temp * T(DHparams[i])
+        push!(Ts, T_temp)
+        push!(os, T_temp[1:3, 4])
+    end
+
+    T_temp = T_temp * T_GR_7
+    push!(Ts, T_temp)
+    push!(os, T_temp[1:3, 4])
+    println(T_temp[1:3, 4])
+
+    x, y, z = split_vec_of_arrays(os)
+    if name
+        s = "R-"
+    else
+        s = "L-"
+    end
+
+    ax.plot(x, y, z, label = s + "joints")
+
+    cs_global_all = []
+    for (i, cs_local) in enumerate(c_points_all)
+        cs_global = []
+        for r in cs_local
+            o = Ts[i+2] * r
+            push!(cs_global, o[1:3, :])
+        end
+        push!(cs_global_all, cs_global)
+    end
+    cname = (
+        "1", "2", "3", "4", "5", "6", "7", "GL"
+    )
+
+    for (i, cs) in enumerate(cs_global_all)
+        if i == 8
+            continue
+        else
+            x, y, z = split_vec_of_arrays(cs)
+            ax.scatter(x, y, z, label = s+cname[i])
+        end
+    end
+end
+
+
+### neutralを図示 ###
+fig = plt.figure()
+ax = fig.gca(projection="3D")
+ax.grid(True)
+ax.set_xlabel("X[m]")
+ax.set_ylabel("Y[m]")
+ax.set_zlabel("Z[m]")
+draw_arm(ax, qr, DHparams_r, true)
+draw_arm(ax, ql, DHparams_l, false)
