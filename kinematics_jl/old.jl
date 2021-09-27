@@ -40,12 +40,61 @@ DHparams = [
 
 
 # 制御点
-r_bar_1 = (
+c_points_1 = (
     [0; L1/2; -L0/2; 1],
     [0; -L1/2; -L0/2; 1],
     [L1/2; 0; -L0/2; 1],
     [-L1/2; 0; -L0/2; 1],
 )
+
+c_points_2 = (
+    [0; 0; L3/2; 1],
+    [0; 0; -L3/2; 1],
+)
+
+c_points_3 = (
+    [0; L3/2; -L2*2/3; 1],
+    [0; -L3/2; -L2*2/3; 1],
+    [L3/2; 0; -L2*2/3; 1],
+    [-L3/2; 0; -L2*2/3; 1],
+    [0; L3/2; -L2*1/3; 1],
+    [0; -L3/2; -L2*1/3; 1],
+    [L3/2; 0; -L2*1/3; 1],
+    [-L3/2; 0; -L2*1/3; 1],
+)
+
+c_points_4 = (
+    [0; 0; L3/2; 1],
+    [0; 0; -L3/2; 1],
+)
+
+c_points_5 = (
+    [0; L5/2; -L4/2; 1],
+    [0; -L5/2; -L4/2; 1],
+    [L5/2; 0; -L4/2; 1],
+    [-L5/2; 0; -L4/2; 1],
+)
+
+c_points_6 = (
+    [0; 0; L5/2; 1],
+    [0; 0; -L5/2; 1]
+)
+
+c_points_7 = (
+    [0; L5/2; L6/2; 1],
+    [0; -L5/2; L6/2; 1],
+    [L5/2; 0; L6/2; 1],
+    [-L5/2; 0; L6/2; 1],
+)
+
+c_points_GL = (
+    [0; 0; 0; 1]
+)
+
+c_points_all = (
+    c_points_1, c_points_2, c_points_3, c_points_4, c_points_5, c_points_6, c_points_7, c_points_GL
+)
+
 
 
 T_BR_Wo = [
@@ -120,22 +169,43 @@ push!(Ts, T_temp)
 push!(os, T_temp[1:3, 4])
 
 x, y, z = split_vec_of_arrays(os)
-plot(
+fig = plot(
     x, y, z,
     aspect_ratio = 1,
     marker=:circle, label = "joints",
     )
 
-r1s = []
-for r in r_bar_1
-    o = Ts[3] * r
-    push!(r1s, o[1:3, :])
+cs_global_all = []
+for (i, cs_local) in enumerate(c_points_all)
+    cs_global = []
+    for r in cs_local
+        o = Ts[i+2] * r
+        push!(cs_global, o[1:3, :])
+    end
+    push!(cs_global_all, cs_global)
 end
 
-x, y, z = split_vec_of_arrays(r1s)
-scatter!(
-    x, y, z,
-    label = "cpoints",
+# for r in c_points_1
+#     o = Ts[3] * r
+#     push!(c1s, o[1:3, :])
+# end
+
+# x, y, z = split_vec_of_arrays(r1s)
+# scatter!(
+#     x, y, z,
+#     label = "cpoints",
+#     )
+
+cname = (
+    "1", "2", "3", "4", "5", "6", "7", "GL"
+)
+
+for (i, cs) in enumerate(cs_global_all)
+    x, y, z = split_vec_of_arrays(cs)
+    scatter!(
+        fig, 
+        x, y, z, label = cname[i],
     )
+end
 
-
+fig
