@@ -251,89 +251,89 @@ function draw_arm(fig, q, DHparams, name)
     fig
 end
 
-# ### neutralを図示 ###
-# fig = plot(aspect_ratio = 1,)
-# fig = draw_arm(fig, qr, DHparams_r, true)
-# fig = draw_arm(fig, ql, DHparams_l, false)
-
-
-function draw_arm(ax, q, DHparams, name)
-    """アームをplot by PyPlot
-    name : trueならright、falseならleft
-    """
-    DHparams = update_DHparams(DHparams, q)
-    os = []
-    Ts = []
-    push!(os, [0.0, 0.0, 0.0])
-
-    if name
-        T_temp = T_BR_Wo
-        push!(Ts, T_temp)
-        push!(os, T_temp[1:3, 4])
-
-        T_temp = T_temp * T_0_BR
-        push!(Ts, T_temp)
-        push!(os, T_temp[1:3, 4])
-    else
-        T_temp = T_BL_Wo
-        push!(Ts, T_temp)
-        push!(os, T_temp[1:3, 4])
-
-        T_temp = T_temp * T_0_BL
-        push!(Ts, T_temp)
-        push!(os, T_temp[1:3, 4])
-    end
-
-    for i in 1:7
-        T_temp = T_temp * T(DHparams[i])
-        push!(Ts, T_temp)
-        push!(os, T_temp[1:3, 4])
-    end
-
-    T_temp = T_temp * T_GR_7
-    push!(Ts, T_temp)
-    push!(os, T_temp[1:3, 4])
-    println(T_temp[1:3, 4])
-
-    x, y, z = split_vec_of_arrays(os)
-    if name
-        s = "R-"
-    else
-        s = "L-"
-    end
-
-    ax.plot(x, y, z, label = s + "joints")
-
-    cs_global_all = []
-    for (i, cs_local) in enumerate(c_points_all)
-        cs_global = []
-        for r in cs_local
-            o = Ts[i+2] * r
-            push!(cs_global, o[1:3, :])
-        end
-        push!(cs_global_all, cs_global)
-    end
-    cname = (
-        "1", "2", "3", "4", "5", "6", "7", "GL"
-    )
-
-    for (i, cs) in enumerate(cs_global_all)
-        if i == 8
-            continue
-        else
-            x, y, z = split_vec_of_arrays(cs)
-            ax.scatter(x, y, z, label = s+cname[i])
-        end
-    end
-end
-
-
 ### neutralを図示 ###
-fig = plt.figure()
-ax = fig.gca(projection="3D")
-ax.grid(True)
-ax.set_xlabel("X[m]")
-ax.set_ylabel("Y[m]")
-ax.set_zlabel("Z[m]")
-draw_arm(ax, qr, DHparams_r, true)
-draw_arm(ax, ql, DHparams_l, false)
+fig = plot(aspect_ratio = 1,)
+fig = draw_arm(fig, qr, DHparams_r, true)
+fig = draw_arm(fig, ql, DHparams_l, false)
+
+
+# function draw_arm(ax, q, DHparams, name)
+#     """アームをplot by PyPlot
+#     name : trueならright、falseならleft
+#     """
+#     DHparams = update_DHparams(DHparams, q)
+#     os = []
+#     Ts = []
+#     push!(os, [0.0, 0.0, 0.0])
+
+#     if name
+#         T_temp = T_BR_Wo
+#         push!(Ts, T_temp)
+#         push!(os, T_temp[1:3, 4])
+
+#         T_temp = T_temp * T_0_BR
+#         push!(Ts, T_temp)
+#         push!(os, T_temp[1:3, 4])
+#     else
+#         T_temp = T_BL_Wo
+#         push!(Ts, T_temp)
+#         push!(os, T_temp[1:3, 4])
+
+#         T_temp = T_temp * T_0_BL
+#         push!(Ts, T_temp)
+#         push!(os, T_temp[1:3, 4])
+#     end
+
+#     for i in 1:7
+#         T_temp = T_temp * T(DHparams[i])
+#         push!(Ts, T_temp)
+#         push!(os, T_temp[1:3, 4])
+#     end
+
+#     T_temp = T_temp * T_GR_7
+#     push!(Ts, T_temp)
+#     push!(os, T_temp[1:3, 4])
+#     println(T_temp[1:3, 4])
+
+#     x, y, z = split_vec_of_arrays(os)
+#     if name
+#         s = "R-"
+#     else
+#         s = "L-"
+#     end
+
+#     ax.plot(x, y, z, label = s + "joints")
+
+#     cs_global_all = []
+#     for (i, cs_local) in enumerate(c_points_all)
+#         cs_global = []
+#         for r in cs_local
+#             o = Ts[i+2] * r
+#             push!(cs_global, o[1:3, :])
+#         end
+#         push!(cs_global_all, cs_global)
+#     end
+#     cname = (
+#         "1", "2", "3", "4", "5", "6", "7", "GL"
+#     )
+
+#     for (i, cs) in enumerate(cs_global_all)
+#         if i == 8
+#             continue
+#         else
+#             x, y, z = split_vec_of_arrays(cs)
+#             ax.scatter(x, y, z, label = s+cname[i])
+#         end
+#     end
+# end
+
+
+# ### neutralを図示 ###
+# fig = plt.figure()
+# ax = fig.gca(projection="3D")
+# ax.grid(True)
+# ax.set_xlabel("X[m]")
+# ax.set_ylabel("Y[m]")
+# ax.set_zlabel("Z[m]")
+# draw_arm(ax, qr, DHparams_r, true)
+# draw_arm(ax, ql, DHparams_l, false)
