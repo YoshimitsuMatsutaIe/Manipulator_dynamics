@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+#from mpl_toolkits.mplot3d import Axes3D 
 from math import cos, sin, tan, pi
 import math
 
@@ -64,23 +65,23 @@ qr = q_neutral  # 右手の関節角度ベクトル
 ql = q_neutral  # 左手の関節角度ベクトル
 
 DHparams_r = [
-    DHparam(0, 0, 0, qr[0]),
-    DHparam(-pi/2, L1, 0, qr[1]+pi/2),
-    DHparam(pi/2, 0, L2, qr[2]),
-    DHparam(-pi/2, L3, 0, qr[3]),
-    DHparam(pi/2, 0, L4, qr[4]),
-    DHparam(-pi/2, L5, 0, qr[5]),
-    DHparam(pi/2, 0, 0, qr[6]),
+    DHparam(0, 0, 0, qr[0, 0]),
+    DHparam(-pi/2, L1, 0, qr[1, 0]+pi/2),
+    DHparam(pi/2, 0, L2, qr[2, 0]),
+    DHparam(-pi/2, L3, 0, qr[3, 0]),
+    DHparam(pi/2, 0, L4, qr[4, 0]),
+    DHparam(-pi/2, L5, 0, qr[5, 0]),
+    DHparam(pi/2, 0, 0, qr[6, 0]),
 ]
 
 DHparams_l = [
-    DHparam(0, 0, 0, ql[0]),
-    DHparam(-pi/2, L1, 0, ql[1]+pi/2),
-    DHparam(pi/2, 0, L2, ql[2]),
-    DHparam(-pi/2, L3, 0, ql[3]),
-    DHparam(pi/2, 0, L4, ql[4]),
-    DHparam(-pi/2, L5, 0, ql[5]),
-    DHparam(pi/2, 0, 0, ql[6]),
+    DHparam(0, 0, 0, ql[0, 0]),
+    DHparam(-pi/2, L1, 0, ql[1, 0]+pi/2),
+    DHparam(pi/2, 0, L2, ql[2, 0]),
+    DHparam(-pi/2, L3, 0, ql[3, 0]),
+    DHparam(pi/2, 0, L4, ql[4, 0]),
+    DHparam(-pi/2, L5, 0, ql[5, 0]),
+    DHparam(pi/2, 0, 0, ql[6, 0]),
 ]
 
 
@@ -224,3 +225,31 @@ for i, T in enumerate(Tls):
     else:
         Tls_.append(Tls_[i-1] * T)
 
+
+# 試しに図示
+# データ作成
+xrs, yrs, zrs = [0], [0], [0]
+for T in Trs:
+    xrs.append(T.o[0, 0])
+    yrs.append(T.o[1, 0])
+    zrs.append(T.o[2, 0])
+
+xls, yls, zls = [0], [0], [0]
+for T in Tls:
+    xls.append(T.o[0, 0])
+    yls.append(T.o[1, 0])
+    zls.append(T.o[2, 0])
+
+
+fig = plt.figure()
+ax = fig.gca(projection = '3d')
+ax.grid(True)
+ax.set_xlabel('X[m]')
+ax.set_ylabel('Y[m]')
+ax.set_zlabel('Z[m]')
+ax.plot(xrs, yrs, zrs, ".-", label = "R-joints",)
+ax.plot(xls, yls, zls, ".-", label = "L-joints",)
+ax.legend()
+ax.set_box_aspect((1,1,1))
+
+plt.show()
