@@ -257,6 +257,7 @@ fig = draw_arm(fig, qr, DHparams_r, true)
 fig = draw_arm(fig, ql, DHparams_l, false)
 
 
+
 # function draw_arm(ax, q, DHparams, name)
 #     """アームをplot by PyPlot
 #     name : trueならright、falseならleft

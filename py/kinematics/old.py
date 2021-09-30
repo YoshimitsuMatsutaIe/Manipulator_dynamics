@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from math import cos, sin, tan, pi
 import math
 
+
 class DHparam:
     """DHパラメータ"""
     
@@ -45,6 +46,24 @@ class HomogeneousTransformationMatrix:
     def __mul__(self, other):
         M = self.t @ other.t
         return HomogeneousTransformationMatrix(DHparam=None, M=M)
+
+
+# # H~クラスのテスト
+# A = np.array([
+#     [1, 2, 3, 4],
+#     [5, 6, 7, 8],
+#     [9, 10, 11, 12],
+#     [13, 14, 15, 16],
+# ])
+# B = A + 1
+
+# print(A @ B)
+
+# A_ = HomogeneousTransformationMatrix(DHparam=None, M=A)
+# B_ = HomogeneousTransformationMatrix(DHparam=None, M=B)
+# C_ = A_ * B_
+# print(C_.t)
+
 
 
 # パラメータ
@@ -211,34 +230,70 @@ Tls.append(T_GR_7)
 
 
 # Wo基準の同次変換行列を作成
-Trs_ = []
-Tls_ = []
+Trs_Wo = []
+Tls_Wo = []
 
 for i, T in enumerate(Trs):
     if i == 0:
-        Trs_.append(T)
+        Trs_Wo.append(T)
     else:
-        Trs_.append(Trs_[i-1] * T)
+        Trs_Wo.append(Trs_Wo[i-1] * T)
 for i, T in enumerate(Tls):
     if i == 0:
-        Tls_.append(T)
+        Tls_Wo.append(T)
     else:
-        Tls_.append(Tls_[i-1] * T)
+        Tls_Wo.append(Tls_Wo[i-1] * T)
+
+
+
+# 制御点の位置を計算
+crs, cls = [], []
+for i, r_bar in enumerate(r_bars):
+    c_temp = []
+    T_temp = Trs_Wo[i+2]
+    for r_bar_ in r_bar:
+        c_temp.append(T_temp.t @ r_bar_)
+    crs.append(c_temp)
+for i, r_bar in enumerate(r_bars):
+    c_temp = []
+    T_temp = Tls_Wo[i+2]
+    for r_bar_ in r_bar:
+        c_temp.append(T_temp.t @ r_bar_)
+    cls.append(c_temp)
+
 
 
 # 試しに図示
 # データ作成
+
+def split_split_vec_of_arrays(u):
+    """ndarrayの縦ベクトルが入ったリストからx, y, ...リストを作成
+    
+    ・いらない
+    """
+    
+    m = len(u)  # 列数
+    n = u[0].shape[0]   # 行数
+    z = ()
+    
+    u_ = np.concatenate(u, axis=1)
+    for i in n:
+        z.append(u_[i, :].tolist())
+    
+    return z
+
 xrs, yrs, zrs = [0], [0], [0]
-for T in Trs:
+for T in Trs_Wo:
     xrs.append(T.o[0, 0])
     yrs.append(T.o[1, 0])
     zrs.append(T.o[2, 0])
 
 xls, yls, zls = [0], [0], [0]
-for T in Tls:
+for T in Tls_Wo:
     xls.append(T.o[0, 0])
     yls.append(T.o[1, 0])
     zls.append(T.o[2, 0])
+
 
 
 fig = plt.figure()
@@ -249,7 +304,35 @@ ax.set_ylabel('Y[m]')
 ax.set_zlabel('Z[m]')
 ax.plot(xrs, yrs, zrs, ".-", label = "R-joints",)
 ax.plot(xls, yls, zls, ".-", label = "L-joints",)
+
+
+
+def get_o(Ts):
+    """Homo~から原点のみ取得"""
+    os = []
+    for T in Ts:
+        os.append(Ts.o[0:3, 3:4])
+    return os
+
+
+cs_name = ("1", "2", "3", "4", "5", "6", "7", "GL")
+for i, cs in enumerate(crs):
+    cs_ = np.concatenate(cs, axis=1)
+    xs = cs_[0, :].tolist()
+    ys = cs_[1, :].tolist()
+    zs = cs_[2, :].tolist()
+    ax.scatter(xs, ys, zs, label = "R-" + cs_name[i])
+for i, cs in enumerate(cls):
+    cs_ = np.concatenate(cs, axis=1)
+    xs = cs_[0, :].tolist()
+    ys = cs_[1, :].tolist()
+    zs = cs_[2, :].tolist()
+    ax.scatter(xs, ys, zs, label = "L-" + cs_name[i])
+
+
 ax.legend()
-ax.set_box_aspect((1,1,1))
+ax.set_box_aspect((1, 1, 1))
 
 plt.show()
+
+
