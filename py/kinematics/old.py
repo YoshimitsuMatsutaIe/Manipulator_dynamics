@@ -1,9 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-#from mpl_toolkits.mplot3d import Axes3D 
 from math import cos, sin, tan, pi
 import math
-
+import time
 
 class DHparam:
     """DHパラメータ"""
@@ -18,7 +17,7 @@ class DHparam:
 class HomogeneousTransformationMatrix:
     """同次変換行列"""
     
-    def __init__(self, DHparam, M=None):
+    def __init__(self, DHparam=None, M=None):
         self.update(DHparam, M)
         return
     
@@ -65,184 +64,207 @@ class HomogeneousTransformationMatrix:
 # print(C_.t)
 
 
+class BaxterKinematics:
+    # パラメータ
+    L = 278e-3
+    h = 64e-3
+    H = 1104e-3
+    L0 = 270.35e-3
+    L1 = 69e-3
+    L2 = 364.35e-3
+    L3 = 69e-3
+    L4 = 374.29e-3
+    L5 = 10e-3
+    L6 = 368.3e-3
 
-# パラメータ
-L = 278e-3
-h = 64e-3
-H = 1104e-3
-L0 = 270.35e-3
-L1 = 69e-3
-L2 = 364.35e-3
-L3 = 69e-3
-L4 = 374.29e-3
-L5 = 10e-3
-L6 = 368.3e-3
+    q_neutral = np.array([[0, -31, 0, 43, 0, 72, 0]]).T * pi/180  # ニュートラルの姿勢
 
-q_neutral = np.array([[0, -31, 0, 43, 0, 72, 0]]).T * pi/180  # ニュートラルの姿勢
-
-qr = q_neutral  # 右手の関節角度ベクトル
-ql = q_neutral  # 左手の関節角度ベクトル
-
-DHparams_r = [
-    DHparam(0, 0, 0, qr[0, 0]),
-    DHparam(-pi/2, L1, 0, qr[1, 0]+pi/2),
-    DHparam(pi/2, 0, L2, qr[2, 0]),
-    DHparam(-pi/2, L3, 0, qr[3, 0]),
-    DHparam(pi/2, 0, L4, qr[4, 0]),
-    DHparam(-pi/2, L5, 0, qr[5, 0]),
-    DHparam(pi/2, 0, 0, qr[6, 0]),
-]
-
-DHparams_l = [
-    DHparam(0, 0, 0, ql[0, 0]),
-    DHparam(-pi/2, L1, 0, ql[1, 0]+pi/2),
-    DHparam(pi/2, 0, L2, ql[2, 0]),
-    DHparam(-pi/2, L3, 0, ql[3, 0]),
-    DHparam(pi/2, 0, L4, ql[4, 0]),
-    DHparam(-pi/2, L5, 0, ql[5, 0]),
-    DHparam(pi/2, 0, 0, ql[6, 0]),
-]
+    qr = q_neutral  # 右手の関節角度ベクトル
+    ql = q_neutral  # 左手の関節角度ベクトル
 
 
-# 制御点のローカル座標
-r_bar_1 = [
-    np.array([[0, L1/2, -L0/2, 1]]).T,
-    np.array([[0, -L1/2, -L0/2, 1]]).T,
-    np.array([[L1/2, 0, -L0/2, 1]]).T,
-    np.array([[-L1/2, 0, -L0/2, 1]]).T,
-]  # 1座標系からみた制御点位置
+    DHparams_r = [
+        DHparam(0, 0, 0, qr[0, 0]),
+        DHparam(-pi/2, L1, 0, qr[1, 0]+pi/2),
+        DHparam(pi/2, 0, L2, qr[2, 0]),
+        DHparam(-pi/2, L3, 0, qr[3, 0]),
+        DHparam(pi/2, 0, L4, qr[4, 0]),
+        DHparam(-pi/2, L5, 0, qr[5, 0]),
+        DHparam(pi/2, 0, 0, qr[6, 0]),
+    ]
 
-r_bar_2 = [
-    np.array([[0, 0, L3/2, 1]]).T,
-    np.array([[0, 0, -L3/2, 1]]).T,
-]
-
-r_bar_3 = [
-    np.array([[0, L3/2, -L2*2/3, 1]]).T,
-    np.array([[0, -L3/2, -L2*2/3, 1]]).T,
-    np.array([[L3/2, 0, -L2*2/3, 1]]).T,
-    np.array([[-L3/2, 0, -L2*2/3, 1]]).T,
-    np.array([[0, L3/2, -L2*1/3, 1]]).T,
-    np.array([[0, -L3/2, -L2*1/3, 1]]).T,
-    np.array([[L3/2, 0, -L2*1/3, 1]]).T,
-    np.array([[-L3/2, 0, -L2*1/3, 1]]).T,
-]
-
-r_bar_4 = [
-    np.array([[0, 0, L3/2, 1]]).T,
-    np.array([[0, 0, -L3/2, 1]]).T,
-]
-
-r_bar_5 = [
-    np.array([[0, L5/2, -L4/2, 1]]).T,
-    np.array([[0, -L5/2, -L4/2, 1]]).T,
-    np.array([[L5/2, 0, -L4/2, 1]]).T,
-    np.array([[-L5/2, 0, -L4/2, 1]]).T,
-]
-
-r_bar_6 = [
-    np.array([[0, 0, L5/2, 1]]).T,
-    np.array([[0, 0, -L5/2, 1]]).T,
-]
-
-r_bar_7 = [
-    np.array([[0, L5/2, L6/2, 1]]).T,
-    np.array([[0, -L5/2, L6/2, 1]]).T,
-    np.array([[L5/2, 0, L6/2, 1]]).T,
-    np.array([[-L5/2, 0, L6/2, 1]]).T,
-]
-
-r_bar_GL = [
-    np.array([[0, 0, 0, 1]]).T
-]
-
-# 追加
-r_bars = [
-    r_bar_1, r_bar_2, r_bar_3, r_bar_4, r_bar_5, r_bar_6, r_bar_7, r_bar_GL,
-]
+    DHparams_l = [
+        DHparam(0, 0, 0, ql[0, 0]),
+        DHparam(-pi/2, L1, 0, ql[1, 0]+pi/2),
+        DHparam(pi/2, 0, L2, ql[2, 0]),
+        DHparam(-pi/2, L3, 0, ql[3, 0]),
+        DHparam(pi/2, 0, L4, ql[4, 0]),
+        DHparam(-pi/2, L5, 0, ql[5, 0]),
+        DHparam(pi/2, 0, 0, ql[6, 0]),
+    ]
 
 
-# 同次変換行列
-# 右手
-T_BR_Wo = HomogeneousTransformationMatrix(
-    DHparam=None,
-    M=np.array([
-        [-math.sqrt(2)/2, math.sqrt(2)/2, 0, -L,],
-        [-math.sqrt(2)/2, -math.sqrt(2)/2, 0, -h,],
-        [0, 0, 1, H,],
-        [0, 0, 0, 1,],
-    ])
-)
+    # 制御点のローカル座標
+    r_bar_1 = [
+        np.array([[0, L1/2, -L0/2, 1]]).T,
+        np.array([[0, -L1/2, -L0/2, 1]]).T,
+        np.array([[L1/2, 0, -L0/2, 1]]).T,
+        np.array([[-L1/2, 0, -L0/2, 1]]).T,
+    ]  # 1座標系からみた制御点位置
 
-T_0_BR = HomogeneousTransformationMatrix(
-    DHparam=None,
-    M=np.array([
-        [1, 0, 0, 0,],
-        [0, 1, 0, 0,],
-        [0, 0, 1, L0,],
-        [0, 0, 0, 1,],
-    ])
-)
+    r_bar_2 = [
+        np.array([[0, 0, L3/2, 1]]).T,
+        np.array([[0, 0, -L3/2, 1]]).T,
+    ]
 
-# 左手
-T_BL_Wo = HomogeneousTransformationMatrix(
-    DHparam=None,
-    M=np.array([
-        [math.sqrt(2)/2, math.sqrt(2)/2, 0, L,],
-        [-math.sqrt(2)/2, math.sqrt(2)/2, 0, -h,],
-        [0, 0, 1, H,],
-        [0, 0, 0, 1,],
-    ])
-)
+    r_bar_3 = [
+        np.array([[0, L3/2, -L2*2/3, 1]]).T,
+        np.array([[0, -L3/2, -L2*2/3, 1]]).T,
+        np.array([[L3/2, 0, -L2*2/3, 1]]).T,
+        np.array([[-L3/2, 0, -L2*2/3, 1]]).T,
+        np.array([[0, L3/2, -L2*1/3, 1]]).T,
+        np.array([[0, -L3/2, -L2*1/3, 1]]).T,
+        np.array([[L3/2, 0, -L2*1/3, 1]]).T,
+        np.array([[-L3/2, 0, -L2*1/3, 1]]).T,
+    ]
 
-T_0_BL = HomogeneousTransformationMatrix(
-    DHparam=None,
-    M=np.array([
-        [1, 0, 0, 0,],
-        [0, 1, 0, 0,],
-        [0, 0, 1, L0,],
-        [0, 0, 0, 1,],
-    ])
-)
+    r_bar_4 = [
+        np.array([[0, 0, L3/2, 1]]).T,
+        np.array([[0, 0, -L3/2, 1]]).T,
+    ]
 
-T_GR_7 = HomogeneousTransformationMatrix(
-    DHparam=None,
-    M=np.array([
-        [1, 0, 0, 0,],
-        [0, 1, 0, 0,],
-        [0, 0, 1, L6,],
-        [0, 0, 0, 1,],
-    ])
-)
+    r_bar_5 = [
+        np.array([[0, L5/2, -L4/2, 1]]).T,
+        np.array([[0, -L5/2, -L4/2, 1]]).T,
+        np.array([[L5/2, 0, -L4/2, 1]]).T,
+        np.array([[-L5/2, 0, -L4/2, 1]]).T,
+    ]
+
+    r_bar_6 = [
+        np.array([[0, 0, L5/2, 1]]).T,
+        np.array([[0, 0, -L5/2, 1]]).T,
+    ]
+
+    r_bar_7 = [
+        np.array([[0, L5/2, L6/2, 1]]).T,
+        np.array([[0, -L5/2, L6/2, 1]]).T,
+        np.array([[L5/2, 0, L6/2, 1]]).T,
+        np.array([[-L5/2, 0, L6/2, 1]]).T,
+    ]
+
+    r_bar_GL = [
+        np.array([[0, 0, 0, 1]]).T
+    ]
+
+    # 追加
+    r_bars = [
+        r_bar_1, r_bar_2, r_bar_3, r_bar_4, r_bar_5, r_bar_6, r_bar_7, r_bar_GL,
+    ]
+
+    A = HomogeneousTransformationMatrix(
+        M=np.array([
+            [0, -1, 0, 0],
+            [1, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ])
+    )  # 偏微分演算行列
+    
+    
+    def __init__(self,):
+        self.update_all()
+        
+    
+    def update_HomogeneousTransformationMatrix(self, qr, ql):
+        """同時変換行列を更新"""
+    
+        def update_DHparams(q):
+            
+    
+        # 同次変換行列（ローカル座標の）
+        # 右手
+        T_BR_Wo = HomogeneousTransformationMatrix(
+            DHparam=None,
+            M=np.array([
+                [-math.sqrt(2)/2, math.sqrt(2)/2, 0, -self.L,],
+                [-math.sqrt(2)/2, -math.sqrt(2)/2, 0, -self.h,],
+                [0, 0, 1, self.H,],
+                [0, 0, 0, 1,],
+            ])
+        )
+
+        T_0_BR = HomogeneousTransformationMatrix(
+            DHparam=None,
+            M=np.array([
+                [1, 0, 0, 0,],
+                [0, 1, 0, 0,],
+                [0, 0, 1, self.L0,],
+                [0, 0, 0, 1,],
+            ])
+        )
+
+        # 左手
+        T_BL_Wo = HomogeneousTransformationMatrix(
+            DHparam=None,
+            M=np.array([
+                [math.sqrt(2)/2, math.sqrt(2)/2, 0, self.L,],
+                [-math.sqrt(2)/2, math.sqrt(2)/2, 0, -self.h,],
+                [0, 0, 1, self.H,],
+                [0, 0, 0, 1,],
+            ])
+        )
+
+        T_0_BL = HomogeneousTransformationMatrix(
+            DHparam=None,
+            M=np.array([
+                [1, 0, 0, 0,],
+                [0, 1, 0, 0,],
+                [0, 0, 1, self.L0,],
+                [0, 0, 0, 1,],
+            ])
+        )
+
+        T_GR_7 = HomogeneousTransformationMatrix(
+            DHparam=None,
+            M=np.array([
+                [1, 0, 0, 0,],
+                [0, 1, 0, 0,],
+                [0, 0, 1, self.L6,],
+                [0, 0, 0, 1,],
+            ])
+        )
 
 
-Trs = [T_BR_Wo, T_0_BR]
-Tls = [T_BL_Wo, T_0_BL]
+        self.Trs = [T_BR_Wo, T_0_BR]
+        self.Tls = [T_BL_Wo, T_0_BL]
 
 
-for param in DHparams_r:
-    Trs.append(HomogeneousTransformationMatrix(DHparam=param))
-for param in DHparams_l:
-    Tls.append(HomogeneousTransformationMatrix(DHparam=param))
+        for param in self.DHparams_r:
+            self.Trs.append(HomogeneousTransformationMatrix(DHparam=param))
+        for param in self.DHparams_l:
+            self.Tls.append(HomogeneousTransformationMatrix(DHparam=param))
 
-Trs.append(T_GR_7)
-Tls.append(T_GR_7)
+        self.Trs.append(T_GR_7)
+        self.Tls.append(T_GR_7)
 
 
-# Wo基準の同次変換行列を作成
-Trs_Wo = []
-Tls_Wo = []
+    # Wo基準の同次変換行列を作成
+    Trs_Wo = []
+    Tls_Wo = []
 
-for i, T in enumerate(Trs):
-    if i == 0:
-        Trs_Wo.append(T)
-    else:
-        Trs_Wo.append(Trs_Wo[i-1] * T)
-for i, T in enumerate(Tls):
-    if i == 0:
-        Tls_Wo.append(T)
-    else:
-        Tls_Wo.append(Tls_Wo[i-1] * T)
+    for i, T in enumerate(Trs):
+        if i == 0:
+            Trs_Wo.append(T)
+        else:
+            Trs_Wo.append(Trs_Wo[i-1] * T)
+    for i, T in enumerate(Tls):
+        if i == 0:
+            Tls_Wo.append(T)
+        else:
+            Tls_Wo.append(Tls_Wo[i-1] * T)
+
+
+
 
 
 
