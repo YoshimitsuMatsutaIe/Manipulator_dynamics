@@ -65,6 +65,7 @@ class HomogeneousTransformationMatrix:
 
 
 class BaxterKinematics:
+    
     # パラメータ
     L = 278e-3
     h = 64e-3
@@ -82,42 +83,20 @@ class BaxterKinematics:
     qr = q_neutral  # 右手の関節角度ベクトル
     ql = q_neutral  # 左手の関節角度ベクトル
 
-
-    DHparams_r = [
-        DHparam(0, 0, 0, qr[0, 0]),
-        DHparam(-pi/2, L1, 0, qr[1, 0]+pi/2),
-        DHparam(pi/2, 0, L2, qr[2, 0]),
-        DHparam(-pi/2, L3, 0, qr[3, 0]),
-        DHparam(pi/2, 0, L4, qr[4, 0]),
-        DHparam(-pi/2, L5, 0, qr[5, 0]),
-        DHparam(pi/2, 0, 0, qr[6, 0]),
-    ]
-
-    DHparams_l = [
-        DHparam(0, 0, 0, ql[0, 0]),
-        DHparam(-pi/2, L1, 0, ql[1, 0]+pi/2),
-        DHparam(pi/2, 0, L2, ql[2, 0]),
-        DHparam(-pi/2, L3, 0, ql[3, 0]),
-        DHparam(pi/2, 0, L4, ql[4, 0]),
-        DHparam(-pi/2, L5, 0, ql[5, 0]),
-        DHparam(pi/2, 0, 0, ql[6, 0]),
-    ]
-
-
     # 制御点のローカル座標
-    r_bar_1 = [
+    r_bars_in_1 = [
         np.array([[0, L1/2, -L0/2, 1]]).T,
         np.array([[0, -L1/2, -L0/2, 1]]).T,
         np.array([[L1/2, 0, -L0/2, 1]]).T,
         np.array([[-L1/2, 0, -L0/2, 1]]).T,
     ]  # 1座標系からみた制御点位置
 
-    r_bar_2 = [
+    r_bars_in_2 = [
         np.array([[0, 0, L3/2, 1]]).T,
         np.array([[0, 0, -L3/2, 1]]).T,
     ]
 
-    r_bar_3 = [
+    r_bars_in_3 = [
         np.array([[0, L3/2, -L2*2/3, 1]]).T,
         np.array([[0, -L3/2, -L2*2/3, 1]]).T,
         np.array([[L3/2, 0, -L2*2/3, 1]]).T,
@@ -128,37 +107,37 @@ class BaxterKinematics:
         np.array([[-L3/2, 0, -L2*1/3, 1]]).T,
     ]
 
-    r_bar_4 = [
+    r_bars_in_4 = [
         np.array([[0, 0, L3/2, 1]]).T,
         np.array([[0, 0, -L3/2, 1]]).T,
     ]
 
-    r_bar_5 = [
+    r_bars_in_5 = [
         np.array([[0, L5/2, -L4/2, 1]]).T,
         np.array([[0, -L5/2, -L4/2, 1]]).T,
         np.array([[L5/2, 0, -L4/2, 1]]).T,
         np.array([[-L5/2, 0, -L4/2, 1]]).T,
     ]
 
-    r_bar_6 = [
+    r_bars_in_6 = [
         np.array([[0, 0, L5/2, 1]]).T,
         np.array([[0, 0, -L5/2, 1]]).T,
     ]
 
-    r_bar_7 = [
+    r_bars_in_7 = [
         np.array([[0, L5/2, L6/2, 1]]).T,
         np.array([[0, -L5/2, L6/2, 1]]).T,
         np.array([[L5/2, 0, L6/2, 1]]).T,
         np.array([[-L5/2, 0, L6/2, 1]]).T,
     ]
 
-    r_bar_GL = [
+    r_bars_in_GL = [
         np.array([[0, 0, 0, 1]]).T
     ]
 
     # 追加
-    r_bars = [
-        r_bar_1, r_bar_2, r_bar_3, r_bar_4, r_bar_5, r_bar_6, r_bar_7, r_bar_GL,
+    r_bars_all = [
+        r_bars_in_1, r_bars_in_2, r_bars_in_3, r_bars_in_4, r_bars_in_5, r_bars_in_6, r_bars_in_7, r_bars_in_GL,
     ]
 
     A = HomogeneousTransformationMatrix(
@@ -178,8 +157,24 @@ class BaxterKinematics:
     def update_HomogeneousTransformationMatrix(self, qr, ql):
         """同時変換行列を更新"""
     
-        def update_DHparams(q):
+        def update_DHparams(qr, ql):
+            def DHparams(q):
+                return [
+                DHparam(0, 0, 0, q[0, 0]),
+                DHparam(-pi/2, self.L1, 0, q[1, 0]+pi/2),
+                DHparam(pi/2, 0, self.L2, q[2, 0]),
+                DHparam(-pi/2, self.L3, 0, q[3, 0]),
+                DHparam(pi/2, 0, self.L4, q[4, 0]),
+                DHparam(-pi/2, self.L5, 0, q[5, 0]),
+                DHparam(pi/2, 0, 0, q[6, 0]),
+                ]
             
+            self.DHparams_r = DHparams(qr)
+            self.DHparams_l = DHparams(ql)
+            return
+        
+    
+        update_DHparams(qr, ql)
     
         # 同次変換行列（ローカル座標の）
         # 右手
@@ -248,40 +243,38 @@ class BaxterKinematics:
         self.Tls.append(T_GR_7)
 
 
-    # Wo基準の同次変換行列を作成
-    Trs_Wo = []
-    Tls_Wo = []
+        # Wo基準の同次変換行列を作成
+        self.Trs_Wo = []
+        self.Tls_Wo = []
 
-    for i, T in enumerate(Trs):
-        if i == 0:
-            Trs_Wo.append(T)
-        else:
-            Trs_Wo.append(Trs_Wo[i-1] * T)
-    for i, T in enumerate(Tls):
-        if i == 0:
-            Tls_Wo.append(T)
-        else:
-            Tls_Wo.append(Tls_Wo[i-1] * T)
-
-
+        for i, T in enumerate(self.Trs):
+            if i == 0:
+                self.Trs_Wo.append(T)
+            else:
+                self.Trs_Wo.append(self.Trs_Wo[i-1] * T)
+        for i, T in enumerate(self.Tls):
+            if i == 0:
+                self.Tls_Wo.append(T)
+            else:
+                self.Tls_Wo.append(self.Tls_Wo[i-1] * T)
 
 
-
-
-# 制御点の位置を計算
-crs, cls = [], []
-for i, r_bar in enumerate(r_bars):
-    c_temp = []
-    T_temp = Trs_Wo[i+2]
-    for r_bar_ in r_bar:
-        c_temp.append(T_temp.t @ r_bar_)
-    crs.append(c_temp)
-for i, r_bar in enumerate(r_bars):
-    c_temp = []
-    T_temp = Tls_Wo[i+2]
-    for r_bar_ in r_bar:
-        c_temp.append(T_temp.t @ r_bar_)
-    cls.append(c_temp)
+    def update_cpoints(self,):
+        
+        # 制御点の位置を計算
+        crs, cls = [], []
+        for i, r_bar in enumerate(r_bars):
+            c_temp = []
+            T_temp = Trs_Wo[i+2]
+            for r_bar_ in r_bar:
+                c_temp.append(T_temp.t @ r_bar_)
+            crs.append(c_temp)
+        for i, r_bar in enumerate(r_bars):
+            c_temp = []
+            T_temp = Tls_Wo[i+2]
+            for r_bar_ in r_bar:
+                c_temp.append(T_temp.t @ r_bar_)
+            cls.append(c_temp)
 
 
 
