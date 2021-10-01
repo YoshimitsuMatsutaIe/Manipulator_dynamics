@@ -4,6 +4,8 @@ from math import cos, sin, tan, pi
 import math
 import time
 
+from numpy.lib.shape_base import expand_dims
+
 class DHparam:
     """DHパラメータ"""
     
@@ -45,23 +47,6 @@ class HomogeneousTransformationMatrix:
     def __mul__(self, other):
         M = self.t @ other.t
         return HomogeneousTransformationMatrix(DHparam=None, M=M)
-
-
-# # H~クラスのテスト
-# A = np.array([
-#     [1, 2, 3, 4],
-#     [5, 6, 7, 8],
-#     [9, 10, 11, 12],
-#     [13, 14, 15, 16],
-# ])
-# B = A + 1
-
-# print(A @ B)
-
-# A_ = HomogeneousTransformationMatrix(DHparam=None, M=A)
-# B_ = HomogeneousTransformationMatrix(DHparam=None, M=B)
-# C_ = A_ * B_
-# print(C_.t)
 
 
 class BaxterKinematics:
@@ -154,7 +139,13 @@ class BaxterKinematics:
         self.update_all()
         
     
-    def update_HomogeneousTransformationMatrix(self, qr, ql):
+    
+    def update_all(self,):
+        self._update_HomogeneousTransformationMatrix(self.qr, self.ql)
+        self._update_cpoints()
+    
+    
+    def _update_HomogeneousTransformationMatrix(self, qr, ql):
         """同時変換行列を更新"""
     
         def update_DHparams(qr, ql):
@@ -259,95 +250,91 @@ class BaxterKinematics:
                 self.Tls_Wo.append(self.Tls_Wo[i-1] * T)
 
 
-    def update_cpoints(self,):
+    def _update_cpoints(self,):
         
         # 制御点の位置を計算
-        crs, cls = [], []
-        for i, r_bar in enumerate(r_bars):
+        self.cpoints_r, self.cpoints_l = [], []
+        for i, r_bar in enumerate(self.r_bars_all):
             c_temp = []
-            T_temp = Trs_Wo[i+2]
+            T_temp = self.Trs_Wo[i+2]
             for r_bar_ in r_bar:
                 c_temp.append(T_temp.t @ r_bar_)
-            crs.append(c_temp)
-        for i, r_bar in enumerate(r_bars):
+            self.cpoints_r.append(c_temp)
+        for i, r_bar in enumerate(self.r_bars_all):
             c_temp = []
-            T_temp = Tls_Wo[i+2]
+            T_temp = self.Tls_Wo[i+2]
             for r_bar_ in r_bar:
                 c_temp.append(T_temp.t @ r_bar_)
-            cls.append(c_temp)
+            self.cpoints_l.append(c_temp)
+        return
+
+    def get_joint_positions(self,):
+        """ジョイント原点座標を取得"""
+        return [
+            [T.o for T in self.Trs_Wo],
+            [T.o for T in self.Tls_Wo],
+        ]
+
+    def get_cpoint_positions(self,):
+        """制御点座標を全取得"""
+        return 
 
 
 
-# 試しに図示
-# データ作成
 
-def split_split_vec_of_arrays(u):
-    """ndarrayの縦ベクトルが入ったリストからx, y, ...リストを作成
+
+def main():
     
-    ・いらない
-    """
-    
-    m = len(u)  # 列数
-    n = u[0].shape[0]   # 行数
-    z = ()
-    
-    u_ = np.concatenate(u, axis=1)
-    for i in n:
-        z.append(u_[i, :].tolist())
-    
-    return z
+    kinema = BaxterKinematics()
+    kinema.update_all()
+    os = kinema.get_joint_positions()
+    xrs, yrs, zrs = [0], [0], [0]
+    for o in os[0]:
+        xrs.append(o[0, 0])
+        yrs.append(o[1, 0])
+        zrs.append(o[2, 0])
 
-xrs, yrs, zrs = [0], [0], [0]
-for T in Trs_Wo:
-    xrs.append(T.o[0, 0])
-    yrs.append(T.o[1, 0])
-    zrs.append(T.o[2, 0])
-
-xls, yls, zls = [0], [0], [0]
-for T in Tls_Wo:
-    xls.append(T.o[0, 0])
-    yls.append(T.o[1, 0])
-    zls.append(T.o[2, 0])
+    xls, yls, zls = [0], [0], [0]
+    for o in os[1]:
+        xls.append(o[0, 0])
+        yls.append(o[1, 0])
+        zls.append(o[2, 0])
 
 
 
-fig = plt.figure()
-ax = fig.gca(projection = '3d')
-ax.grid(True)
-ax.set_xlabel('X[m]')
-ax.set_ylabel('Y[m]')
-ax.set_zlabel('Z[m]')
-ax.plot(xrs, yrs, zrs, ".-", label = "R-joints",)
-ax.plot(xls, yls, zls, ".-", label = "L-joints",)
+    fig = plt.figure()
+    ax = fig.gca(projection = '3d')
+    ax.grid(True)
+    ax.set_xlabel('X[m]')
+    ax.set_ylabel('Y[m]')
+    ax.set_zlabel('Z[m]')
+    ax.plot(xrs, yrs, zrs, ".-", label = "R-joints",)
+    ax.plot(xls, yls, zls, ".-", label = "L-joints",)
 
 
 
-def get_o(Ts):
-    """Homo~から原点のみ取得"""
-    os = []
-    for T in Ts:
-        os.append(Ts.o[0:3, 3:4])
-    return os
+    # cs_name = ("1", "2", "3", "4", "5", "6", "7", "GL")
+    # for i, cs in enumerate(crs):
+    #     cs_ = np.concatenate(cs, axis=1)
+    #     xs = cs_[0, :].tolist()
+    #     ys = cs_[1, :].tolist()
+    #     zs = cs_[2, :].tolist()
+    #     ax.scatter(xs, ys, zs, label = "R-" + cs_name[i])
+    # for i, cs in enumerate(cls):
+    #     cs_ = np.concatenate(cs, axis=1)
+    #     xs = cs_[0, :].tolist()
+    #     ys = cs_[1, :].tolist()
+    #     zs = cs_[2, :].tolist()
+    #     ax.scatter(xs, ys, zs, label = "L-" + cs_name[i])
 
 
-cs_name = ("1", "2", "3", "4", "5", "6", "7", "GL")
-for i, cs in enumerate(crs):
-    cs_ = np.concatenate(cs, axis=1)
-    xs = cs_[0, :].tolist()
-    ys = cs_[1, :].tolist()
-    zs = cs_[2, :].tolist()
-    ax.scatter(xs, ys, zs, label = "R-" + cs_name[i])
-for i, cs in enumerate(cls):
-    cs_ = np.concatenate(cs, axis=1)
-    xs = cs_[0, :].tolist()
-    ys = cs_[1, :].tolist()
-    zs = cs_[2, :].tolist()
-    ax.scatter(xs, ys, zs, label = "L-" + cs_name[i])
+    ax.legend()
+    ax.set_box_aspect((1, 1, 1))
+
+    plt.show()
 
 
-ax.legend()
-ax.set_box_aspect((1, 1, 1))
+    return
 
-plt.show()
-
-
+if __name__ == "__main__":
+    main()
