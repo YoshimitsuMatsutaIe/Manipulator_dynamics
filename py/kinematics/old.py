@@ -41,7 +41,10 @@ class HomogeneousTransformationMatrix:
         self.rx = self.t[0:3, 0:1]
         self.ry = self.t[0:3, 1:2]
         self.rz = self.t[0:3, 2:3]
-        
+        self.rx_bar = self.t[:, 0:1]
+        self.ry_bar = self.t[:, 1:2]
+        self.rz_bar = self.t[:, 2:3]
+        self.o_bar = self.t[:, 3:4]
         return
     
     def __mul__(self, other):
@@ -138,13 +141,19 @@ class BaxterKinematics:
         
         self.q_r = self.q_neutral  # 右手の関節角度ベクトル
         self.q_l = self.q_neutral  # 左手の関節角度ベクトル
+        
+        self.dq_r = self.q_neutral  # 右手の関節角速度ベクトル
+        self.dq_l = self.q_neutral  # 左手の関節角速度ベクトル
+        
         self.update_all()
         
     
     
     def update_all(self,):
         self._update_HomogeneousTransformationMatrix(self.q_r, self.q_l)
+        self._update_diff_HomogeneousTransformationMatrix()
         self._update_cpoints()
+        
     
     
     def _update_HomogeneousTransformationMatrix(self, q_r, q_l):
@@ -255,6 +264,32 @@ class BaxterKinematics:
     def _update_diff_HomogeneousTransformationMatrix(self,):
         """微分同次変換行列を更新"""
         
+        dTj_dqis = []
+        for j in range(8):
+            dTj_dqi = []
+            for i in range(7):
+                if i == 0:
+                    if i == j:
+                        dTj_dqi.append(self.Trs_Wo[1] * self.Trs[1+i] * self.A)
+                    else:
+                        dTj_dqi.append(self.Trs_Wo[2])
+                else:
+                    dTj_dqi.append(dTj_dqi[i-1] * self.Trs[i])
+            dTj_dqis.append(dTj_dqi)
+
+        self.JTs = []
+        
+        for j in range(8):
+            Jax = [T.rx_bar for T in dTj_dqis[j]]
+            Jay = [T.ry_bar for T in dTj_dqis[j]]
+            Jaz = [T.rz_bar for T in dTj_dqis[j]]
+            Jo = [T.o_bar for T in dTj_dqis[j]]
+            
+            JT = np.concatenate(
+                Jax + Jay + Jaz + Jo
+            )
+            self.JTs.append(JT)
+        
         return
 
 
@@ -297,7 +332,7 @@ class BaxterKinematics:
 
 
 def main():
-    
+    start = time.time()
     kinema = BaxterKinematics()
     kinema.update_all()
     os = kinema.get_joint_positions()
@@ -344,7 +379,10 @@ def main():
     ax.legend()
     ax.set_box_aspect((1, 1, 1))
 
-    plt.show()
+
+    print("実行時間 ", time.time() - start)
+    
+    #plt.show()
 
 
     return
