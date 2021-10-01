@@ -143,6 +143,12 @@ class BaxterKinematics:
             rs_.append(_make_r_bar_ex(r_bar))
         r_bars_ex_all.append(rs_)
 
+    r_bars_ex_zero = np.block([
+        [np.zeros((7, 7))],
+        [np.zeros((7, 7))],
+        [np.zeros((7, 7))],
+        [np.eye(7)],
+    ])
 
     A = HomogeneousTransformationMatrix(
         M=np.array([
@@ -167,10 +173,14 @@ class BaxterKinematics:
     
     
     def update_all(self,):
-        self._update_HomogeneousTransformationMatrix(self.q_r, self.q_l)
-        self._update_Jacobian()
-        self._update_cpoints()
+        """全部アップデート"""
         
+        self._update_HomogeneousTransformationMatrix(self.q_r, self.q_l)
+        self._update_diff_HomogeneousTransformationMatrix()
+        self._update_cpoints()
+        self._update_jacobian()
+        
+        return
     
     
     def _update_HomogeneousTransformationMatrix(self, q_r, q_l):
@@ -278,7 +288,7 @@ class BaxterKinematics:
                 self.Tls_Wo.append(self.Tls_Wo[i-1] * T)
 
 
-    def _update_Jacobian(self,):
+    def _update_diff_HomogeneousTransformationMatrix(self,):
         """微分同次変換行列？を更新 & ジョイントに関するヤコビ行列を作成"""
         
         dTj_dqis = []
@@ -303,10 +313,13 @@ class BaxterKinematics:
             Jo = [T.o_bar for T in dTj_dqis[j]]
             
             JT = np.concatenate(
-                Jax + Jay + Jaz + Jo
+                Jax + Jay + Jaz + Jo, axis=1,
             )
             self.JTs.append(JT)
         
+        return
+
+    def _update_jacobian(self,):
         Co = np.array([
             [1, 0, 0, 0],
             [0, 1, 0, 0],
@@ -314,11 +327,9 @@ class BaxterKinematics:
         ])  # 原点に関するヤコビ行列に使用
         
         self.Jo = []
-        
-        
+        for i in range(7):
+            self.Jo.append(Co @ self.JTs[i] @ self.r_bars_ex_zero)
         return
-
-
 
     def _update_cpoints(self,):
         
