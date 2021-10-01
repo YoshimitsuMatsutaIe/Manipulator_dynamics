@@ -65,8 +65,7 @@ class BaxterKinematics:
 
     q_neutral = np.array([[0, -31, 0, 43, 0, 72, 0]]).T * pi/180  # ニュートラルの姿勢
 
-    qr = q_neutral  # 右手の関節角度ベクトル
-    ql = q_neutral  # 左手の関節角度ベクトル
+
 
     # 制御点のローカル座標
     r_bars_in_1 = [
@@ -136,19 +135,22 @@ class BaxterKinematics:
     
     
     def __init__(self,):
+        
+        self.q_r = self.q_neutral  # 右手の関節角度ベクトル
+        self.q_l = self.q_neutral  # 左手の関節角度ベクトル
         self.update_all()
         
     
     
     def update_all(self,):
-        self._update_HomogeneousTransformationMatrix(self.qr, self.ql)
+        self._update_HomogeneousTransformationMatrix(self.q_r, self.q_l)
         self._update_cpoints()
     
     
-    def _update_HomogeneousTransformationMatrix(self, qr, ql):
+    def _update_HomogeneousTransformationMatrix(self, q_r, q_l):
         """同時変換行列を更新"""
     
-        def update_DHparams(qr, ql):
+        def update_DHparams(q_r, q_l):
             def DHparams(q):
                 return [
                 DHparam(0, 0, 0, q[0, 0]),
@@ -160,12 +162,12 @@ class BaxterKinematics:
                 DHparam(pi/2, 0, 0, q[6, 0]),
                 ]
             
-            self.DHparams_r = DHparams(qr)
-            self.DHparams_l = DHparams(ql)
+            self.DHparams_r = DHparams(q_r)
+            self.DHparams_l = DHparams(q_l)
             return
         
     
-        update_DHparams(qr, ql)
+        update_DHparams(q_r, q_l)
     
         # 同次変換行列（ローカル座標の）
         # 右手
@@ -250,6 +252,12 @@ class BaxterKinematics:
                 self.Tls_Wo.append(self.Tls_Wo[i-1] * T)
 
 
+    def _update_diff_HomogeneousTransformationMatrix(self,):
+        """微分同次変換行列を更新"""
+        
+        return
+
+
     def _update_cpoints(self,):
         
         # 制御点の位置を計算
@@ -267,6 +275,11 @@ class BaxterKinematics:
                 c_temp.append(T_temp.t @ r_bar_)
             self.cpoints_l.append(c_temp)
         return
+
+
+
+
+
 
     def get_joint_positions(self,):
         """ジョイント原点座標を取得"""
@@ -303,7 +316,7 @@ def main():
 
 
     fig = plt.figure()
-    ax = fig.gca(projection = '3d')
+    ax = fig.add_subplot(projection='3d')
     ax.grid(True)
     ax.set_xlabel('X[m]')
     ax.set_ylabel('Y[m]')
@@ -313,19 +326,19 @@ def main():
 
 
 
-    # cs_name = ("1", "2", "3", "4", "5", "6", "7", "GL")
-    # for i, cs in enumerate(crs):
-    #     cs_ = np.concatenate(cs, axis=1)
-    #     xs = cs_[0, :].tolist()
-    #     ys = cs_[1, :].tolist()
-    #     zs = cs_[2, :].tolist()
-    #     ax.scatter(xs, ys, zs, label = "R-" + cs_name[i])
-    # for i, cs in enumerate(cls):
-    #     cs_ = np.concatenate(cs, axis=1)
-    #     xs = cs_[0, :].tolist()
-    #     ys = cs_[1, :].tolist()
-    #     zs = cs_[2, :].tolist()
-    #     ax.scatter(xs, ys, zs, label = "L-" + cs_name[i])
+    cs_name = ("1", "2", "3", "4", "5", "6", "7", "GL")
+    for i, cs in enumerate(kinema.cpoints_r):
+        cs_ = np.concatenate(cs, axis=1)
+        xs = cs_[0, :].tolist()
+        ys = cs_[1, :].tolist()
+        zs = cs_[2, :].tolist()
+        ax.scatter(xs, ys, zs, label = "R-" + cs_name[i])
+    for i, cs in enumerate(kinema.cpoints_l):
+        cs_ = np.concatenate(cs, axis=1)
+        xs = cs_[0, :].tolist()
+        ys = cs_[1, :].tolist()
+        zs = cs_[2, :].tolist()
+        ax.scatter(xs, ys, zs, label = "L-" + cs_name[i])
 
 
     ax.legend()
