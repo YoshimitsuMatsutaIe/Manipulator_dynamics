@@ -149,6 +149,7 @@ class BaxterKinematics:
         [np.zeros((7, 7))],
         [np.eye(7)],
     ])
+    #print(r_bars_ex_zero)
 
     A = HomogeneousTransformationMatrix(
         M=np.array([
@@ -291,32 +292,39 @@ class BaxterKinematics:
     def _update_diff_HomogeneousTransformationMatrix(self,):
         """微分同次変換行列？を更新 & ジョイントに関するヤコビ行列を作成"""
         
-        dTj_dqis = []
-        for j in range(8):
-            dTj_dqi = []
-            for i in range(7):
-                if i == 0:
-                    if i == j:
-                        dTj_dqi.append(self.Trs_Wo[1] * self.Trs[1+i] * self.A)
+        def _update(Ts, Ts_Wo,):
+            dTj_dqis = []
+            for j in range(7):
+                dTj_dqi = []
+                for i in range(7):
+                    if i == 0:
+                        if i == j:
+                            dTj_dqi.append(Ts_Wo[1] * Ts[1+i] * self.A)
+                        else:
+                            dTj_dqi.append(Ts_Wo[2])
+                    elif i == j:
+                        dTj_dqi.append(dTj_dqi[i-1] * Ts[i] * self.A)
                     else:
-                        dTj_dqi.append(self.Trs_Wo[2])
-                else:
-                    dTj_dqi.append(dTj_dqi[i-1] * self.Trs[i])
-            dTj_dqis.append(dTj_dqi)
-
-        self.JTs = []
-        
-        for j in range(8):
-            Jax = [T.rx_bar for T in dTj_dqis[j]]
-            Jay = [T.ry_bar for T in dTj_dqis[j]]
-            Jaz = [T.rz_bar for T in dTj_dqis[j]]
-            Jo = [T.o_bar for T in dTj_dqis[j]]
+                        dTj_dqi.append(dTj_dqi[i-1] * Ts[i])
+                dTj_dqis.append(dTj_dqi)
             
-            JT = np.concatenate(
-                Jax + Jay + Jaz + Jo, axis=1,
-            )
-            self.JTs.append(JT)
-        
+            JTs = []
+            for j in range(7):
+                Jax = [T.rx_bar for T in dTj_dqis[j]]
+                Jay = [T.ry_bar for T in dTj_dqis[j]]
+                Jaz = [T.rz_bar for T in dTj_dqis[j]]
+                Jo = [T.o_bar for T in dTj_dqis[j]]
+                
+                JT = np.concatenate(
+                    Jax + Jay + Jaz + Jo, axis=1,
+                )
+                JTs.append(JT)
+
+            return JTs
+            
+        self.JTs_r = _update(self.Trs, self.Trs_Wo)
+        self.JTs_l = _update(self.Tls, self.Tls_Wo)
+
         return
 
     def _update_jacobian(self,):
@@ -326,10 +334,18 @@ class BaxterKinematics:
             [0, 0, 1, 0],
         ])  # 原点に関するヤコビ行列に使用
         
-        self.Jo = []
+        #print(self.JTs_r)
+        
+        Jo_r = []
         for i in range(7):
-            self.Jo.append(Co @ self.JTs[i] @ self.r_bars_ex_zero)
+            Jo_r.append(Co @ self.JTs_r[i] @ self.r_bars_ex_zero)
+        self.Jo_r = Jo_r
+        Jo_l = []
+        for i in range(7):
+            Jo_l.append(Co @ self.JTs_l[i] @ self.r_bars_ex_zero)
+        self.Jo_l = Jo_l
         return
+
 
     def _update_cpoints(self,):
         
@@ -420,7 +436,7 @@ def main():
 
     print("実行時間 ", time.time() - start)
     
-    #plt.show()
+    plt.show()
 
 
     return
