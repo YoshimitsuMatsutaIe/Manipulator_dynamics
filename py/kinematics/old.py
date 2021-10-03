@@ -273,12 +273,12 @@ class BaxterKinematics:
         
         def _update(Ts, Ts_Wo,):
             dTj_dqis = []
-            for j in range(7):
+            for j in range(8):
                 dTj_dqi = []
                 for i in range(7):
                     if i == 0:
                         if i == j:
-                            dTj_dqi.append(Ts_Wo[1] * Ts[1+i] * self.A)
+                            dTj_dqi.append(Ts_Wo[2] * self.A)
                         else:
                             dTj_dqi.append(Ts_Wo[2])
                     elif i == j:
@@ -287,12 +287,13 @@ class BaxterKinematics:
                         dTj_dqi.append(dTj_dqi[i-1] * Ts[i])
                 dTj_dqis.append(dTj_dqi)
             
+            
             Jaxs, Jays, Jazs, Jos = [], [], [], []
-            for j in range(7):
-                _Jax = [T.rx_bar for T in dTj_dqis[j]]
-                _Jay = [T.ry_bar for T in dTj_dqis[j]]
-                _Jaz = [T.rz_bar for T in dTj_dqis[j]]
-                _Jo = [T.o_bar for T in dTj_dqis[j]]
+            for dT in dTj_dqis:
+                _Jax = [T.rx_bar for T in dT]
+                _Jay = [T.ry_bar for T in dT]
+                _Jaz = [T.rz_bar for T in dT]
+                _Jo = [T.o_bar for T in dT]
                 
                 Jax = np.concatenate(_Jax, axis=1)
                 Jay = np.concatenate(_Jay, axis=1)
@@ -349,8 +350,6 @@ class BaxterKinematics:
                 c_temp.append(T_temp.t @ r_bar_)
             self.cpoints_l.append(c_temp)
         return
-
-
 
 
 

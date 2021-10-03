@@ -4,16 +4,20 @@ from math import pi
 from baxter_utils_3 import BaxterKinematics3
 from old import BaxterKinematics
 
-
+import time
 
 q = np.array([[0, -31, 0, 43, 0, 72, 0]]).T * pi/180 
 
+start = time.time()
 hoge = BaxterKinematics3()
 J_all = hoge.jacobi_all(q)
+print("old = ", time.time() - start)
 print(len(J_all))
 
+start = time.time()
 hogehoge = BaxterKinematics()
 J_all_2 = hogehoge.Jo_global_l
+print("new = ", time.time() - start)
 print(len(J_all_2))
 
 # d = J_all[2] - J_all_2[0]
@@ -24,3 +28,6 @@ print(len(J_all_2))
 
 print(J_all[4])
 print(J_all_2[0])
+
+# print(J_all[-1])
+# print(J_all_2[-1])
