@@ -13,7 +13,7 @@ J_all = hoge.jacobi_all(q)
 print(len(J_all))
 
 hogehoge = BaxterKinematics()
-J_all_2 = hogehoge.Jo_l
+J_all_2 = hogehoge.Jo_global_l
 print(len(J_all_2))
 
 # d = J_all[2] - J_all_2[0]

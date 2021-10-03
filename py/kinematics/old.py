@@ -127,29 +127,8 @@ class BaxterKinematics:
         r_bars_in_1, r_bars_in_2, r_bars_in_3, r_bars_in_4, r_bars_in_5, r_bars_in_6, r_bars_in_7, r_bars_in_GL,
     ]
 
-
-    def _make_r_bar_ex(r_bar):
-        return np.block([
-            [r_bar[0, 0] * np.eye(7)],
-            [r_bar[1, 0] * np.eye(7)],
-            [r_bar[2, 0] * np.eye(7)],
-            [np.eye(7)],
-        ])
-
-    r_bars_ex_all = []
-    for r_bars in r_bars_all:
-        rs_ = []
-        for r_bar in r_bars:
-            rs_.append(_make_r_bar_ex(r_bar))
-        r_bars_ex_all.append(rs_)
-
-    r_bars_ex_zero = np.block([
-        [np.zeros((7, 7))],
-        [np.zeros((7, 7))],
-        [np.zeros((7, 7))],
-        [np.eye(7)],
-    ])
-    #print(r_bars_ex_zero)
+    r_bar_zero = np.array([[0, 0, 0, 1]]).T
+    
 
     A = HomogeneousTransformationMatrix(
         M=np.array([
@@ -308,42 +287,48 @@ class BaxterKinematics:
                         dTj_dqi.append(dTj_dqi[i-1] * Ts[i])
                 dTj_dqis.append(dTj_dqi)
             
-            JTs = []
+            Jaxs, Jays, Jazs, Jos = [], [], [], []
             for j in range(7):
-                Jax = [T.rx_bar for T in dTj_dqis[j]]
-                Jay = [T.ry_bar for T in dTj_dqis[j]]
-                Jaz = [T.rz_bar for T in dTj_dqis[j]]
-                Jo = [T.o_bar for T in dTj_dqis[j]]
+                _Jax = [T.rx_bar for T in dTj_dqis[j]]
+                _Jay = [T.ry_bar for T in dTj_dqis[j]]
+                _Jaz = [T.rz_bar for T in dTj_dqis[j]]
+                _Jo = [T.o_bar for T in dTj_dqis[j]]
                 
-                JT = np.concatenate(
-                    Jax + Jay + Jaz + Jo, axis=1,
-                )
-                JTs.append(JT)
+                Jax = np.concatenate(_Jax, axis=1)
+                Jay = np.concatenate(_Jay, axis=1)
+                Jaz = np.concatenate(_Jaz, axis=1)
+                Jo = np.concatenate(_Jo, axis=1)
 
-            return JTs
+                Jaxs.append(Jax)
+                Jays.append(Jay)
+                Jazs.append(Jaz)
+                Jos.append(Jo)
             
-        self.JTs_r = _update(self.Trs, self.Trs_Wo)
-        self.JTs_l = _update(self.Tls, self.Tls_Wo)
+            return Jaxs, Jays, Jazs, Jos
+        
+        self.Jaxs_r, self.Jays_r, self.Jazs_r, self.Jos_r = _update(self.Trs, self.Trs_Wo)
+        self.Jaxs_l, self.Jays_l, self.Jazs_l, self.Jos_l = _update(self.Tls, self.Tls_Wo)
 
+        #print(self.Jaxs_l)
+        
         return
 
     def _update_jacobian(self,):
-        Co = np.array([
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-        ])  # 原点に関するヤコビ行列に使用
         
-        #print(self.JTs_r)
+        def _calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar):
+            z_bar = (Jax * r_bar[0,0] + Jay * r_bar[1,0] + Jaz * r_bar[2,0] + Jo)
+            #print(z_bar)
+            return z_bar[0:3, :]
         
-        Jo_r = []
-        for i in range(7):
-            Jo_r.append(Co @ self.JTs_r[i] @ self.r_bars_ex_zero)
-        self.Jo_r = Jo_r
-        Jo_l = []
-        for i in range(7):
-            Jo_l.append(Co @ self.JTs_l[i] @ self.r_bars_ex_zero)
-        self.Jo_l = Jo_l
+        self.Jo_global_r = []
+        for Jax, Jay, Jaz, Jo in zip(self.Jaxs_r, self.Jays_r, self.Jazs_r, self.Jos_r):
+            self.Jo_global_r.append(_calc_Jo_global(Jax, Jay, Jaz, Jo, self.r_bar_zero))
+        self.Jo_global_l = []
+        for Jax, Jay, Jaz, Jo in zip(self.Jaxs_l, self.Jays_l, self.Jazs_l, self.Jos_l):
+            self.Jo_global_l.append(_calc_Jo_global(Jax, Jay, Jaz, Jo, self.r_bar_zero))
+
+
+        #print("Jo_global_l=", self.Jo_global_l)
         return
 
 
@@ -436,7 +421,7 @@ def main():
 
     print("実行時間 ", time.time() - start)
     
-    plt.show()
+    #plt.show()
 
 
     return
