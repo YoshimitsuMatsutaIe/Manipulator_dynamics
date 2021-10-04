@@ -2,7 +2,7 @@ import numpy as np
 from math import pi
 
 from baxter_utils_3 import BaxterKinematics3
-from old import BaxterKinematics
+from new import BaxterRobotArmKinematics
 
 import time
 
@@ -15,8 +15,8 @@ print("old = ", time.time() - start)
 print(len(J_all))
 
 start = time.time()
-hogehoge = BaxterKinematics()
-J_all_2 = hogehoge.Jo_global_l
+hogehoge = BaxterRobotArmKinematics(isLeft=True)
+J_all_2 = hogehoge.Jo_global
 print("new = ", time.time() - start)
 print(len(J_all_2))
 
