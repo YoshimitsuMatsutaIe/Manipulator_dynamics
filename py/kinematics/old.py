@@ -19,16 +19,14 @@ class DHparam:
 class HomogeneousTransformationMatrix:
     """同次変換行列"""
     
-    def __init__(self, DHparam=None, M=None, zero=False):
-        self.update(DHparam, M, zero)
+    def __init__(self, DHparam=None, M=None,):
+        self.update(DHparam, M,)
         return
     
-    def update(self, p, M, zero):
+    def update(self, p, M,):
         """情報を更新"""
         
-        if zero:
-            self.t = np.zeros((4, 4))
-        elif M is not None:
+        if M is not None:
             self.t = M  # 同次変換行列
         else:
             self.t = np.array([
@@ -48,10 +46,16 @@ class HomogeneousTransformationMatrix:
         self.rz_bar = self.t[:, 2:3]
         self.o_bar = self.t[:, 3:4]
         return
-    
+
     def __mul__(self, other):
         M = self.t @ other.t
         return HomogeneousTransformationMatrix(DHparam=None, M=M)
+
+    @classmethod
+    def zero(cls,):
+        return HomogeneousTransformationMatrix(
+            M=np.zeros((4, 4))
+        )
 
 
 class BaxterKinematics:
@@ -69,7 +73,6 @@ class BaxterKinematics:
     L6 = 368.3e-3
 
     q_neutral = np.array([[0, -31, 0, 43, 0, 72, 0]]).T * pi/180  # ニュートラルの姿勢
-    #q_neutral = np.array([[0, 31, 0, 43, 0, 72, 0]]).T * pi/180
 
 
     # 制御点のローカル座標
@@ -288,7 +291,7 @@ class BaxterKinematics:
                     
                     if j < i:
                         dTj_dqi.append(
-                            HomogeneousTransformationMatrix(zero=True)
+                            HomogeneousTransformationMatrix.zero()
                         )
                     
                     elif j == i:
@@ -330,7 +333,6 @@ class BaxterKinematics:
         
         def _calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar):
             z_bar = (Jax * r_bar[0,0] + Jay * r_bar[1,0] + Jaz * r_bar[2,0] + Jo)
-            #print(z_bar)
             return z_bar[0:3, :]
         
         self.Jo_global_r = []
@@ -340,7 +342,6 @@ class BaxterKinematics:
         for Jax, Jay, Jaz, Jo in zip(self.Jaxs_l, self.Jays_l, self.Jazs_l, self.Jos_l):
             self.Jo_global_l.append(_calc_Jo_global(Jax, Jay, Jaz, Jo, self.r_bar_zero))
 
-        #print("Jo_global_l=", self.Jo_global_l)
         return
 
 
