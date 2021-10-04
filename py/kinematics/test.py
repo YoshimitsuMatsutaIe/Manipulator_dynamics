@@ -20,14 +20,24 @@ J_all_2 = hogehoge.Jo_global_l
 print("new = ", time.time() - start)
 print(len(J_all_2))
 
-# d = J_all[2] - J_all_2[0]
 
+# d = J_all[-1] - J_all_2[-1]
 # print(d)
 
 
+# print("q0")
+# print(J_all[4])
+# print(J_all_2[0])
 
-print(J_all[4])
-print(J_all_2[0])
-
+# print("qGL")
 # print(J_all[-1])
 # print(J_all_2[-1])
+
+
+for i in range(8):
+    print("i = ", i)
+    print(J_all[i+3].astype(np.float16))
+    print(J_all_2[i].astype(np.float16))
+
+for i in range(8):
+    print(i, " = ", np.linalg.norm(J_all[i+3] - J_all_2[i], 2))

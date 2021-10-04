@@ -19,14 +19,16 @@ class DHparam:
 class HomogeneousTransformationMatrix:
     """同次変換行列"""
     
-    def __init__(self, DHparam=None, M=None):
-        self.update(DHparam, M)
+    def __init__(self, DHparam=None, M=None, zero=False):
+        self.update(DHparam, M, zero)
         return
     
-    def update(self, p, M):
+    def update(self, p, M, zero):
         """情報を更新"""
         
-        if M is not None:
+        if zero:
+            self.t = np.zeros((4, 4))
+        elif M is not None:
             self.t = M  # 同次変換行列
         else:
             self.t = np.array([
@@ -37,10 +39,10 @@ class HomogeneousTransformationMatrix:
             ])  # 同次変換行列
         
         self.o = self.t[0:3, 3:4]
-        self.R = self.t[0:3, 0:3]
-        self.rx = self.t[0:3, 0:1]
-        self.ry = self.t[0:3, 1:2]
-        self.rz = self.t[0:3, 2:3]
+        #self.R = self.t[0:3, 0:3]
+        #self.rx = self.t[0:3, 0:1]
+        #self.ry = self.t[0:3, 1:2]
+        #self.rz = self.t[0:3, 2:3]
         self.rx_bar = self.t[:, 0:1]
         self.ry_bar = self.t[:, 1:2]
         self.rz_bar = self.t[:, 2:3]
@@ -67,7 +69,7 @@ class BaxterKinematics:
     L6 = 368.3e-3
 
     q_neutral = np.array([[0, -31, 0, 43, 0, 72, 0]]).T * pi/180  # ニュートラルの姿勢
-
+    #q_neutral = np.array([[0, 31, 0, 43, 0, 72, 0]]).T * pi/180
 
 
     # 制御点のローカル座標
@@ -260,36 +262,46 @@ class BaxterKinematics:
             if i == 0:
                 self.Trs_Wo.append(T)
             else:
-                self.Trs_Wo.append(self.Trs_Wo[i-1] * T)
+                self.Trs_Wo.append(self.Trs_Wo[-1] * T)
         for i, T in enumerate(self.Tls):
             if i == 0:
                 self.Tls_Wo.append(T)
             else:
-                self.Tls_Wo.append(self.Tls_Wo[i-1] * T)
+                self.Tls_Wo.append(self.Tls_Wo[-1] * T)
 
 
     def _update_diff_HomogeneousTransformationMatrix(self,):
         """微分同次変換行列？を更新 & ジョイントに関するヤコビ行列を作成"""
         
         def _update(Ts, Ts_Wo,):
+            """4つのヤコビ行列を計算
+            
+            Ts : ローカル同時変換行列
+            Ts_Wo : グローバル同次変換行列
+            """
+            
             dTj_dqis = []
-            for j in range(8):
+            # j = 0
+            for i in range(7):
                 dTj_dqi = []
-                for i in range(7):
-                    if i == 0:
-                        if i == j:
-                            dTj_dqi.append(Ts_Wo[2] * self.A)
-                        else:
-                            dTj_dqi.append(Ts_Wo[2])
-                    elif i == j:
-                        dTj_dqi.append(dTj_dqi[i-1] * Ts[i] * self.A)
+                for j in range(8):
+                    
+                    if j < i:
+                        dTj_dqi.append(
+                            HomogeneousTransformationMatrix(zero=True)
+                        )
+                    
+                    elif j == i:
+                        dTj_dqi.append(Ts_Wo[j+2] * self.A)
+                    
                     else:
-                        dTj_dqi.append(dTj_dqi[i-1] * Ts[i])
+                        dTj_dqi.append(dTj_dqi[-1] * Ts[j+2])
+                    
                 dTj_dqis.append(dTj_dqi)
             
             
             Jaxs, Jays, Jazs, Jos = [], [], [], []
-            for dT in dTj_dqis:
+            for dT in [list(x) for x in zip(*dTj_dqis)]:
                 _Jax = [T.rx_bar for T in dT]
                 _Jay = [T.ry_bar for T in dT]
                 _Jaz = [T.rz_bar for T in dT]
@@ -327,7 +339,6 @@ class BaxterKinematics:
         self.Jo_global_l = []
         for Jax, Jay, Jaz, Jo in zip(self.Jaxs_l, self.Jays_l, self.Jazs_l, self.Jos_l):
             self.Jo_global_l.append(_calc_Jo_global(Jax, Jay, Jaz, Jo, self.r_bar_zero))
-
 
         #print("Jo_global_l=", self.Jo_global_l)
         return
@@ -420,7 +431,7 @@ def main():
 
     print("実行時間 ", time.time() - start)
     
-    #plt.show()
+    plt.show()
 
 
     return
