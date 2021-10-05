@@ -73,7 +73,8 @@ class BaxterRobotArmKinematics:
     L6 = 368.3e-3
 
     q_neutral = np.array([[0, -31, 0, 43, 0, 72, 0]]).T * pi/180  # ニュートラルの姿勢
-
+    q_min = np.array([[-141, -123, -173, -3, -175, -90, -175]]).T * pi/180
+    q_max = np.array([[51, 60, 173, 150, 175, 120, 175]]).T * pi/180
 
     # 制御点のローカル座標
     r_bars_in_1 = [
@@ -154,7 +155,7 @@ class BaxterRobotArmKinematics:
         self.isLeft = isLeft
         
         self.q = self.q_neutral  # 左手の関節角度ベクトル
-        self.dq = self.q_neutral  # 左手の関節角速度ベクトル
+        self.dq = np.zeros((7, 1))  # 左手の関節角速度ベクトル
         
         self.update_all(self.q, self.dq)
         
@@ -166,7 +167,7 @@ class BaxterRobotArmKinematics:
         self._update_HomogeneousTransformationMatrix(q)
         self._update_diff_HomogeneousTransformationMatrix()
         self._update_jacobian()
-        self._update_cpoints()
+        self._update_cpoints(dq)
         
         
         return
@@ -323,24 +324,30 @@ class BaxterRobotArmKinematics:
                 J_.append(_calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar))
             self.Jos_cpoints.append(J_)
         
-        print(self.Jos_cpoints)
+        #print(self.Jos_cpoints)
         return
 
 
-    def _update_cpoints(self,):
+    def _update_cpoints(self, dq):
         
         # 制御点の位置を計算
-        self.cpoints = []
+        self.cpoints_x = []
         for i, r_bar in enumerate(self.r_bars_all):
             c_temp = []
             T_temp = self.Ts_Wo[i+2]
             for r_bar_ in r_bar:
-                c_temp.append(T_temp.t @ r_bar_)
-            self.cpoints.append(c_temp)
+                c_temp.append((T_temp.t @ r_bar_)[0:3, :])
+            self.cpoints_x.append(c_temp)
         
+        # 制御点の速度を計算
+        self.cpoints_dx = []
+        for i in range(len(self.r_bars_all)):
+            dx_ = []
+            for Jo in self.Jos_cpoints[i]:
+                dx_.append(Jo @ dq)
+            self.cpoints_dx.append(dx_)
         
-        
-        
+        #print(self.cpoints_dx)
         return
 
 
@@ -389,13 +396,13 @@ def main():
 
 
     cs_name = ("1", "2", "3", "4", "5", "6", "7", "GL")
-    for i, cs in enumerate(right.cpoints):
+    for i, cs in enumerate(right.cpoints_x):
         cs_ = np.concatenate(cs, axis=1)
         xs = cs_[0, :].tolist()
         ys = cs_[1, :].tolist()
         zs = cs_[2, :].tolist()
         ax.scatter(xs, ys, zs, label = "R-" + cs_name[i])
-    for i, cs in enumerate(left.cpoints):
+    for i, cs in enumerate(left.cpoints_x):
         cs_ = np.concatenate(cs, axis=1)
         xs = cs_[0, :].tolist()
         ys = cs_[1, :].tolist()
@@ -409,7 +416,7 @@ def main():
 
     print("実行時間 ", time.time() - start)
     
-    #plt.show()
+    plt.show()
 
 
     return
