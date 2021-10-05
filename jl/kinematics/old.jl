@@ -1,7 +1,7 @@
 using CPUTime
 using Plots
-using PyCall
-@pyimport matplotlib.pyplot as plt
+# using PyCall
+# @pyimport matplotlib.pyplot as plt
 using LinearAlgebra
 using StaticArrays
 using ArraysOfArrays

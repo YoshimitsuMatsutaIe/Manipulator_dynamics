@@ -156,18 +156,19 @@ class BaxterRobotArmKinematics:
         self.q = self.q_neutral  # 左手の関節角度ベクトル
         self.dq = self.q_neutral  # 左手の関節角速度ベクトル
         
-        self.update_all()
+        self.update_all(self.q, self.dq)
         
     
     
-    def update_all(self,):
+    def update_all(self, q, dq):
         """全部アップデート"""
 
-        self._update_HomogeneousTransformationMatrix(self.q)
+        self._update_HomogeneousTransformationMatrix(q)
         self._update_diff_HomogeneousTransformationMatrix()
-        self._update_cpoints()
         self._update_jacobian()
-
+        self._update_cpoints()
+        
+        
         return
     
     
@@ -302,16 +303,27 @@ class BaxterRobotArmKinematics:
         
         return
 
+
     def _update_jacobian(self,):
         
         def _calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar):
             z_bar = (Jax * r_bar[0,0] + Jay * r_bar[1,0] + Jaz * r_bar[2,0] + Jo)
             return z_bar[0:3, :]
         
-        self.Jo_global = []
+        self.Jos_joint = []
         for Jax, Jay, Jaz, Jo in zip(self.Jaxs, self.Jays, self.Jazs, self.Jos):
-            self.Jo_global.append(_calc_Jo_global(Jax, Jay, Jaz, Jo, self.r_bar_zero))
+            self.Jos_joint.append(_calc_Jo_global(Jax, Jay, Jaz, Jo, self.r_bar_zero))
 
+        self.Jos_cpoints = []
+        for Jax, Jay, Jaz, Jo, r_bars in zip(
+            self.Jaxs, self.Jays, self.Jazs, self.Jos, self.r_bars_all
+        ):
+            J_ = []
+            for r_bar in r_bars:
+                J_.append(_calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar))
+            self.Jos_cpoints.append(J_)
+        
+        print(self.Jos_cpoints)
         return
 
 
@@ -325,6 +337,10 @@ class BaxterRobotArmKinematics:
             for r_bar_ in r_bar:
                 c_temp.append(T_temp.t @ r_bar_)
             self.cpoints.append(c_temp)
+        
+        
+        
+        
         return
 
 
@@ -344,7 +360,6 @@ class BaxterRobotArmKinematics:
 def main():
     start = time.time()
     right = BaxterRobotArmKinematics(isLeft=False)
-    right.update_all()
     os_r = right.get_joint_positions()
     xrs, yrs, zrs = [0], [0], [0]
     for o in os_r:
@@ -394,7 +409,7 @@ def main():
 
     print("実行時間 ", time.time() - start)
     
-    plt.show()
+    #plt.show()
 
 
     return
