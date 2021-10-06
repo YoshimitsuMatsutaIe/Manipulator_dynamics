@@ -36,7 +36,7 @@ class HomogeneousTransformationMatrix:
                 [0, 0, 0, 1],
             ])  # 同次変換行列
         
-        self.o = self.t[0:3, 3:4]
+        self.o = self.t[0:3, 3:4]  # 平行移動要素
         #self.R = self.t[0:3, 0:3]
         #self.rx = self.t[0:3, 0:1]
         #self.ry = self.t[0:3, 1:2]
@@ -53,8 +53,21 @@ class HomogeneousTransformationMatrix:
 
     @classmethod
     def zero(cls,):
+        """ゼロ"""
         return HomogeneousTransformationMatrix(
             M=np.zeros((4, 4))
+        )
+
+    @classmethod
+    def diff_by_theta(cls, p, dqi):
+        z = np.array([
+            [-sin(p.theta)*dqi, -cos(p.theta)*dqi, 0, p.a],
+            [cos(p.theta)*dqi*cos(p.alpha), -sin(p.theta)*dqi*cos(p.alpha), -sin(p.alpha), -p.d*sin(p.alpha)],
+            [cos(p.theta)*dqi*sin(p.alpha), -sin(p.theta)*dqi*sin(p.alpha), cos(p.alpha), p.d*cos(p.alpha)],
+            [0, 0, 0, 1],
+        ])  # 同次変換行列
+        return HomogeneousTransformationMatrix(
+            M=z,
         )
 
 
@@ -159,21 +172,21 @@ class BaxterRobotArmKinematics:
         
         self.update_all(self.q, self.dq)
         
+        return
     
     
     def update_all(self, q, dq):
-        """全部アップデート"""
+        """全情報を更新"""
 
-        self._update_HomogeneousTransformationMatrix(q)
+        self._update_HomogeneousTransformationMatrix(q, dq)
         self._update_diff_HomogeneousTransformationMatrix()
         self._update_jacobian()
         self._update_cpoints(dq)
         
-        
         return
     
     
-    def _update_HomogeneousTransformationMatrix(self, q):
+    def _update_HomogeneousTransformationMatrix(self, q, dq):
         """同時変換行列を更新"""
 
         DHparams = [
@@ -199,6 +212,7 @@ class BaxterRobotArmKinematics:
                     [0, 0, 0, 1,],
                 ])
             )
+            
             T_0_BLorR = HomogeneousTransformationMatrix(
                 DHparam=None,
                 M=np.array([
@@ -241,36 +255,45 @@ class BaxterRobotArmKinematics:
             ])
         )
 
-
         self.Ts = [T_BLorR_Wo, T_0_BLorR]
-
-
-        for param in DHparams:
+        for param in DHparams:  # i-1からiへの同時変換行列を作成
             self.Ts.append(HomogeneousTransformationMatrix(DHparam=param))
-
-
         self.Ts.append(T_GR_7)
+
+        # 時間微分用
+        self.Ts_diff_by_t = [HomogeneousTransformationMatrix.zero()] * 2
+        for i, param in enumerate(DHparams):  # i-1からiへの同時変換行列を作成
+            self.Ts_diff_by_t.append(
+                HomogeneousTransformationMatrix.diff_by_theta(param, dq[i])
+            )
+        self.Ts_diff_by_t.append(HomogeneousTransformationMatrix.zero())
 
 
         # Wo基準の同次変換行列を作成
-        self.Ts_Wo = []
+        self.Ts_Wo = []  # Wo基準の同時変換行列
         for i, T in enumerate(self.Ts):
             if i == 0:
                 self.Ts_Wo.append(T)
             else:
                 self.Ts_Wo.append(self.Ts_Wo[-1] * T)
 
+        self.Ts_Wo_diff_by_t = []  # Wo基準の同時変換行列
+        for i, T in enumerate(self.Ts_diff_by_t):
+            if i == 0:
+                self.Ts_Wo_diff_by_t.append(T)
+            else:
+                self.Ts_Wo_diff_by_t.append(self.Ts_Wo_diff_by_t[-1] * T)
+
         return
 
 
     def _update_diff_HomogeneousTransformationMatrix(self,):
-        """微分同次変換行列？を更新 & ジョイントに関するヤコビ行列を作成"""
+        """微分同次変換行列？を更新 & ジョイントに関するヤコビ行列を更新"""
 
-        dTj_dqis = []
-        for i in range(7):
+        dTj_dqis = []  # Woからjへの同時変換行列のqi微分を格納
+        for i in range(7):  # q1, q2, ..., q7
             dTj_dqi = []
-            for j in range(8):
-                
+            for j in range(8):  # 1, 2, ..., 7, GL
                 if j < i:
                     dTj_dqi.append(
                         HomogeneousTransformationMatrix.zero()
@@ -285,7 +308,11 @@ class BaxterRobotArmKinematics:
             dTj_dqis.append(dTj_dqi)
         
         
-        self.Jaxs, self.Jays, self.Jazs, self.Jos = [], [], [], []
+        self.Jaxs = []  # ax_barのqで微分したヤコビ行列
+        self.Jays = []  # ay_barのqで微分したヤコビ行列
+        self.Jazs = []  # az_barのqで微分したヤコビ行列
+        self.Jos = []  # o_barのqで微分したヤコビ行列
+        
         for dT in [list(x) for x in zip(*dTj_dqis)]:
             _Jax = [T.rx_bar for T in dT]
             _Jay = [T.ry_bar for T in dT]
@@ -301,21 +328,64 @@ class BaxterRobotArmKinematics:
             self.Jays.append(Jay)
             self.Jazs.append(Jaz)
             self.Jos.append(Jo)
+
+
+        # 時間微分のヤコビ行列に関するもの
+        dTj_dqis = []  # Woからjへの同時変換行列のqi微分を格納
+        for i in range(7):  # q1, q2, ..., q7
+            dTj_dqi = []
+            for j in range(8):  # 1, 2, ..., 7, GL
+                if j < i:
+                    dTj_dqi.append(
+                        HomogeneousTransformationMatrix.zero()
+                    )
+                
+                elif j == i:
+                    dTj_dqi.append(self.Ts_Wo_diff_by_t[j+2] * self.A)
+                
+                else:
+                    dTj_dqi.append(dTj_dqi[-1] * self.Ts_diff_by_t[j+2])
+                
+            dTj_dqis.append(dTj_dqi)
+        
+        
+        self.Jaxs_diff_by_t = []  # ax_barのqで微分したヤコビ行列
+        self.Jays_diff_by_t = []  # ay_barのqで微分したヤコビ行列
+        self.Jazs_diff_by_t = []  # az_barのqで微分したヤコビ行列
+        self.Jos_diff_by_t = []  # o_barのqで微分したヤコビ行列
+        
+        for dT in [list(x) for x in zip(*dTj_dqis)]:
+            _Jax = [T.rx_bar for T in dT]
+            _Jay = [T.ry_bar for T in dT]
+            _Jaz = [T.rz_bar for T in dT]
+            _Jo = [T.o_bar for T in dT]
+            
+            Jax = np.concatenate(_Jax, axis=1)
+            Jay = np.concatenate(_Jay, axis=1)
+            Jaz = np.concatenate(_Jaz, axis=1)
+            Jo = np.concatenate(_Jo, axis=1)
+
+            self.Jaxs_diff_by_t.append(Jax)
+            self.Jays_diff_by_t.append(Jay)
+            self.Jazs_diff_by_t.append(Jaz)
+            self.Jos_diff_by_t.append(Jo)
         
         return
 
 
     def _update_jacobian(self,):
+        """各制御点のヤコビ行列を更新"""
         
         def _calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar):
+            """Joのヤコビ行列"""
             z_bar = (Jax * r_bar[0,0] + Jay * r_bar[1,0] + Jaz * r_bar[2,0] + Jo)
             return z_bar[0:3, :]
         
-        self.Jos_joint = []
+        self.Jos_joint = []  # ジョイント基底のヤコビ行列
         for Jax, Jay, Jaz, Jo in zip(self.Jaxs, self.Jays, self.Jazs, self.Jos):
             self.Jos_joint.append(_calc_Jo_global(Jax, Jay, Jaz, Jo, self.r_bar_zero))
 
-        self.Jos_cpoints = []
+        self.Jos_cpoints = []  # 制御点位置のヤコビ行列
         for Jax, Jay, Jaz, Jo, r_bars in zip(
             self.Jaxs, self.Jays, self.Jazs, self.Jos, self.r_bars_all
         ):
@@ -323,12 +393,26 @@ class BaxterRobotArmKinematics:
             for r_bar in r_bars:
                 J_.append(_calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar))
             self.Jos_cpoints.append(J_)
-        
-        #print(self.Jos_cpoints)
+
+
+        # 時間微分
+        self.Jos_cpoints_diff_by_t = []  # 制御点位置のヤコビ行列
+        for Jax, Jay, Jaz, Jo, r_bars in zip(
+            self.Jaxs_diff_by_t, self.Jays_diff_by_t, self.Jazs_diff_by_t, self.Jos_diff_by_t, self.r_bars_all
+        ):
+            J_ = []
+            for r_bar in r_bars:
+                J_.append(_calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar))
+            self.Jos_cpoints_diff_by_t.append(J_)
+
         return
 
 
     def _update_cpoints(self, dq):
+        """制御点の位置と速度を更新
+        
+        dq : 関節角速度ベクトル
+        """
         
         # 制御点の位置を計算
         self.cpoints_x = []
@@ -342,14 +426,13 @@ class BaxterRobotArmKinematics:
         # 制御点の速度を計算
         self.cpoints_dx = []
         for i in range(len(self.r_bars_all)):
-            dx_ = []
+            _dx = []
             for Jo in self.Jos_cpoints[i]:
-                dx_.append(Jo @ dq)
-            self.cpoints_dx.append(dx_)
+                _dx.append(Jo @ dq)
+            self.cpoints_dx.append(_dx)
         
         #print(self.cpoints_dx)
         return
-
 
 
     def get_joint_positions(self,):
