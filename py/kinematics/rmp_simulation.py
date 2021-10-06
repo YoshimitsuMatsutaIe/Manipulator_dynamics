@@ -156,11 +156,8 @@ class Simulator:
             dstate = np.ravel(dstate).tolist()
             
             
-            
             # 以下 視覚化のためのデータ保存
-            
             self.data.add_data(arm)
-            
             
             return dstate
         
@@ -175,40 +172,12 @@ class Simulator:
             t_eval=t,
         )
         print("シミュレーション実行終了")
-        print("実行時間 = ", time.time() - start)
+        print("シミュレーション実行時間 = ", time.time() - start)
 
         return
 
 
     def plot(self,):
-        
-        # fig = plt.figure()
-        # ax = fig.add_subplot()
-        # for i in range(7):
-        #     ax.plot(sol.t, sol.y[i], label=str(i+1))
-        # ax.legend()
-        # ax.grid(True)
-        # ax.set_xlabel('time')
-        # ax.set_ylabel('joint angle')
-        
-        
-        # arm = BaxterRobotArmKinematics(isLeft=True)
-        # origins_his = []
-        # for i in range(len(sol.t)):
-        #     _q = [sol.y[j][i] for j in range(7)]
-        #     q = np.array([_q]).T
-        #     arm.update_all(q, arm.dq)
-            
-        #     _os = arm.get_joint_positions()
-        #     os = [i, 0, 0, 0]
-        #     for o in _os:
-        #         os.extend(np.ravel(o).tolist())
-        #     origins_his.append(os)
-        
-        
-        # origins_his_T = [list(x) for x in zip(*origins_his)]
-        
-        
         
         # アニメーション
         fig_ani = plt.figure()
@@ -219,23 +188,21 @@ class Simulator:
         ax.set_zlabel('Z[m]')
 
         # ## 三軸のスケールを揃える
-        # # 使用するデータを指定
-        # list_x = []  # x軸配列
-        # list_y = []  # y軸配列
-        # list_z = []  # z軸配列
-        # for i in range(0, 11, 1):
-        #     list_x.extend(origins_his_T[1 + 3 * i][1:])
-        #     list_y.extend(origins_his_T[2 + 3 * i][1:])
-        #     list_z.extend(origins_his_T[3 + 3 * i][1:])
-        # # 軸をセット
+        # max_x = 1.0
+        # min_x = -1.0
+        # max_y = 1.0
+        # min_y = -1.0
+        # max_z = 1.0
+        # min_z = 0.0
+        
         # max_range = np.array([
-        #     max(list_x) - min(list_x),
-        #     max(list_y) - min(list_y),
-        #     max(list_z) - min(list_z)
+        #     max_x - min_x,
+        #     max_y - min_y,
+        #     max_z - min_z
         #     ]).max() * 0.5
-        # mid_x = (max(list_x) + min(list_x)) * 0.5
-        # mid_y = (max(list_y) + min(list_y)) * 0.5
-        # mid_z = (max(list_z) + min(list_z)) * 0.5
+        # mid_x = (max_x + min_x) * 0.5
+        # mid_y = (max_y + min_y) * 0.5
+        # mid_z = (max_z + min_z) * 0.5
         # ax.set_xlim(mid_x - max_range, mid_x + max_range)
         # ax.set_ylim(mid_y - max_range, mid_y + max_range)
         # ax.set_zlim(mid_z - max_range, mid_z + max_range)
@@ -275,8 +242,6 @@ class Simulator:
             )[0]
         )
 
-        #ax.legend()
-
         # 時刻表示
         timeani = [ax.text(0.8, 0.2, 0.01, "time = 0.0 [s]", size = 10)]
         time_template = 'time = %s [s]'
@@ -292,27 +257,34 @@ class Simulator:
             
             d = self.data.data[i]
             
-            body_x, body_y, body_z = [], [], []
-            for j in range(0, 11, 1):
-                # body用の配列作成
-                body_x.append(d.joint_positions.x)
-                body_y.append(d.joint_positions.y)
-                body_z.append(d.joint_positions.z)
+            
+            body_x = d.joint_positions.x
+            body_y = d.joint_positions.y
+            body_z = d.joint_positions.z
             
             item1 = bodys.pop(0)
             ax.lines.remove(item1)
-            bodys.append(ax.plot(body_x, body_y, body_z, "o-", color = "blue")[0])
+            bodys.append(
+                ax.plot(body_x, body_y, body_z, "o-", color = "blue")[0]
+            )
             
             item2 = gl.pop(0)
             ax.lines.remove(item2)
             gl.append(ax.plot(
-                self.data.ee.x[1:i], 
-                self.data.ee.y[1:i], 
-                self.data.ee.z[1:i], "-", color = "#ff7f00")[0])
+                self.data.ee.x[1:i],
+                self.data.ee.y[1:i],
+                self.data.ee.z[1:i],
+                "-", color = "#ff7f00")[0]
+            )
             
             # 時刻表示
             timeani.pop().remove()
-            timeani_, = [ax.text(0.8, 0.12, 0.01, time_template % (i * self.TIME_INTERVAL), size = 10)]
+            timeani_, = [
+                ax.text(
+                    0.8, 0.12, 0.01,
+                    time_template % (i * self.TIME_INTERVAL), size = 10
+                )
+            ]
             timeani.append(timeani_)
             return None
 
@@ -320,9 +292,12 @@ class Simulator:
             fig = fig_ani, 
             func = update, 
             frames = int(self.TIME_SPAN / self.TIME_INTERVAL),
-            interval = self.TIME_INTERVAL * 0.001)
+            interval = self.TIME_INTERVAL * 0.001
+        )
 
-        plt.show()
+        ani.save("hoge.gif", writer='pillow')
+
+        #plt.show()
 
 
 
