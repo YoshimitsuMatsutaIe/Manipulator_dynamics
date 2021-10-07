@@ -84,6 +84,7 @@ class Simulator:
         
         
         t = np.arange(0.0, self.TIME_SPAN, self.TIME_INTERVAL)
+        print("t size = ", t.shape)
         
         arm = BaxterRobotArmKinematics(isLeft=True)
         rmp = OriginalRMP(
@@ -171,6 +172,9 @@ class Simulator:
             method='RK45',
             t_eval=t,
         )
+        
+        print("data size = ", len(self.data.data))
+        
         print("シミュレーション実行終了")
         print("シミュレーション実行時間 = ", time.time() - start)
 
@@ -178,6 +182,10 @@ class Simulator:
 
 
     def plot(self,):
+        """グラフ作成"""
+        
+        start = time.time()
+        print("plot実行中...")
         
         # アニメーション
         fig_ani = plt.figure()
@@ -187,25 +195,25 @@ class Simulator:
         ax.set_ylabel('Y[m]')
         ax.set_zlabel('Z[m]')
 
-        # ## 三軸のスケールを揃える
-        # max_x = 1.0
-        # min_x = -1.0
-        # max_y = 1.0
-        # min_y = -1.0
-        # max_z = 1.0
-        # min_z = 0.0
+        ## 三軸のスケールを揃える
+        max_x = 1.0
+        min_x = -1.0
+        max_y = 1.0
+        min_y = -1.0
+        max_z = 1.0
+        min_z = 0.0
         
-        # max_range = np.array([
-        #     max_x - min_x,
-        #     max_y - min_y,
-        #     max_z - min_z
-        #     ]).max() * 0.5
-        # mid_x = (max_x + min_x) * 0.5
-        # mid_y = (max_y + min_y) * 0.5
-        # mid_z = (max_z + min_z) * 0.5
-        # ax.set_xlim(mid_x - max_range, mid_x + max_range)
-        # ax.set_ylim(mid_y - max_range, mid_y + max_range)
-        # ax.set_zlim(mid_z - max_range, mid_z + max_range)
+        max_range = np.array([
+            max_x - min_x,
+            max_y - min_y,
+            max_z - min_z
+            ]).max() * 0.5
+        mid_x = (max_x + min_x) * 0.5
+        mid_y = (max_y + min_y) * 0.5
+        mid_z = (max_z + min_z) * 0.5
+        ax.set_xlim(mid_x - max_range, mid_x + max_range)
+        ax.set_ylim(mid_y - max_range, mid_y + max_range)
+        ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
 
 
@@ -253,7 +261,7 @@ class Simulator:
 
         def update(i):
             """アニメーションの関数"""
-            i = i + 1
+            #i = i + 1
             
             d = self.data.data[i]
             
@@ -286,18 +294,27 @@ class Simulator:
                 )
             ]
             timeani.append(timeani_)
-            return None
+            
+            ax.set_box_aspect((1,1,1))
+            
+            return
 
         ani = anm.FuncAnimation(
             fig = fig_ani, 
             func = update, 
-            frames = int(self.TIME_SPAN / self.TIME_INTERVAL),
+            #frames = int(self.TIME_SPAN / self.TIME_INTERVAL)-1,
+            frames=len(self.data.data),
             interval = self.TIME_INTERVAL * 0.001
         )
 
-        ani.save("hoge.gif", writer='pillow')
+        ani.save("hoge.gif", fps=1/self.TIME_INTERVAL, writer='pillow')
 
-        #plt.show()
+        plt.show()
+        
+        print("plot実行終了")
+        print("実行時間 = ", time.time() - start)
+        
+        return
 
 
 
