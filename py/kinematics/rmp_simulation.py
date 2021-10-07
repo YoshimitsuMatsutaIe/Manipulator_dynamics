@@ -32,9 +32,9 @@ class FrameData:
     
     
     def _get_joint_position(self, arm):
-        self.joint_positions = PositinData()
+        self.joint_positions_list = PositinData()
         for o in arm.get_joint_positions():
-            self.joint_positions.add(o)
+            self.joint_positions_list.add(o)
         return
     
     
@@ -68,7 +68,7 @@ class SimulationData:
 class Simulator:
     """"""
     
-    def __init__(self, TIME_SPAN=5, TIME_INTERVAL=0.01):
+    def __init__(self, TIME_SPAN=50, TIME_INTERVAL=0.01):
         self.TIME_SPAN = TIME_SPAN
         self.TIME_INTERVAL = TIME_INTERVAL
         
@@ -198,9 +198,9 @@ class Simulator:
         ## 三軸のスケールを揃える
         max_x = 1.0
         min_x = -1.0
-        max_y = 1.0
+        max_y = 0.2
         min_y = -1.0
-        max_z = 1.0
+        max_z = 2.0
         min_z = 0.0
         
         max_range = np.array([
@@ -236,7 +236,9 @@ class Simulator:
         bodys = []
         bodys.append(
             ax.plot(
-                d.joint_positions.x, d.joint_positions.y, d.joint_positions.z,
+                d.joint_positions_list.x,
+                d.joint_positions_list.y,
+                d.joint_positions_list.z,
                 "o-", color = "blue"
             )[0]
         )
@@ -257,23 +259,24 @@ class Simulator:
         # # 結果表示
         # ax.text(0.8, 0.3, 0.01, result[0], color = "r", size = 14)
 
-        ax.set_box_aspect((1,1,1))
+        #ax.set_box_aspect((1,1,1))
 
-        def update(i):
+        def _update(i):
             """アニメーションの関数"""
             #i = i + 1
             
             d = self.data.data[i]
             
             
-            body_x = d.joint_positions.x
-            body_y = d.joint_positions.y
-            body_z = d.joint_positions.z
-            
             item1 = bodys.pop(0)
             ax.lines.remove(item1)
             bodys.append(
-                ax.plot(body_x, body_y, body_z, "o-", color = "blue")[0]
+                ax.plot(
+                    d.joint_positions_list.x,
+                    d.joint_positions_list.y,
+                    d.joint_positions_list.z,
+                    "o-", color = "blue"
+                )[0]
             )
             
             item2 = gl.pop(0)
@@ -295,24 +298,25 @@ class Simulator:
             ]
             timeani.append(timeani_)
             
-            ax.set_box_aspect((1,1,1))
+            #ax.set_box_aspect((1,1,1))
             
             return
 
         ani = anm.FuncAnimation(
-            fig = fig_ani, 
-            func = update, 
-            #frames = int(self.TIME_SPAN / self.TIME_INTERVAL)-1,
+            fig = fig_ani,
+            func = _update,
             frames=len(self.data.data),
             interval = self.TIME_INTERVAL * 0.001
         )
 
-        ani.save("hoge.gif", fps=1/self.TIME_INTERVAL, writer='pillow')
-
-        plt.show()
+        #ani.save("hoge.gif", fps=1/self.TIME_INTERVAL, writer='pillow')
+        
         
         print("plot実行終了")
         print("実行時間 = ", time.time() - start)
+        
+        plt.show()
+        
         
         return
 

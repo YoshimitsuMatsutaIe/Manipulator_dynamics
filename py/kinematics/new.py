@@ -437,7 +437,9 @@ class BaxterRobotArmKinematics:
 
     def get_joint_positions(self,):
         """ジョイント原点座標を取得"""
-        return [T.o for T in self.Ts_Wo]
+        _os = [T.o for T in self.Ts_Wo]
+        _os.insert(0, np.zeros((3, 1)))  # 台座の設置店（原点）
+        return _os
 
     def get_cpoint_positions(self,):
         """制御点座標を全取得"""
@@ -451,7 +453,7 @@ def main():
     start = time.time()
     right = BaxterRobotArmKinematics(isLeft=False)
     os_r = right.get_joint_positions()
-    xrs, yrs, zrs = [0], [0], [0]
+    xrs, yrs, zrs = [], [], []
     for o in os_r:
         xrs.append(o[0, 0])
         yrs.append(o[1, 0])
@@ -459,7 +461,7 @@ def main():
 
     left = BaxterRobotArmKinematics(isLeft=True)
     os_l = left.get_joint_positions()
-    xls, yls, zls = [0], [0], [0]
+    xls, yls, zls = [], [], []
     for o in os_l:
         xls.append(o[0, 0])
         yls.append(o[1, 0])
