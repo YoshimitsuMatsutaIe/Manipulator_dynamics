@@ -60,11 +60,12 @@ class SimulationData:
         pass
     
     
-    def add_data(self, arm, ddq):
+    def add_data(self, arm, ddq=None):
         self.data.append(FrameData(arm))
         
         self.ee.add(arm.Ts_Wo[-1].o)
-        self.command.append(ddq)
+        if ddq is not None:
+            self.command.append(ddq)
         return
 
 
@@ -73,7 +74,7 @@ def make_obstacle(name, R, center):
     obs = []
     if name == 'curb':
         rand = np.random.RandomState(123)
-        for i in range(100):
+        for i in range(50):
             theta = np.arccos(rand.uniform(-1, 1))
             phi = rand.uniform(0, 2*np.pi)
             x = R * np.sin(theta) * np.cos(phi)
@@ -87,7 +88,7 @@ def make_obstacle(name, R, center):
 class Simulator:
     """"""
     
-    def __init__(self, TIME_SPAN=50, TIME_INTERVAL=0.01):
+    def __init__(self, TIME_SPAN=10, TIME_INTERVAL=0.05):
         self.TIME_SPAN = TIME_SPAN
         self.TIME_INTERVAL = TIME_INTERVAL
         
@@ -109,8 +110,7 @@ class Simulator:
         #     np.array([[0.6, -0.6, 1.2]]).T,
         # ]
         
-        self.obs = make_obstacle(name='curb', R=0.15, center=np.array([[-0.6, -0.6, 1]]).T)
-        
+        self.obs = make_obstacle(name='curb', R=0.15, center=np.array([[0.6, -0.6, 1]]).T)
         self.obs_plot = np.concatenate(self.obs, axis=1)
         
         #dobs = np.zeros((3, 1))
@@ -123,7 +123,7 @@ class Simulator:
         arm = BaxterRobotArmKinematics(isLeft=True)
         rmp = OriginalRMP(
             attract_max_speed = 2, 
-            attract_gain = 10, 
+            attract_gain = 100, 
             attract_a_damp_r = 0.3,
             attract_sigma_W = 1, 
             attract_sigma_H = 1, 
@@ -141,7 +141,7 @@ class Simulator:
         )
         
         
-        self.data = SimulationData()
+        #self.data = SimulationData()
         
         
         def _eom(t, state):
@@ -202,7 +202,7 @@ class Simulator:
             
             
             # 以下 視覚化のためのデータ保存
-            self.data.add_data(arm, ddq)
+            #self.data.add_data(arm, ddq)
             
             return dstate
         
@@ -217,8 +217,36 @@ class Simulator:
             y0=np.ravel(np.concatenate([arm.q, arm.dq])).tolist(),
             method='RK45',
             #method='LSODA',
-            #t_eval=t,
+            t_eval=t,
         )
+        print("シミュレーション実行終了")
+        print("シミュレーション実行時間 = ", time.time() - start)
+        
+        # データ作成
+        self.data = SimulationData()
+        _arm = BaxterRobotArmKinematics(isLeft=True)
+        for i in range(len(self.sol.t)):
+            q = np.array([
+                [self.sol.y[0][i]],
+                [self.sol.y[1][i]],
+                [self.sol.y[2][i]],
+                [self.sol.y[3][i]],
+                [self.sol.y[4][i]],
+                [self.sol.y[5][i]],
+                [self.sol.y[6][i]],
+            ])
+            dq = np.array([
+                [self.sol.y[7][i]],
+                [self.sol.y[8][i]],
+                [self.sol.y[9][i]],
+                [self.sol.y[10][i]],
+                [self.sol.y[11][i]],
+                [self.sol.y[12][i]],
+                [self.sol.y[13][i]],
+            ])
+            _arm.update_all(q, dq)
+            self.data.add_data(_arm, ddq=None)
+        
         
         # # オイラー
         # state = np.ravel(np.concatenate([arm.q, arm.dq])).tolist()
@@ -227,8 +255,7 @@ class Simulator:
         #     for j in range(14):
         #         state[j] = state[j] + dstate[j] * self.TIME_INTERVAL
         
-        print("シミュレーション実行終了")
-        print("シミュレーション実行時間 = ", time.time() - start)
+
 
         return
 
@@ -497,10 +524,11 @@ class Simulator:
             fig = fig_ani,
             func = _update,
             frames = len(self.data.data),
+            #frames = int(self.TIME_SPAN / self.TIME_INTERVAL),
             interval = self.TIME_INTERVAL * 0.001
         )
 
-        #ani.save("hoge.gif", fps=1/self.TIME_INTERVAL, writer='pillow')
+        ani.save("hoge.gif", fps=1/self.TIME_INTERVAL, writer='pillow')
         
         
         print("plot実行終了")
@@ -508,14 +536,15 @@ class Simulator:
         
         
         
-        # 入力履歴
-        fig_input = plt.figure()
-        ax2 = fig_input.add_subplot(111)
-        _c = np.concatenate(self.data.command, axis=1)
-        for i in range(7):
-            ax2.plot(_c[i, :], label=str(i+1))
-        ax2.grid(True)
-        ax2.legend()
+        # # 入力履歴
+        # if len(self.data.command) != 1:
+        #     fig_input = plt.figure()
+        #     ax2 = fig_input.add_subplot(111)
+        #     _c = np.concatenate(self.data.command, axis=1)
+        #     for i in range(7):
+        #         ax2.plot(_c[i, :], label=str(i+1))
+        #     ax2.grid(True)
+        #     ax2.legend()
         
         plt.show()
         
