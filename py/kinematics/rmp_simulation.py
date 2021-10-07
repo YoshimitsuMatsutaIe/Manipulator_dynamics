@@ -88,7 +88,7 @@ def make_obstacle(name, R, center):
 class Simulator:
     """"""
     
-    def __init__(self, TIME_SPAN=10, TIME_INTERVAL=0.05):
+    def __init__(self, TIME_SPAN=30, TIME_INTERVAL=0.05):
         self.TIME_SPAN = TIME_SPAN
         self.TIME_INTERVAL = TIME_INTERVAL
         
@@ -111,6 +111,7 @@ class Simulator:
         # ]
         
         self.obs = make_obstacle(name='curb', R=0.15, center=np.array([[0.6, -0.6, 1]]).T)
+        self.obs.extend(make_obstacle(name='curb', R=0.15, center=np.array([[0.6, -0.6, 1.5]]).T))
         self.obs_plot = np.concatenate(self.obs, axis=1)
         
         #dobs = np.zeros((3, 1))
