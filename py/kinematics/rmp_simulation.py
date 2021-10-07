@@ -1,5 +1,6 @@
 """RMPシミュレーション"""
 
+from collections import deque
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as anm
@@ -49,26 +50,29 @@ class FrameData:
 
 
 
+
 class SimulationData:
     
     def __init__(self,):
         self.data = []
         self.ee = PositinData()
+        self.command = []
         pass
     
     
-    def add_data(self, arm):
+    def add_data(self, arm, ddq):
         self.data.append(FrameData(arm))
         
         self.ee.add(arm.Ts_Wo[-1].o)
+        self.command.append(ddq)
         return
 
 
-
+\
 class Simulator:
     """"""
     
-    def __init__(self, TIME_SPAN=50, TIME_INTERVAL=0.01):
+    def __init__(self, TIME_SPAN=5, TIME_INTERVAL=0.001):
         self.TIME_SPAN = TIME_SPAN
         self.TIME_INTERVAL = TIME_INTERVAL
         
@@ -79,9 +83,22 @@ class Simulator:
         
         
         self.gl_goal = np.array([[0.3, -0.6, 1]]).T
-        self.obs = np.array([[0.8, -0.6, 1]]).T
-        dobs = np.zeros((3, 1))
+        #self.obs = [np.array([[0.8, -0.6, 1]]).T]
         
+        
+        self.obs = [
+            np.array([[0.6, -0.6, 1]]).T,
+            np.array([[0.6, -0.6, 1.1]]).T,
+            np.array([[0.6, -0.6, 0.9]]).T,
+            np.array([[0.6, -0.6, 1.2]]).T,
+        ]
+        
+        
+        self.obs_plot = np.concatenate(self.obs, axis=1)
+        
+        #dobs = np.zeros((3, 1))
+        
+        #self.obs = None
         
         t = np.arange(0.0, self.TIME_SPAN, self.TIME_INTERVAL)
         print("t size = ", t.shape)
@@ -89,7 +106,7 @@ class Simulator:
         arm = BaxterRobotArmKinematics(isLeft=True)
         rmp = OriginalRMP(
             attract_max_speed = 2, 
-            attract_gain = 10, 
+            attract_gain = 100, 
             attract_a_damp_r = 0.3,
             attract_sigma_W = 1, 
             attract_sigma_H = 1, 
@@ -115,6 +132,9 @@ class Simulator:
             q = np.array([state[0:7]]).T
             dq = np.array([state[7:14]]).T
             
+            # print("q = ", q)
+            # print("dq = ", dq)
+            
             arm.update_all(q, dq)  # ロボットアームの全情報更新
             
             pulled_f_all = []
@@ -127,15 +147,17 @@ class Simulator:
                     arm.Jos_cpoints[i],
                     arm.Jos_cpoints_diff_by_t[i],
                 ):
-                    a = rmp.a_obs(x, dx, self.obs)
-                    M = rmp.metric_obs(x, dx, self.obs, a)
-                    f = M @ a
-                    
-                    _pulled_f = J.T @ (f - M @ dJ @ dq)
-                    _pulled_M = J.T @ M @ J
-                    
-                    pulled_f_all.append(_pulled_f)
-                    pulled_M_all.append(_pulled_M)
+                    if self.obs is not None:
+                        for o in self.obs:
+                            a = rmp.a_obs(x, dx, o)
+                            M = rmp.metric_obs(x, dx, o, a)
+                            f = M @ a
+                            
+                            _pulled_f = J.T @ (f - M @ dJ @ dq)
+                            _pulled_M = J.T @ M @ J
+                            
+                            pulled_f_all.append(_pulled_f)
+                            pulled_M_all.append(_pulled_M)
 
                     if i == 7:
                         a = rmp.a_attract(x, dx, self.gl_goal)
@@ -163,22 +185,30 @@ class Simulator:
             
             
             # 以下 視覚化のためのデータ保存
-            self.data.add_data(arm)
+            self.data.add_data(arm, ddq)
             
             return dstate
         
         
         print("シミュレーション実行中...")
         start = time.time()
+        
+        # scipy使用
         self.sol = integrate.solve_ivp(
             fun=_eom,
             t_span=(0.0, self.TIME_SPAN),
             y0=np.ravel(np.concatenate([arm.q, arm.dq])).tolist(),
-            method='RK45',
+            #method='RK45',
+            method='LSODA',
             t_eval=t,
         )
         
-        print("data size = ", len(self.data.data))
+        # # オイラー
+        # state = np.ravel(np.concatenate([arm.q, arm.dq])).tolist()
+        # for i in t:
+        #     dstate = _eom(i, state)
+        #     for j in range(14):
+        #         state[j] = state[j] + dstate[j] * self.TIME_INTERVAL
         
         print("シミュレーション実行終了")
         print("シミュレーション実行時間 = ", time.time() - start)
@@ -390,18 +420,23 @@ class Simulator:
         def _update(i):
             """アニメーションの関数"""
             ax.cla()  # 遅いかも
-            
+            ax.grid(True)
+            ax.set_xlabel('X[m]')
+            ax.set_ylabel('Y[m]')
+            ax.set_zlabel('Z[m]')
             
             # 目標点
             ax.scatter(
                 self.gl_goal[0, 0], self.gl_goal[1, 0], self.gl_goal[2, 0],
                 s = 100, label = 'goal point', marker = '*', color = '#ff7f00', 
                 alpha = 1, linewidths = 1.5, edgecolors = 'red')
+            
             # 障害物点
-            ax.scatter(
-                self.obs[0, 0], self.obs[1, 0], self.obs[2, 0],
-                s = 100, label = 'obstacle point', marker = '+', color = 'k', 
-                alpha = 1)
+            if self.obs is not None:
+                ax.scatter(
+                    self.obs_plot[0, :], self.obs_plot[1, :], self.obs_plot[2, :],
+                    s = 100, label = 'obstacle point', marker = '+', color = 'k', 
+                    alpha = 1)
             
             d = self.data.data[i]
             
@@ -410,13 +445,14 @@ class Simulator:
                 d.joint_positions_list.x,
                 d.joint_positions_list.y,
                 d.joint_positions_list.z,
-                "o-", color = "blue"
+                "o-", color = "blue",
             )
             
             # 制御点
             for p in d.cpoints_potisions_list:
                 ax.scatter(
                     p.x, p.y, p.z,
+                    marker='.'
                 )
             
             # グリッパー
@@ -450,8 +486,18 @@ class Simulator:
         print("plot実行終了")
         print("実行時間 = ", time.time() - start)
         
-        plt.show()
         
+        
+        # 入力履歴
+        fig_input = plt.figure()
+        ax2 = fig_input.add_subplot(111)
+        _c = np.concatenate(self.data.command, axis=1)
+        for i in range(7):
+            ax2.plot(_c[i, :], label=str(i+1))
+        ax2.grid(True)
+        ax2.legend()
+        
+        plt.show()
         
         return
 
@@ -463,6 +509,9 @@ def main():
     simu.run_simulation()
     # simu.plot_animation()
     simu.plot_animation_2()
+    
+    
+
 
 
 

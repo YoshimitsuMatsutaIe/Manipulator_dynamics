@@ -90,6 +90,9 @@ class BaxterRobotArmKinematics:
     q_max = np.array([[51, 60, 173, 150, 175, 120, 175]]).T * pi/180
 
     # 制御点のローカル座標
+    
+    R = 0.05
+    
     r_bars_in_1 = [
         np.array([[0, L1/2, -L0/2, 1]]).T,
         np.array([[0, -L1/2, -L0/2, 1]]).T,
@@ -119,10 +122,14 @@ class BaxterRobotArmKinematics:
     ]
 
     r_bars_in_5 = [
-        np.array([[0, L5/2, -L4/2, 1]]).T,
-        np.array([[0, -L5/2, -L4/2, 1]]).T,
-        np.array([[L5/2, 0, -L4/2, 1]]).T,
-        np.array([[-L5/2, 0, -L4/2, 1]]).T,
+        np.array([[0, R/2, -L4/3, 1]]).T,
+        np.array([[0, -R/2, -L4/3, 1]]).T,
+        np.array([[R/2, 0, -L4/3, 1]]).T,
+        np.array([[-R/2, 0, -L4/3, 1]]).T,
+        np.array([[0, R/2, -L4/3*2, 1]]).T,
+        np.array([[0, -R/2, -L4/3*2, 1]]).T,
+        np.array([[R/2, 0, -L4/3*2, 1]]).T,
+        np.array([[-R/2, 0, -L4/3*2, 1]]).T,
     ]
 
     r_bars_in_6 = [
@@ -131,10 +138,10 @@ class BaxterRobotArmKinematics:
     ]
 
     r_bars_in_7 = [
-        np.array([[0, L5/2, L6/2, 1]]).T,
-        np.array([[0, -L5/2, L6/2, 1]]).T,
-        np.array([[L5/2, 0, L6/2, 1]]).T,
-        np.array([[-L5/2, 0, L6/2, 1]]).T,
+        np.array([[0, R/2, L6/2, 1]]).T,
+        np.array([[0, -R/2, L6/2, 1]]).T,
+        np.array([[R/2, 0, L6/2, 1]]).T,
+        np.array([[-R/2, 0, L6/2, 1]]).T,
     ]
 
     r_bars_in_GL = [
