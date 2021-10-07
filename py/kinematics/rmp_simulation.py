@@ -68,15 +68,31 @@ class SimulationData:
         return
 
 
-\
+
+def make_obstacle(name, R, center):
+    obs = []
+    if name == 'curb':
+        rand = np.random.RandomState(123)
+        for i in range(100):
+            theta = np.arccos(rand.uniform(-1, 1))
+            phi = rand.uniform(0, 2*np.pi)
+            x = R * np.sin(theta) * np.cos(phi)
+            y = R * np.sin(theta) * np.sin(phi)
+            z = R * np.cos(theta)
+            obs.append(np.array([[x, y, z]]).T + center)
+        
+    return obs
+
+
 class Simulator:
     """"""
     
-    def __init__(self, TIME_SPAN=5, TIME_INTERVAL=0.001):
+    def __init__(self, TIME_SPAN=50, TIME_INTERVAL=0.01):
         self.TIME_SPAN = TIME_SPAN
         self.TIME_INTERVAL = TIME_INTERVAL
         
         return
+    
     
     
     def run_simulation(self,):
@@ -86,13 +102,14 @@ class Simulator:
         #self.obs = [np.array([[0.8, -0.6, 1]]).T]
         
         
-        self.obs = [
-            np.array([[0.6, -0.6, 1]]).T,
-            np.array([[0.6, -0.6, 1.1]]).T,
-            np.array([[0.6, -0.6, 0.9]]).T,
-            np.array([[0.6, -0.6, 1.2]]).T,
-        ]
+        # self.obs = [
+        #     np.array([[0.6, -0.6, 1]]).T,
+        #     np.array([[0.6, -0.6, 1.1]]).T,
+        #     np.array([[0.6, -0.6, 0.9]]).T,
+        #     np.array([[0.6, -0.6, 1.2]]).T,
+        # ]
         
+        self.obs = make_obstacle(name='curb', R=0.15, center=np.array([[-0.6, -0.6, 1]]).T)
         
         self.obs_plot = np.concatenate(self.obs, axis=1)
         
@@ -106,7 +123,7 @@ class Simulator:
         arm = BaxterRobotArmKinematics(isLeft=True)
         rmp = OriginalRMP(
             attract_max_speed = 2, 
-            attract_gain = 100, 
+            attract_gain = 10, 
             attract_a_damp_r = 0.3,
             attract_sigma_W = 1, 
             attract_sigma_H = 1, 
@@ -114,7 +131,7 @@ class Simulator:
             obs_scale_rep = 0.2,
             obs_scale_damp = 1,
             obs_ratio = 0.5,
-            obs_rep_gain = 0.5,
+            obs_rep_gain = 0.5*0.1,
             obs_r = 15,
             jl_gamma_p = 0.05,
             jl_gamma_d = 0.1,
@@ -198,9 +215,9 @@ class Simulator:
             fun=_eom,
             t_span=(0.0, self.TIME_SPAN),
             y0=np.ravel(np.concatenate([arm.q, arm.dq])).tolist(),
-            #method='RK45',
-            method='LSODA',
-            t_eval=t,
+            method='RK45',
+            #method='LSODA',
+            #t_eval=t,
         )
         
         # # オイラー
@@ -425,6 +442,10 @@ class Simulator:
             ax.set_ylabel('Y[m]')
             ax.set_zlabel('Z[m]')
             
+            ax.set_xlim(mid_x - max_range, mid_x + max_range)
+            ax.set_ylim(mid_y - max_range, mid_y + max_range)
+            ax.set_zlim(mid_z - max_range, mid_z + max_range)
+            
             # 目標点
             ax.scatter(
                 self.gl_goal[0, 0], self.gl_goal[1, 0], self.gl_goal[2, 0],
@@ -435,8 +456,7 @@ class Simulator:
             if self.obs is not None:
                 ax.scatter(
                     self.obs_plot[0, :], self.obs_plot[1, :], self.obs_plot[2, :],
-                    s = 100, label = 'obstacle point', marker = '+', color = 'k', 
-                    alpha = 1)
+                    label = 'obstacle point', marker = '.', color = 'k',)
             
             d = self.data.data[i]
             
@@ -452,7 +472,7 @@ class Simulator:
             for p in d.cpoints_potisions_list:
                 ax.scatter(
                     p.x, p.y, p.z,
-                    marker='.'
+                    marker='o'
                 )
             
             # グリッパー
