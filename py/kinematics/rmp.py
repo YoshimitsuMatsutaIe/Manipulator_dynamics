@@ -261,7 +261,8 @@ class RMPfromGDS:
             self.attract_w_u, 
             self.attract_w_l, 
             self.attract_alpha, 
-            self.attract_epsilon)
+            self.attract_epsilon
+        )
         carv = -np.linalg.inv(M_attract) @ xi_M
         f = f1 + carv
         return f
