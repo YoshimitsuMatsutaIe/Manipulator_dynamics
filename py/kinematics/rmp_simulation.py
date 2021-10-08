@@ -9,7 +9,7 @@ import scipy.integrate as integrate
 
 import time
 
-
+import environment
 from new import BaxterRobotArmKinematics
 from rmp import OriginalRMP
 
@@ -70,20 +70,6 @@ class SimulationData:
 
 
 
-def make_obstacle(name, R, center):
-    obs = []
-    if name == 'curb':
-        rand = np.random.RandomState(123)
-        for i in range(50):
-            theta = np.arccos(rand.uniform(-1, 1))
-            phi = rand.uniform(0, 2*np.pi)
-            x = R * np.sin(theta) * np.cos(phi)
-            y = R * np.sin(theta) * np.sin(phi)
-            z = R * np.cos(theta)
-            obs.append(np.array([[x, y, z]]).T + center)
-        
-    return obs
-
 
 class Simulator:
     """"""
@@ -110,20 +96,27 @@ class Simulator:
         #     np.array([[0.6, -0.6, 1.2]]).T,
         # ]
         
-        self.obs = make_obstacle(name='curb', R=0.15, center=np.array([[0.6, -0.6, 1]]).T)
-        self.obs.extend(make_obstacle(name='curb', R=0.15, center=np.array([[0.6, -0.6, 1.5]]).T))
-        self.obs_plot = np.concatenate(self.obs, axis=1)
+        
+        # self.obs = environment.make_obstacle(name='curb', R=0.15, center=np.array([[0.6, -0.6, 1]]).T)
+        # self.obs.extend(make_obstacle(name='curb', R=0.15, center=np.array([[0.6, -0.6, 1.5]]).T))
+        # self.obs_plot = np.concatenate(self.obs, axis=1)
+        
+        
+        self.obs = environment.set_obstacle()
         
         #dobs = np.zeros((3, 1))
         
         #self.obs = None
+        
+        if self.obs is not None:
+            self.obs_plot = np.concatenate(self.obs, axis=1)
         
         t = np.arange(0.0, self.TIME_SPAN, self.TIME_INTERVAL)
         print("t size = ", t.shape)
         
         arm = BaxterRobotArmKinematics(isLeft=True)
         rmp = OriginalRMP(
-            attract_max_speed = 2, 
+            attract_max_speed = 2*10, 
             attract_gain = 100, 
             attract_a_damp_r = 0.3,
             attract_sigma_W = 1, 
@@ -529,7 +522,7 @@ class Simulator:
             interval = self.TIME_INTERVAL * 0.001
         )
 
-        ani.save("hoge.gif", fps=1/self.TIME_INTERVAL, writer='pillow')
+        #ani.save("hoge.gif", fps=1/self.TIME_INTERVAL, writer='pillow')
         
         
         print("plot実行終了")
