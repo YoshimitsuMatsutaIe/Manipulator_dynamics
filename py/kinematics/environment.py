@@ -67,10 +67,17 @@ def set_obstacle(data=None):
     
     obs = []
     obs.extend(
-        _set_cylinder(0.1, 0.5, np.array([[0.6, -0.6, 1]]).T, 150)
+        _set_cylinder(0.1, 1.0, np.array([[0.25, -0.4, 1]]).T, 150)
+    )
+    obs.extend(
+        _set_cylinder(0.1, 1.0, np.array([[0.25, -0.4, 1]]).T, 150, phi=pi/2)
     )
     
     return obs
+
+
+
+
 
 
 

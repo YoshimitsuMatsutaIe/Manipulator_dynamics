@@ -185,131 +185,131 @@ def dAiidqi(q, dq, q_min, q_max, sigma):
 
 
 
-# class RMPfromGDS:
-#     """[R2],[R4]のRMP
+class RMPfromGDS:
+    """[R2],[R4]のRMP
     
-#     注意
-#     0 ＜ w_l ＜ w_u ＜ infty
-#     alpha_fはたぶん減速半径
+    注意
+    0 ＜ w_l ＜ w_u ＜ infty
+    alpha_fはたぶん減速半径
     
     
-#     """
+    """
     
-#     def __init__(self, **kwargs):
-#         # アトラクターRMP関連
-#         self.attract_max_speed = kwargs.pop('attract_max_speed')
-#         self.attract_gain = kwargs.pop('attract_gain')
-#         self.attract_alpha_f = kwargs.pop('attract_alpha_f')
-#         self.attract_sigma_alpha = kwargs.pop('attract_sigma_alpha')
-#         self.attract_sigma_gamma = kwargs.pop('attract_sigma_gamma')
-#         self.attract_w_u = kwargs.pop('attract_w_u')
-#         self.attract_w_l = kwargs.pop('attract_w_l')
-#         self.attract_alpha = kwargs.pop('attract_alpha')
-#         self.attract_epsilon = kwargs.pop('attract_epsilon')
+    def __init__(self, **kwargs):
+        # アトラクターRMP関連
+        self.attract_max_speed = kwargs.pop('attract_max_speed')
+        self.attract_gain = kwargs.pop('attract_gain')
+        self.attract_alpha_f = kwargs.pop('attract_alpha_f')
+        self.attract_sigma_alpha = kwargs.pop('attract_sigma_alpha')
+        self.attract_sigma_gamma = kwargs.pop('attract_sigma_gamma')
+        self.attract_w_u = kwargs.pop('attract_w_u')
+        self.attract_w_l = kwargs.pop('attract_w_l')
+        self.attract_alpha = kwargs.pop('attract_alpha')
+        self.attract_epsilon = kwargs.pop('attract_epsilon')
         
-#         # # 衝突回避関連
-#         # self.obs_scale_rep = kwargs.pop('obs_scale_rep')
-#         # self.obs_scale_damp = kwargs.pop('obs_scale_damp')
-#         # self.obs_ratio = kwargs.pop('obs_ratio')
-#         # self.obs_rep_gain = kwargs.pop('obs_rep_gain')
-#         # # 障害物計量
-#         # self.obs_r = kwargs.pop('obs_r')
+        # # 衝突回避関連
+        # self.obs_scale_rep = kwargs.pop('obs_scale_rep')
+        # self.obs_scale_damp = kwargs.pop('obs_scale_damp')
+        # self.obs_ratio = kwargs.pop('obs_ratio')
+        # self.obs_rep_gain = kwargs.pop('obs_rep_gain')
+        # # 障害物計量
+        # self.obs_r = kwargs.pop('obs_r')
         
-#         # ジョイント制限処理力
-#         self.jl_gamma_p = kwargs.pop('jl_gamma_p')
-#         self.jl_gamma_d = kwargs.pop('jl_gamma_d')
-#         # ジョイント制限処理計量
-#         self.jl_lambda = kwargs.pop('jl_lambda')
-#         self.joint_limit_upper = kwargs.pop('joint_limit_upper')
-#         self.joint_limit_lower = kwargs.pop('joint_limit_lower')
-#         self.jl_sigma = kwargs.pop('jl_sigma')
+        # ジョイント制限処理力
+        self.jl_gamma_p = kwargs.pop('jl_gamma_p')
+        self.jl_gamma_d = kwargs.pop('jl_gamma_d')
+        # ジョイント制限処理計量
+        self.jl_lambda = kwargs.pop('jl_lambda')
+        self.joint_limit_upper = kwargs.pop('joint_limit_upper')
+        self.joint_limit_lower = kwargs.pop('joint_limit_lower')
+        self.jl_sigma = kwargs.pop('jl_sigma')
     
     
-#     def inertia_attract(self, x, dx, x0, dx0):
-#         """アトラクター慣性行列"""
-#         z = x0 - x
-#         dz = dx0 - dx
-#         M = rmp_fromGDS_attract_xi_M.attract_M(
-#             z, 
-#             dz, 
-#             self.attract_sigma_alpha, 
-#             self.attract_sigma_gamma, 
-#             self.attract_w_u, 
-#             self.attract_w_l, 
-#             self.attract_alpha, 
-#             self.attract_epsilon)
-#         return M
+    def inertia_attract(self, x, dx, x0, dx0):
+        """アトラクター慣性行列"""
+        z = x0 - x
+        dz = dx0 - dx
+        M = rmp_fromGDS_attract_xi_M.attract_M(
+            z, 
+            dz, 
+            self.attract_sigma_alpha, 
+            self.attract_sigma_gamma, 
+            self.attract_w_u, 
+            self.attract_w_l, 
+            self.attract_alpha, 
+            self.attract_epsilon)
+        return M
     
     
-#     def f_attract(self, x, dx, x0, dx0, M_attract):
-#         """アトラクト力（加速度？）"""
-#         # パラメーター
-#         gamma_p = self.attract_gain
-#         gamma_d = self.attract_gain / self.attract_max_speed
-#         alpha = self.attract_alpha_f
-#         # 変数変換
-#         z = x0 - x
-#         dz = dx0 - dx
+    def f_attract(self, x, dx, x0, dx0, M_attract):
+        """アトラクト力（加速度？）"""
+        # パラメーター
+        gamma_p = self.attract_gain
+        gamma_d = self.attract_gain / self.attract_max_speed
+        alpha = self.attract_alpha_f
+        # 変数変換
+        z = x0 - x
+        dz = dx0 - dx
         
-#         # メイン
-#         f1 = -gamma_p * soft_normal(z, alpha) - gamma_d * dz
-#         xi_M = rmp_fromGDS_attract_xi_M.attract_xi_M(
-#             z, 
-#             dz, 
-#             self.attract_sigma_alpha, 
-#             self.attract_sigma_gamma, 
-#             self.attract_w_u, 
-#             self.attract_w_l, 
-#             self.attract_alpha, 
-#             self.attract_epsilon)
-#         carv = -np.linalg.inv(M_attract) @ xi_M
-#         f = f1 + carv
-#         return f
+        # メイン
+        f1 = -gamma_p * soft_normal(z, alpha) - gamma_d * dz
+        xi_M = rmp_fromGDS_attract_xi_M.attract_xi_M(
+            z, 
+            dz, 
+            self.attract_sigma_alpha, 
+            self.attract_sigma_gamma, 
+            self.attract_w_u, 
+            self.attract_w_l, 
+            self.attract_alpha, 
+            self.attract_epsilon)
+        carv = -np.linalg.inv(M_attract) @ xi_M
+        f = f1 + carv
+        return f
     
     
-#     def metric_joint_limit(self, q, dq):
-#         """ジョイント制限回避計量"""
-#         A_ii = []
-#         dof = len(q)
-#         for i in range(0, dof, 1):
-#             b = jl_b(
-#                 q[i, 0], 
-#                 dq[i, 0], 
-#                 self.joint_limit_lower[i, 0], 
-#                 self.joint_limit_upper[i, 0], 
-#                 self.jl_sigma)
-#             A_ii.append(b ** (-2))
-#         A = self.jl_lambda * np.diag(A_ii)
-#         return A
+    def metric_joint_limit(self, q, dq):
+        """ジョイント制限回避計量"""
+        A_ii = []
+        dof = len(q)
+        for i in range(0, dof, 1):
+            b = jl_b(
+                q[i, 0], 
+                dq[i, 0], 
+                self.joint_limit_lower[i, 0], 
+                self.joint_limit_upper[i, 0], 
+                self.jl_sigma)
+            A_ii.append(b ** (-2))
+        A = self.jl_lambda * np.diag(A_ii)
+        return A
     
-#     def f_joint_limit(self, q, dq, metric_jl):
-#         """ジョイント制限処理力（加速度？）"""
+    def f_joint_limit(self, q, dq, metric_jl):
+        """ジョイント制限処理力（加速度？）"""
         
-#         gamma_p = self.jl_gamma_p
-#         gamma_d = self.jl_gamma_d
-#         ddq_old = gamma_p * (-q) - gamma_d * dq
+        gamma_p = self.jl_gamma_p
+        gamma_d = self.jl_gamma_d
+        ddq_old = gamma_p * (-q) - gamma_d * dq
         
-#         A = metric_jl
-#         dof = len(q)
+        A = metric_jl
+        dof = len(q)
         
-#         d_xi_A = []
+        d_xi_A = []
         
-#         for i in range(0, dof, 1):
-#             dAdq = dAiidqi(
-#                 q[i, 0], 
-#                 dq[i, 0], 
-#                 self.joint_limit_lower[i, 0],
-#                 self.joint_limit_upper[i, 0],
-#                 self.jl_sigma)
-#             d_xi_A.append(1/2 * dAdq * dq[i, 0])
+        for i in range(0, dof, 1):
+            dAdq = dAiidqi(
+                q[i, 0], 
+                dq[i, 0], 
+                self.joint_limit_lower[i, 0],
+                self.joint_limit_upper[i, 0],
+                self.jl_sigma)
+            d_xi_A.append(1/2 * dAdq * dq[i, 0])
         
-#         xi_A = np.diag(d_xi_A)
+        xi_A = np.diag(d_xi_A)
         
-#         carv = np.linalg.inv(A) @ xi_A
+        carv = np.linalg.inv(A) @ xi_A
         
-#         f = ddq_old - carv
-#         #print("z = ", z)
-#         return f
+        f = ddq_old - carv
+        #print("z = ", z)
+        return f
 
 
 
