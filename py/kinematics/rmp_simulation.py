@@ -83,6 +83,10 @@ def _moveing_goal(t):
     return g + g0
 
 
+
+
+
+
 class Simulator:
     """"""
     
@@ -114,7 +118,7 @@ class Simulator:
         # self.obs_plot = np.concatenate(self.obs, axis=1)
         
         
-        self.obs = environment.set_obstacle()
+        self.obs = environment.set_obstacle(data=environment.data1)
         
         dobs = np.zeros((3, 1))
         

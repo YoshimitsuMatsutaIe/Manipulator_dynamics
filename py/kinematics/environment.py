@@ -64,17 +64,30 @@ def _set_cylinder(r, L, center, n, theta=0, phi=0, zeta=0,):
 
 
 def set_obstacle(data=None):
+    """固定障害物を返す"""
     
-    obs = []
-    obs.extend(
-        _set_cylinder(0.1, 1.0, np.array([[0.25, -0.4, 1]]).T, 5)
-    )
-    obs.extend(
-        _set_cylinder(0.1, 1.0, np.array([[0.25, -0.4, 1]]).T, 5, phi=pi/2)
-    )
+    def _choice(name):
+        if name == "cylinder":
+            return _set_cylinder
+        elif name == "sphere":
+            return _set_sphere
     
+    
+    if data is None:
+        return None
+    else:
+        obs = []
+        for d in data:
+            obs.extend(
+                _choice(d[0])(*d[1:])
+            )
     return obs
 
+
+data1 = [
+    ["cylinder", 0.1, 1.0, np.array([[0.25, -0.4, 1]]).T, 5, 0, 0, 0],
+    ["cylinder", 0.1, 1.0, np.array([[0.25, -0.4, 1]]).T, 5, 0, pi/2, 0]
+]
 
 
 
@@ -82,4 +95,6 @@ def set_obstacle(data=None):
 
 
 if __name__ == '__main__':
-    pass
+    
+    o = set_obstacle(data1)
+    print(len(o))
