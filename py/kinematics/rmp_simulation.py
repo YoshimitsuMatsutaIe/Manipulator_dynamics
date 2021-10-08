@@ -11,6 +11,8 @@ import time
 
 import environment
 from new import BaxterRobotArmKinematics
+from rmp import RMPfromGDS
+
 from rmp import OriginalRMP
 
 
@@ -114,7 +116,7 @@ class Simulator:
         
         self.obs = environment.set_obstacle()
         
-        #dobs = np.zeros((3, 1))
+        dobs = np.zeros((3, 1))
         
         #self.obs = None
         
@@ -127,7 +129,7 @@ class Simulator:
         arm = BaxterRobotArmKinematics(isLeft=True)
         rmp = OriginalRMP(
             attract_max_speed = 2, 
-            attract_gain = 100, 
+            attract_gain = 10, 
             attract_a_damp_r = 0.3,
             attract_sigma_W = 1, 
             attract_sigma_H = 1, 
@@ -135,7 +137,7 @@ class Simulator:
             obs_scale_rep = 0.2,
             obs_scale_damp = 1,
             obs_ratio = 0.5,
-            obs_rep_gain = 0.5*0.1,
+            obs_rep_gain = 0.5e-10,
             obs_r = 1,
             jl_gamma_p = 0.05,
             jl_gamma_d = 0.1,
@@ -144,7 +146,23 @@ class Simulator:
             joint_limit_lower = arm.q_min,
         )
         
-        
+        rmp2 = RMPfromGDS(
+            attract_max_speed = 2, 
+            attract_gain = 100,
+            attract_alpha_f = 0.3,
+            attract_sigma_alpha = 1,
+            attract_sigma_gamma = 1,
+            attract_w_u = 1,
+            attract_w_l = 1,
+            attract_alpha = 0.1,
+            attract_epsilon = 1e-5,
+            jl_gamma_p = 0.05,
+            jl_gamma_d = 0.1,
+            jl_lambda = 0.7,
+            joint_limit_upper = arm.q_max,
+            joint_limit_lower = arm.q_min,
+            jl_sigma = 1,
+        )
         
         
         
@@ -176,6 +194,8 @@ class Simulator:
                             a = rmp.a_obs(x, dx, o)
                             M = rmp.metric_obs(x, dx, o, a)
                             f = M @ a
+
+                            
                             
                             _pulled_f = J.T @ (f - M @ dJ @ dq)
                             _pulled_M = J.T @ M @ J
@@ -187,6 +207,12 @@ class Simulator:
                         a = rmp.a_attract(x, dx, self.gl_goal)
                         M = rmp.metric_attract(x, dx, self.gl_goal, a)
                         f = M @ a
+                        
+                        
+                        #M = rmp2.inertia_attract(x, dx, self.gl_goal, np.zeros((3,1)))
+                        #f = rmp2.f_attract(x, dx, self.gl_goal, np.zeros((3,1)),M)
+                        
+                        
                         
                         _pulled_f = J.T @ (f - M @ dJ @ dq)
                         _pulled_M = J.T @ M @ J
@@ -598,7 +624,7 @@ class Simulator:
         
         i = int(self.TIME_SPAN/self.TIME_INTERVAL-1)
         
-        # 目標点
+        #目標点
         ax_rezult.scatter(
             self.gl_goal[0, 0], self.gl_goal[1, 0], self.gl_goal[2, 0],
             s = 100, label = 'goal point', marker = '*', color = '#ff7f00', 

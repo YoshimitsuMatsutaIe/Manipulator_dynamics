@@ -96,8 +96,8 @@ class BaxterRobotArmKinematics:
     r_bars_in_1 = [
         np.array([[0, L1/2, -L0/2, 1]]).T,
         np.array([[0, -L1/2, -L0/2, 1]]).T,
-        np.array([[L1/2, 0, -L0/2, 1]]).T,
-        np.array([[-L1/2, 0, -L0/2, 1]]).T,
+        # np.array([[L1/2, 0, -L0/2, 1]]).T,
+        # np.array([[-L1/2, 0, -L0/2, 1]]).T,
     ]  # 1座標系からみた制御点位置
 
     r_bars_in_2 = [
@@ -107,41 +107,41 @@ class BaxterRobotArmKinematics:
 
     r_bars_in_3 = [
         np.array([[0, L3/2, -L2*2/3, 1]]).T,
-        np.array([[0, -L3/2, -L2*2/3, 1]]).T,
-        np.array([[L3/2, 0, -L2*2/3, 1]]).T,
-        np.array([[-L3/2, 0, -L2*2/3, 1]]).T,
-        np.array([[0, L3/2, -L2*1/3, 1]]).T,
-        np.array([[0, -L3/2, -L2*1/3, 1]]).T,
-        np.array([[L3/2, 0, -L2*1/3, 1]]).T,
-        np.array([[-L3/2, 0, -L2*1/3, 1]]).T,
+        # np.array([[0, -L3/2, -L2*2/3, 1]]).T,
+        # np.array([[L3/2, 0, -L2*2/3, 1]]).T,
+        # np.array([[-L3/2, 0, -L2*2/3, 1]]).T,
+        # np.array([[0, L3/2, -L2*1/3, 1]]).T,
+        # np.array([[0, -L3/2, -L2*1/3, 1]]).T,
+        # np.array([[L3/2, 0, -L2*1/3, 1]]).T,
+        # np.array([[-L3/2, 0, -L2*1/3, 1]]).T,
     ]
 
     r_bars_in_4 = [
         np.array([[0, 0, L3/2, 1]]).T,
-        np.array([[0, 0, -L3/2, 1]]).T,
+        # np.array([[0, 0, -L3/2, 1]]).T,
     ]
 
     r_bars_in_5 = [
         np.array([[0, R/2, -L4/3, 1]]).T,
-        np.array([[0, -R/2, -L4/3, 1]]).T,
-        np.array([[R/2, 0, -L4/3, 1]]).T,
-        np.array([[-R/2, 0, -L4/3, 1]]).T,
-        np.array([[0, R/2, -L4/3*2, 1]]).T,
-        np.array([[0, -R/2, -L4/3*2, 1]]).T,
-        np.array([[R/2, 0, -L4/3*2, 1]]).T,
-        np.array([[-R/2, 0, -L4/3*2, 1]]).T,
+        # np.array([[0, -R/2, -L4/3, 1]]).T,
+        # np.array([[R/2, 0, -L4/3, 1]]).T,
+        # np.array([[-R/2, 0, -L4/3, 1]]).T,
+        # np.array([[0, R/2, -L4/3*2, 1]]).T,
+        # np.array([[0, -R/2, -L4/3*2, 1]]).T,
+        # np.array([[R/2, 0, -L4/3*2, 1]]).T,
+        # np.array([[-R/2, 0, -L4/3*2, 1]]).T,
     ]
 
     r_bars_in_6 = [
         np.array([[0, 0, L5/2, 1]]).T,
-        np.array([[0, 0, -L5/2, 1]]).T,
+        # np.array([[0, 0, -L5/2, 1]]).T,
     ]
 
     r_bars_in_7 = [
         np.array([[0, R/2, L6/2, 1]]).T,
-        np.array([[0, -R/2, L6/2, 1]]).T,
-        np.array([[R/2, 0, L6/2, 1]]).T,
-        np.array([[-R/2, 0, L6/2, 1]]).T,
+        # np.array([[0, -R/2, L6/2, 1]]).T,
+        # np.array([[R/2, 0, L6/2, 1]]).T,
+        # np.array([[-R/2, 0, L6/2, 1]]).T,
     ]
 
     r_bars_in_GL = [

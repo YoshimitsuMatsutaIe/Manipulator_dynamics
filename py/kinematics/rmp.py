@@ -5,7 +5,7 @@ import numpy as np
 import math
 from math import pi, cos, sin, tan
 
-#import rmp_fromGDS_attract_xi_M
+import rmp_fromGDS_attract_xi_M
 
 
 ## マニピュレータの論文[R1]のやつ
