@@ -23,14 +23,14 @@ def _set_sphere(r, center, n):
 
 
 def _set_cylinder(r, L, center, n, theta=0, phi=0, zeta=0,):
-    """
+    """円筒を設置
     
     r : 半径
     L : 長さ
     n : 点の数
     theta : 回転
-    phi : 
-    zeta : 
+    phi : 回転
+    zeta : 回転
     """
     
     obs = []
