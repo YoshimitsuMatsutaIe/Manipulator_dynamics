@@ -1,9 +1,10 @@
+# 基本
 sim_param : 
-  isleft : True
+  isLeft : True
   TIME_INTERVAL : 10
   TIME_INTERVAL : 0.05
 rmp_param : 
-  -
+  -  # 1
     name : 'original'
     attract_max_speed : 2
     attract_gain : 10
@@ -19,7 +20,7 @@ rmp_param :
     jl_gamma_p : 0.05
     jl_gamma_d : 0.1
     jl_lambda : 0.7
-  -
+  -  # 2
     name : 'original'
     attract_max_speed : 2
     attract_gain : 10
@@ -35,7 +36,7 @@ rmp_param :
     jl_gamma_p : 0.05
     jl_gamma_d : 0.1
     jl_lambda : 0.7
-  -
+  -  # 3
     name : 'original'
     attract_max_speed : 2
     attract_gain : 10
@@ -51,7 +52,7 @@ rmp_param :
     jl_gamma_p : 0.05
     jl_gamma_d : 0.1
     jl_lambda : 0.7
-  -
+  -  # 4
     name : 'original'
     attract_max_speed : 2
     attract_gain : 10
@@ -67,7 +68,7 @@ rmp_param :
     jl_gamma_p : 0.05
     jl_gamma_d : 0.1
     jl_lambda : 0.7
-  -
+  -  # 5
     name : 'original'
     attract_max_speed : 2
     attract_gain : 10
@@ -83,7 +84,7 @@ rmp_param :
     jl_gamma_p : 0.05
     jl_gamma_d : 0.1
     jl_lambda : 0.7
-  -
+  -  # 6
     name : 'original'
     attract_max_speed : 2
     attract_gain : 10
@@ -99,7 +100,7 @@ rmp_param :
     jl_gamma_p : 0.05
     jl_gamma_d : 0.1
     jl_lambda : 0.7
-  -
+  -  # 7
     name : 'original'
     attract_max_speed : 2
     attract_gain : 10
@@ -115,5 +116,43 @@ rmp_param :
     jl_gamma_p : 0.05
     jl_gamma_d : 0.1
     jl_lambda : 0.7
-env_param : 
+  -  # 8
+    name : 'original'
+    attract_max_speed : 2
+    attract_gain : 10
+    attract_a_damp_r : 0.15
+    attract_sigma_W : 1
+    attract_sigma_H : 1
+    attract_A_damp_r : 5
+    obs_scale_rep : 0.2
+    obs_scale_damp : 1
+    obs_ratio : 0.5
+    obs_rep_gain : 0.5e-10
+    obs_r : 1
+    jl_gamma_p : 0.05
+    jl_gamma_d : 0.1
+    jl_lambda : 0.7
+env_param :
+  goal :
   
+  obstacle :
+    -
+      name : 'cylinder'
+      data :
+        r : 0.1
+        L : 1.0
+        center : [[0.25, -0.4, 1]]
+        n : 50
+        theta : 0
+        phi : 90
+        zeta : 0
+    -
+      name : 'cylinder'
+      data:
+        r : 0.1
+        L : 1.0
+        center : [[0.25, -0.4, 1]]
+        n : 50
+        theta : 90
+        phi : 0
+        zeta : 0

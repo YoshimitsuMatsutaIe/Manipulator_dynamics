@@ -64,6 +64,7 @@ def _set_cylinder(r, L, center, n, theta=0, phi=0, zeta=0,):
     
     obs = []
     
+    
     rand = np.random.RandomState(123)
     for i in range(n):
         _theta = rand.uniform(0, 2*pi)
@@ -74,7 +75,12 @@ def _set_cylinder(r, L, center, n, theta=0, phi=0, zeta=0,):
             ])
         obs.append(X)
     
-    return _rotate(theta, phi, zeta) @ obs + center
+    R = _rotate(
+        np.deg2rad(theta),
+        np.deg2rad(phi),
+        np.deg2rad(zeta),
+    )
+    return R @ obs + np.array(center).T
 
 
 def _set_field(lx, ly, center, n, theta=0, phi=0, zeta=0):
@@ -99,7 +105,7 @@ def _set_box(lx, ly, lz, center, n, theta=0, phi=0, zeta=0,):
     pass
 
 
-def set_obstacle(data=None):
+def set_obstacle(obs_param):
     """固定障害物を返す"""
     
     def _choice(name):
@@ -111,13 +117,13 @@ def set_obstacle(data=None):
             return _set_field
     
     
-    if data is None:
+    if obs_param is None:
         return None
     else:
         obs = []
-        for d in data:
+        for d in obs_param:
             obs.extend(
-                _choice(d[0])(*d[1:])
+                _choice(d['name'])(**d['data'])
             )
     return obs
 
@@ -132,6 +138,33 @@ data2 = [
     ['field', 1, 0.5, np.array([[0.25, -0.5, 1.15]]).T, 100, 0, 0, 0]
 ]  # 机
 
+
+
+class Goal:
+
+    def __init__(self, init_position, name):
+        self.init_position = init_position
+        
+        if name == 'static':
+            self.goal = self._static
+        
+        return
+    
+    
+    def _cicle(self, t):
+        omega = 0.3
+        r = 0.5
+        g = np.array([[
+            r * np.cos(omega*t),
+            0,
+            r * np.sin(omega * t),
+        ]]).T
+        g0 = np.array([[0.3, -0.6, 1]]).T
+        return g + g0
+
+
+    def _static(self, t):
+        return self.init_position
 
 
 def _test(data):

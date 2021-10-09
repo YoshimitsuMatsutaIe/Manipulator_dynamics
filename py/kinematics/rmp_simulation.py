@@ -70,29 +70,12 @@ class SimulationData:
         return
 
 
-def _calc_goal_position(t):
-    omega = 0.3
-    r = 0.5
-    g = np.array([[
-        r * np.cos(omega*t),
-        0,
-        r * np.sin(omega * t),
-    ]]).T
-    g0 = np.array([[0.3, -0.6, 1]]).T
-    return g + g0
-
-
-def _calc_obstacle_position(t):
-    return environment.set_obstacle(data=environment.data1)
-
-
-
 
 class Simulator:
     """"""
     
-    def __init__(self, isleft=True, TIME_SPAN=30, TIME_INTERVAL=0.05):
-        self.isleft = isleft
+    def __init__(self, isLeft=True, TIME_SPAN=30, TIME_INTERVAL=0.05):
+        self.isLeft = isLeft
         self.TIME_SPAN = TIME_SPAN
         self.TIME_INTERVAL = TIME_INTERVAL
         
@@ -102,22 +85,40 @@ class Simulator:
     def set_controller(self, rmp_param):
         """rmpをセット"""
         
+        print('制御器セット中...')
+        start = time.time()
+        
         self.rmps = []
-        for i in range(7):
-            if rmp_param[i]['name'] == 'origimal':
+        for i in range(8):
+            if rmp_param[i]['name'] == 'original':
                 self.rmps.append(OriginalRMP(**rmp_param[i]))
             elif rmp_param[i]['name'] == 'fromGDS':
                 self.rmps.append(RMPfromGDS(**rmp_param[i]))
     
+        print('セット完了')
+        print('セット時間 = ', time.time() - start, '\n')
+        
         return
     
     
     
     def set_environment(self, env_param):
+        """目標，障害物をセット"""
         
         
+        print('環境セット中...')
+        start = time.time()
         
+        goal_param = env_param['goal']
+        obs_param = env_param['obstacle']
         
+        self.gl_goal = np.array([[0.3, -0.75, 1]]).T
+        self.obs = environment.set_obstacle(obs_param)
+        if self.obs is not None:
+            self.obs_plot = np.concatenate(self.obs, axis=1)
+        
+        print('セット完了')
+        print('セット時間 = ', time.time() - start, '\n')
         
         return
     
@@ -125,7 +126,7 @@ class Simulator:
     def run_simulation(self,):
         
         
-        self.gl_goal = np.array([[0.3, -0.75, 1]]).T
+        
         #self.obs = [np.array([[0.8, -0.6, 1]]).T]
         
         
@@ -142,51 +143,16 @@ class Simulator:
         # self.obs_plot = np.concatenate(self.obs, axis=1)
         
         
-        self.obs = environment.set_obstacle(data=environment.data2)
+
         
         dobs = np.zeros((3, 1))
         
-        #self.obs = None
-        
-        if self.obs is not None:
-            self.obs_plot = np.concatenate(self.obs, axis=1)
+
         
         t = np.arange(0.0, self.TIME_SPAN, self.TIME_INTERVAL)
         print("t size = ", t.shape)
         
         arm = BaxterRobotArmKinematics(self.isLeft)
-        rmp = OriginalRMP(
-            attract_max_speed = 2, 
-            attract_gain = 10, 
-            attract_a_damp_r = 0.15,
-            attract_sigma_W = 1, 
-            attract_sigma_H = 1, 
-            attract_A_damp_r = 5, 
-            obs_scale_rep = 0.2,
-            obs_scale_damp = 1,
-            obs_ratio = 0.5,
-            obs_rep_gain = 0.5e-10,
-            obs_r = 1,
-            jl_gamma_p = 0.05,
-            jl_gamma_d = 0.1,
-            jl_lambda = 0.7,
-        )
-        
-        rmp2 = RMPfromGDS(
-            attract_max_speed = 2, 
-            attract_gain = 100,
-            attract_alpha_f = 0.3,
-            attract_sigma_alpha = 1,
-            attract_sigma_gamma = 1,
-            attract_w_u = 1,
-            attract_w_l = 1,
-            attract_alpha = 0.1,
-            attract_epsilon = 1e-5,
-            jl_gamma_p = 0.05,
-            jl_gamma_d = 0.1,
-            jl_lambda = 0.7,
-            jl_sigma = 1,
-        )
         
         
         
@@ -212,12 +178,12 @@ class Simulator:
             pulled_M_all = []
             
             for i in range(8):
-                for x, dx, J, dJ, rmp in zip(
+                rmp = self.rmps[i]
+                for x, dx, J, dJ, in zip(
                     arm.cpoints_x[i],
                     arm.cpoints_dx[i],
                     arm.Jos_cpoints[i],
                     arm.Jos_cpoints_diff_by_t[i],
-                    self.rmps[i],
                 ):
                     
                     if self.obs is not None:
