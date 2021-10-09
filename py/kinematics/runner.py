@@ -3,7 +3,7 @@
 import yaml
 
 import rmp_simulation
-#import param
+
 
 
 
@@ -19,6 +19,9 @@ def run(params):
     rmp_param = config['rmp_param']
     env_param = config['env_param']
     
+    
+    
+    
     simulator = rmp_simulation.Simulator(**sim_param)
     simulator.set_controller(rmp_param)
     simulator.set_environment(env_param)
@@ -30,6 +33,7 @@ def run(params):
 
 
 if __name__ == '__main__':
-    #run(*param.setting_1())
     
-    run('./py/kinematics/config/scean_1.yaml')
+    #run('./py/kinematics/config/scean_1.yaml')
+    
+    run('./py/kinematics/config/tracking.yaml')
