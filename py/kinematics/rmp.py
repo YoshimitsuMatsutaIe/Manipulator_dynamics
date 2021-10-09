@@ -65,8 +65,7 @@ class OriginalRMP:
         self.jl_gamma_d = kwargs.pop('jl_gamma_d')
         # ジョイント制限処理計量
         self.jl_lambda = kwargs.pop('jl_lambda')
-        self.joint_limit_upper = kwargs.pop('joint_limit_upper')
-        self.joint_limit_lower = kwargs.pop('joint_limit_lower')
+
     
     
     ## アトラクターRMP
@@ -135,7 +134,7 @@ class OriginalRMP:
     
     
     # ジョイント制限RMP
-    def a_joint_limit(self, q, dq):
+    def a_joint_limit(self, q, dq, q_max, q_min):
         """ジョイント制限処理加速度"""
         
         gamma_p = self.jl_gamma_p
@@ -143,10 +142,7 @@ class OriginalRMP:
         z = gamma_p * (-q) - gamma_d * dq
         #print("z = ", z)
         a = np.linalg.inv(
-            D_sigma(
-                q, 
-                self.joint_limit_lower, 
-                self.joint_limit_upper)) @ z
+            D_sigma(q, q_min, q_max)) @ z
         return a
         
     
@@ -220,8 +216,6 @@ class RMPfromGDS:
         self.jl_gamma_d = kwargs.pop('jl_gamma_d')
         # ジョイント制限処理計量
         self.jl_lambda = kwargs.pop('jl_lambda')
-        self.joint_limit_upper = kwargs.pop('joint_limit_upper')
-        self.joint_limit_lower = kwargs.pop('joint_limit_lower')
         self.jl_sigma = kwargs.pop('jl_sigma')
     
     
@@ -268,7 +262,7 @@ class RMPfromGDS:
         return f
     
     
-    def metric_joint_limit(self, q, dq):
+    def metric_joint_limit(self, q, dq, q_max, q_min):
         """ジョイント制限回避計量"""
         A_ii = []
         dof = len(q)
@@ -276,14 +270,14 @@ class RMPfromGDS:
             b = jl_b(
                 q[i, 0], 
                 dq[i, 0], 
-                self.joint_limit_lower[i, 0], 
-                self.joint_limit_upper[i, 0], 
+                q_min[i, 0], 
+                q_max[i, 0], 
                 self.jl_sigma)
             A_ii.append(b ** (-2))
         A = self.jl_lambda * np.diag(A_ii)
         return A
     
-    def f_joint_limit(self, q, dq, metric_jl):
+    def f_joint_limit(self, q, dq, q_max, q_min, metric_jl):
         """ジョイント制限処理力（加速度？）"""
         
         gamma_p = self.jl_gamma_p
@@ -299,8 +293,8 @@ class RMPfromGDS:
             dAdq = dAiidqi(
                 q[i, 0], 
                 dq[i, 0], 
-                self.joint_limit_lower[i, 0],
-                self.joint_limit_upper[i, 0],
+                q_min[i, 0],
+                q_max[i, 0],
                 self.jl_sigma)
             d_xi_A.append(1/2 * dAdq * dq[i, 0])
         

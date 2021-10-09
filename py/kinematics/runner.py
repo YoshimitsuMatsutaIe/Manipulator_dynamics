@@ -18,8 +18,7 @@ def run(params):
     rmp_param = config['rmp_param']
     
     simulator = rmp_simulation.Simulator(**sim_param)
-    #simulator.set_controller(rmp_param)
-    
+    simulator.set_controller(rmp_param)
     
     
     return

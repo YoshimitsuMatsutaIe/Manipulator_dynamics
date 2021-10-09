@@ -170,8 +170,6 @@ class Simulator:
             jl_gamma_p = 0.05,
             jl_gamma_d = 0.1,
             jl_lambda = 0.7,
-            joint_limit_upper = arm.q_max,
-            joint_limit_lower = arm.q_min,
         )
         
         rmp2 = RMPfromGDS(
@@ -187,8 +185,6 @@ class Simulator:
             jl_gamma_p = 0.05,
             jl_gamma_d = 0.1,
             jl_lambda = 0.7,
-            joint_limit_upper = arm.q_max,
-            joint_limit_lower = arm.q_min,
             jl_sigma = 1,
         )
         
@@ -259,7 +255,7 @@ class Simulator:
             pulled_M_all = np.sum(pulled_M_all, axis=0)
             
             # # ジョイント制限
-            # a_jl = rmp.a_joint_limit(q, dq)
+            # a_jl = rmp.a_joint_limit(q, dq, arm.q_max, qrm.q_min)
             # M_jl = rmp.metric_joint_limit(q)
             # f_jl = M_jl @ a_jl
             # pulled_f_all += f_jl
