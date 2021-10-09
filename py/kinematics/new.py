@@ -96,8 +96,8 @@ class BaxterRobotArmKinematics:
     r_bars_in_1 = [
         np.array([[0, L1/2, -L0/2, 1]]).T,
         np.array([[0, -L1/2, -L0/2, 1]]).T,
-        # np.array([[L1/2, 0, -L0/2, 1]]).T,
-        # np.array([[-L1/2, 0, -L0/2, 1]]).T,
+        np.array([[L1/2, 0, -L0/2, 1]]).T,
+        np.array([[-L1/2, 0, -L0/2, 1]]).T,
     ]  # 1座標系からみた制御点位置
 
     r_bars_in_2 = [
@@ -107,41 +107,41 @@ class BaxterRobotArmKinematics:
 
     r_bars_in_3 = [
         np.array([[0, L3/2, -L2*2/3, 1]]).T,
-        # np.array([[0, -L3/2, -L2*2/3, 1]]).T,
-        # np.array([[L3/2, 0, -L2*2/3, 1]]).T,
-        # np.array([[-L3/2, 0, -L2*2/3, 1]]).T,
-        # np.array([[0, L3/2, -L2*1/3, 1]]).T,
-        # np.array([[0, -L3/2, -L2*1/3, 1]]).T,
-        # np.array([[L3/2, 0, -L2*1/3, 1]]).T,
-        # np.array([[-L3/2, 0, -L2*1/3, 1]]).T,
+        np.array([[0, -L3/2, -L2*2/3, 1]]).T,
+        np.array([[L3/2, 0, -L2*2/3, 1]]).T,
+        np.array([[-L3/2, 0, -L2*2/3, 1]]).T,
+        np.array([[0, L3/2, -L2*1/3, 1]]).T,
+        np.array([[0, -L3/2, -L2*1/3, 1]]).T,
+        np.array([[L3/2, 0, -L2*1/3, 1]]).T,
+        np.array([[-L3/2, 0, -L2*1/3, 1]]).T,
     ]
 
     r_bars_in_4 = [
         np.array([[0, 0, L3/2, 1]]).T,
-        # np.array([[0, 0, -L3/2, 1]]).T,
+        np.array([[0, 0, -L3/2, 1]]).T,
     ]
 
     r_bars_in_5 = [
         np.array([[0, R/2, -L4/3, 1]]).T,
-        # np.array([[0, -R/2, -L4/3, 1]]).T,
-        # np.array([[R/2, 0, -L4/3, 1]]).T,
-        # np.array([[-R/2, 0, -L4/3, 1]]).T,
-        # np.array([[0, R/2, -L4/3*2, 1]]).T,
-        # np.array([[0, -R/2, -L4/3*2, 1]]).T,
-        # np.array([[R/2, 0, -L4/3*2, 1]]).T,
-        # np.array([[-R/2, 0, -L4/3*2, 1]]).T,
+        np.array([[0, -R/2, -L4/3, 1]]).T,
+        np.array([[R/2, 0, -L4/3, 1]]).T,
+        np.array([[-R/2, 0, -L4/3, 1]]).T,
+        np.array([[0, R/2, -L4/3*2, 1]]).T,
+        np.array([[0, -R/2, -L4/3*2, 1]]).T,
+        np.array([[R/2, 0, -L4/3*2, 1]]).T,
+        np.array([[-R/2, 0, -L4/3*2, 1]]).T,
     ]
 
     r_bars_in_6 = [
         np.array([[0, 0, L5/2, 1]]).T,
-        # np.array([[0, 0, -L5/2, 1]]).T,
+        np.array([[0, 0, -L5/2, 1]]).T,
     ]
 
     r_bars_in_7 = [
         np.array([[0, R/2, L6/2, 1]]).T,
-        # np.array([[0, -R/2, L6/2, 1]]).T,
-        # np.array([[R/2, 0, L6/2, 1]]).T,
-        # np.array([[-R/2, 0, L6/2, 1]]).T,
+        np.array([[0, -R/2, L6/2, 1]]).T,
+        np.array([[R/2, 0, L6/2, 1]]).T,
+        np.array([[-R/2, 0, L6/2, 1]]).T,
     ]
 
     r_bars_in_GL = [
@@ -500,6 +500,28 @@ def main():
         ys = cs_[1, :].tolist()
         zs = cs_[2, :].tolist()
         ax.scatter(xs, ys, zs, label = "L-" + cs_name[i])
+
+
+    ## 三軸のスケールを揃える
+    max_x = 1.0
+    min_x = -1.0
+    max_y = 0.2
+    min_y = -1.0
+    max_z = 2.0
+    min_z = 0.0
+    
+    max_range = np.array([
+        max_x - min_x,
+        max_y - min_y,
+        max_z - min_z
+        ]).max() * 0.5
+    mid_x = (max_x + min_x) * 0.5
+    mid_y = (max_y + min_y) * 0.5
+    mid_z = (max_z + min_z) * 0.5
+    ax.set_xlim(mid_x - max_range, mid_x + max_range)
+    ax.set_ylim(mid_y - max_range, mid_y + max_range)
+    ax.set_zlim(mid_z - max_range, mid_z + max_range)
+
 
 
     ax.legend()

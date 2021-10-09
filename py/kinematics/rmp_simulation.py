@@ -1,12 +1,12 @@
 """RMPシミュレーション"""
 
-from collections import deque
+#from collections import deque
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as anm
 import scipy.integrate as integrate
 
-
+import tqdm
 import time
 
 import environment
@@ -52,7 +52,6 @@ class FrameData:
 
 
 
-
 class SimulationData:
     
     def __init__(self,):
@@ -71,7 +70,7 @@ class SimulationData:
         return
 
 
-def _moveing_goal(t):
+def _calc_goal_position(t):
     omega = 0.3
     r = 0.5
     g = np.array([[
@@ -83,6 +82,8 @@ def _moveing_goal(t):
     return g + g0
 
 
+def _calc_obstacle_position(t):
+    return environment.set_obstacle(data=environment.data1)
 
 
 
@@ -90,7 +91,8 @@ def _moveing_goal(t):
 class Simulator:
     """"""
     
-    def __init__(self, TIME_SPAN=10, TIME_INTERVAL=0.01):
+    def __init__(self, isleft=True, TIME_SPAN=30, TIME_INTERVAL=0.05):
+        self.isleft = isleft
         self.TIME_SPAN = TIME_SPAN
         self.TIME_INTERVAL = TIME_INTERVAL
         
@@ -118,7 +120,7 @@ class Simulator:
         # self.obs_plot = np.concatenate(self.obs, axis=1)
         
         
-        self.obs = environment.set_obstacle(data=environment.data1)
+        self.obs = environment.set_obstacle(data=environment.data2)
         
         dobs = np.zeros((3, 1))
         
@@ -130,14 +132,14 @@ class Simulator:
         t = np.arange(0.0, self.TIME_SPAN, self.TIME_INTERVAL)
         print("t size = ", t.shape)
         
-        arm = BaxterRobotArmKinematics(isLeft=True)
+        arm = BaxterRobotArmKinematics(self.isLeft)
         rmp = OriginalRMP(
             attract_max_speed = 2, 
             attract_gain = 10, 
-            attract_a_damp_r = 0.3,
+            attract_a_damp_r = 0.15,
             attract_sigma_W = 1, 
             attract_sigma_H = 1, 
-            attract_A_damp_r = 0.3, 
+            attract_A_damp_r = 5, 
             obs_scale_rep = 0.2,
             obs_scale_damp = 1,
             obs_ratio = 0.5,
@@ -174,6 +176,11 @@ class Simulator:
         
         
         def _eom(t, state):
+            
+            if t > 1 and (int(t) % 2 == 0):
+                print("t = ", '{:.2f}'.format(t))
+            
+            
             #self.gl_goal = _moveing_goal(t)
             q = np.array([state[0:7]]).T
             dq = np.array([state[7:14]]).T
@@ -187,12 +194,14 @@ class Simulator:
             pulled_M_all = []
             
             for i in range(8):
-                for x, dx, J, dJ in zip(
+                for x, dx, J, dJ, rmp in zip(
                     arm.cpoints_x[i],
                     arm.cpoints_dx[i],
                     arm.Jos_cpoints[i],
                     arm.Jos_cpoints_diff_by_t[i],
+                    self.rmps[i],
                 ):
+                    
                     if self.obs is not None:
                         for o in self.obs:
                             a = rmp.a_obs(x, dx, o)
@@ -224,13 +233,16 @@ class Simulator:
                         pulled_f_all.append(_pulled_f)
                         pulled_M_all.append(_pulled_M)
             
+            pulled_f_all = np.sum(pulled_f_all, axis=0)
+            pulled_M_all = np.sum(pulled_M_all, axis=0)
             
-            a_jl = rmp.a_joint_limit(q, dq)
-            M_jl = rmp.metric_joint_limit(q)
-            f_jl = M_jl @ a_jl
+            # # ジョイント制限
+            # a_jl = rmp.a_joint_limit(q, dq)
+            # M_jl = rmp.metric_joint_limit(q)
+            # f_jl = M_jl @ a_jl
+            # pulled_f_all += f_jl
+            # pulled_M_all += M_jl
             
-            pulled_f_all = np.sum(pulled_f_all, axis=0) + f_jl
-            pulled_M_all = np.sum(pulled_M_all, axis=0) + M_jl
             
             ddq = np.linalg.pinv(pulled_M_all) @ pulled_f_all
             
@@ -258,11 +270,16 @@ class Simulator:
         )
         print("シミュレーション実行終了")
         print("シミュレーション実行時間 = ", time.time() - start)
+        print("")
         
         # データ作成
+        print("データ作成中...")
+        start = time.time()
         self.data = SimulationData()
         _arm = BaxterRobotArmKinematics(isLeft=True)
-        for i in range(len(self.sol.t)):
+        
+        for i in tqdm.tqdm(range(len(self.sol.t))):
+        #for i in range(len(self.sol.t)):
             q = np.array([
                 [self.sol.y[0][i]],
                 [self.sol.y[1][i]],
@@ -284,6 +301,9 @@ class Simulator:
             _arm.update_all(q, dq)
             self.data.add_data(_arm, ddq=None)
         
+        print("データ作成完了")
+        print("データ作成時間 = ", time.time() - start)
+        print("")
         
         # # オイラー
         # state = np.ravel(np.concatenate([arm.q, arm.dq])).tolist()
@@ -304,9 +324,6 @@ class Simulator:
         
         start = time.time()
         print("plot実行中...")
-        
-        
-
         
         
         
@@ -468,7 +485,7 @@ class Simulator:
         ax_rezult.set_ylim(mid_y - max_range, mid_y + max_range)
         ax_rezult.set_zlim(mid_z - max_range, mid_z + max_range)
         
-        i = int(self.TIME_SPAN/self.TIME_INTERVAL-1)
+        i = int(self.TIME_SPAN/self.TIME_INTERVAL)-1
         
         #目標点
         ax_rezult.scatter(
@@ -527,9 +544,6 @@ class Simulator:
         
         
         
-        
-        
-        
         plt.show()
         
         return
@@ -540,7 +554,6 @@ class Simulator:
 def main():
     simu = Simulator()
     simu.run_simulation()
-    # simu.plot_animation()
     simu.plot_animation_2()
     
     
