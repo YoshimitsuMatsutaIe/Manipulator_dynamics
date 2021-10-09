@@ -99,6 +99,28 @@ class Simulator:
         return
     
     
+    def set_controller(self, rmp_param):
+        """rmpをセット"""
+        
+        self.rmps = []
+        for i in range(7):
+            if rmp_param[i]['name'] == 'origimal':
+                self.rmps.append(OriginalRMP(**rmp_param[i]))
+            elif rmp_param[i]['name'] == 'fromGDS':
+                self.rmps.append(RMPfromGDS(**rmp_param[i]))
+    
+        return
+    
+    
+    
+    def set_environment(self, env_param):
+        
+        
+        
+        
+        
+        return
+    
     
     def run_simulation(self,):
         
