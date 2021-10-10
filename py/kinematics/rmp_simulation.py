@@ -11,6 +11,7 @@ import time
 
 import environment
 from new import BaxterRobotArmKinematics
+import rmp
 from rmp import RMPfromGDS
 
 from rmp import OriginalRMP
@@ -101,12 +102,44 @@ class Simulator:
         start = time.time()
         
         self.rmps = []
-        for i in range(8):
-            if rmp_param[i]['name'] == 'original':
-                self.rmps.append(OriginalRMP(**rmp_param[i]))
-            elif rmp_param[i]['name'] == 'fromGDS':
-                self.rmps.append(RMPfromGDS(**rmp_param[i]))
+        # for i in range(8):
+        #     if rmp_param[i]['name'] == 'original':
+        #         self.rmps.append(OriginalRMP(**rmp_param[i]))
+        #     elif rmp_param[i]['name'] == 'fromGDS':
+        #         self.rmps.append(RMPfromGDS(**rmp_param[i]))
     
+    
+        self.rmps = []
+        for i in range(8):
+            p = rmp_param[i]
+            
+            if p['goal_attractor'] is None:
+                goal_attractor = None
+            elif p['goal_attractor']['name'] == 'original':
+                goal_attractor = rmp.OriginalRMPAttractor(
+                    **p['goal_attractor']
+                )
+            
+            if p['collision_avoidance'] is None:
+                collision_avoidance = None
+            elif p['collision_avoidance']['name'] == 'original':
+                goal_attractor = rmp.OriginalRMPCollisionAvoidance(
+                    **p['collision_avoidance']
+                )
+            
+            self.rmps.append(
+                rmp.RMP(goal_attractor, collision_avoidance,)
+            )
+    
+        
+        
+        if p['joint_limit_avoidance'] is None:
+            self.joint_limit_avoidance_RMP = None
+        elif p['joint_limit_avoidance']['name'] == 'original':
+            self.joint_limit_avoidance_RMP = rmp.OriginalRMPJointLimitAvoidance(
+                **p['joint_limit_avoidance']
+            )
+        
         print('セット完了')
         print('セット時間 = ', time.time() - start, '\n')
         
@@ -180,13 +213,8 @@ class Simulator:
             if t > 1 and (int(t) % 2 == 0):
                 print("t = ", '{:.2f}'.format(t))
             
-            
-            #self.gl_goal = _moveing_goal(t)
             q = np.array([state[0:7]]).T
             dq = np.array([state[7:14]]).T
-            
-            # print("q = ", q)
-            # print("dq = ", dq)
             
             arm.update_all(q, dq)  # ロボットアームの全情報更新
             
@@ -195,6 +223,7 @@ class Simulator:
             
             for i in range(8):
                 rmp = self.rmps[i]
+                
                 for x, dx, J, dJ, in zip(
                     arm.cpoints_x[i],
                     arm.cpoints_dx[i],
@@ -238,6 +267,11 @@ class Simulator:
             # pulled_f_all += f_jl
             # pulled_M_all += M_jl
             
+            
+            # ジョイント制限
+            if self.joint_limit_avoidance_RMP is not None:
+                M_jl = self.joint_limit_avoidance_RMP.M(q)
+                f_jl = 
             
             ddq = np.linalg.pinv(pulled_M_all) @ pulled_f_all
             

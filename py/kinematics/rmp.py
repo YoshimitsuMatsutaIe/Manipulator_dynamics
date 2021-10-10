@@ -8,6 +8,14 @@ from math import pi, cos, sin, tan
 import rmp_fromGDS_attract_xi_M
 
 
+class RMP:
+    def __init__(self, goal_attractor, collision_avoidance,):
+        self.goal_attractor = goal_attractor
+        self.collision_avoidance = collision_avoidance
+
+
+
+
 ## マニピュレータの論文[R1]のやつ
 def soft_normal(v, alpha):
     """ソフト正規化関数"""
@@ -52,14 +60,14 @@ class OriginalRMPAttractor:
         self.attract_sigma_H = kwargs.pop('attract_sigma_H')
         self.attract_A_damp_r = kwargs.pop('attract_A_damp_r')
 
-    def a_attract(self, z, dz, z0):
+    def _a_attract(self, z, dz, z0):
         """アトラクタ加速度"""
         
         damp = self.attract_gain / self.attract_max_speed
         _a = self.attract_gain * soft_normal(z0 - z, self.attrat_a_damp_r) - damp * dz
         return _a
     
-    def metric_attract(self, z, dz, z0, a):
+    def _metric_attract(self, z, dz, z0, a):
         """アトラクタ計量"""
         
         dis = np.linalg.norm(z0 - z)
@@ -67,6 +75,16 @@ class OriginalRMPAttractor:
         beta_attract = 1 - np.exp(-1 / 2 * (dis / self.attract_sigma_H) ** 2)
         
         return weight * basic_metric_H(a, self.attract_A_damp_r, beta_attract) # 論文
+
+    def get_canonical(self, z, dz, z0):
+        a = self._a_attract(z, dz, z0)
+        M = self._metric_attract(z, dz, z0, a)
+        return a, M
+
+    def get_natural(self, z, dz, z0,):
+        a, M = self.get_canonical(z, dz, z0)
+        f = M @ a
+        return f, M
 
 
 
