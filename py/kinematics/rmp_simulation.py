@@ -112,7 +112,11 @@ class Simulator:
         goal_param = env_param['goal']
         obs_param = env_param['obstacle']
         
-        self.gl_goal = np.array([[0.3, -0.75, 1]]).T
+        
+        print(goal_param)
+        
+        self.gl_goal = environment.Goal(**goal_param).goal
+        #self.gl_goal = np.array([[0.3, -0.75, 1]]).T
         self.obs = environment.set_obstacle(obs_param)
         if self.obs is not None:
             self.obs_plot = np.concatenate(self.obs, axis=1)
@@ -201,8 +205,8 @@ class Simulator:
                             pulled_M_all.append(_pulled_M)
 
                     if i == 7:
-                        a = rmp.a_attract(x, dx, self.gl_goal)
-                        M = rmp.metric_attract(x, dx, self.gl_goal, a)
+                        a = rmp.a_attract(x, dx, self.gl_goal(t))
+                        M = rmp.metric_attract(x, dx, self.gl_goal(t), a)
                         f = M @ a
                         
                         
@@ -349,6 +353,10 @@ class Simulator:
 
         def _update(i):
             """アニメーションの関数"""
+            
+            t = i * self.TIME_INTERVAL
+            
+            
             ax.cla()  # 遅いかも
             ax.grid(True)
             ax.set_xlabel('X[m]')
@@ -361,7 +369,7 @@ class Simulator:
             
             # 目標点
             ax.scatter(
-                self.gl_goal[0, 0], self.gl_goal[1, 0], self.gl_goal[2, 0],
+                self.gl_goal(t)[0, 0], self.gl_goal(t)[1, 0], self.gl_goal(t)[2, 0],
                 s = 100, label = 'goal point', marker = '*', color = '#ff7f00', 
                 alpha = 1, linewidths = 1.5, edgecolors = 'red')
             
@@ -471,9 +479,10 @@ class Simulator:
         
         i = int(self.TIME_SPAN/self.TIME_INTERVAL)-1
         
+        t = self.TIME_SPAN
         #目標点
         ax_rezult.scatter(
-            self.gl_goal[0, 0], self.gl_goal[1, 0], self.gl_goal[2, 0],
+            self.gl_goal(t)[0, 0], self.gl_goal(t)[1, 0], self.gl_goal(t)[2, 0],
             s = 100, label = 'goal point', marker = '*', color = '#ff7f00', 
             alpha = 1, linewidths = 1.5, edgecolors = 'red')
         

@@ -34,6 +34,6 @@ def run(params):
 
 if __name__ == '__main__':
     
-    #run('./py/kinematics/config/scean_1.yaml')
+    run('./py/kinematics/config/scean_1.yaml')
     
-    run('./py/kinematics/config/tracking.yaml')
+    #run('./py/kinematics/config/tracking.yaml')

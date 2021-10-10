@@ -142,16 +142,20 @@ data2 = [
 
 class Goal:
 
-    def __init__(self, init_position, name):
-        self.init_position = init_position
+    def __init__(self, **kwargs):
+        
+        name = kwargs.pop('name')
         
         if name == 'static':
-            self.goal = self._static
+            self.goal = self.static
+            self.center = np.array(kwargs.pop('center')).T
+        elif name == 'tracking_circle':
+            self.goal = self.tracking_circle
         
         return
     
     
-    def _cicle(self, t):
+    def tracking_circle(self, t):
         omega = 0.3
         r = 0.5
         g = np.array([[
@@ -163,8 +167,8 @@ class Goal:
         return g + g0
 
 
-    def _static(self, t):
-        return self.init_position
+    def static(self, t):
+        return self.center
 
 
 def _test(data):

@@ -134,7 +134,8 @@ rmp_param :
     jl_lambda : 0.7
 env_param :
   goal :
-  
+    name : 'static'
+    center : [[0.3, -0.75, 1]]
   obstacle :
     -
       name : 'cylinder'
