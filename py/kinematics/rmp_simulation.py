@@ -71,6 +71,18 @@ class SimulationData:
 
 
 
+def pullback(f, M, J, dJ=None, dx= None):
+    """pullback演算"""
+    
+    if dJ is None and dx is None:
+        _f = J.T @ f
+        _M = J.T @ M @ J
+    else:
+        _f = J.T @ (f - M @ dJ @ dx)
+        _M = J.T @ M @ J
+    return _f, _M
+
+
 class Simulator:
     """"""
     
@@ -196,10 +208,7 @@ class Simulator:
                             M = rmp.metric_obs(x, dx, o, a)
                             f = M @ a
 
-                            
-                            
-                            _pulled_f = J.T @ (f - M @ dJ @ dq)
-                            _pulled_M = J.T @ M @ J
+                            _pulled_f, _pulled_M = pullback(f, M, J, dJ, dq)
                             
                             pulled_f_all.append(_pulled_f)
                             pulled_M_all.append(_pulled_M)
@@ -214,9 +223,7 @@ class Simulator:
                         #f = rmp2.f_attract(x, dx, self.gl_goal, np.zeros((3,1)),M)
                         
                         
-                        
-                        _pulled_f = J.T @ (f - M @ dJ @ dq)
-                        _pulled_M = J.T @ M @ J
+                        _pulled_f, _pulled_M = pullback(f, M, J, dJ, dq)
                         
                         pulled_f_all.append(_pulled_f)
                         pulled_M_all.append(_pulled_M)
