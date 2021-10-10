@@ -100,7 +100,7 @@ class Simulator:
             
             if p['goal_attractor'] is None:
                 goal_attractor = None
-            elif p['goal_attractor']['name'] == 'original':
+            elif p['goal_attractor']['name'] == 'Original':
                 goal_attractor = rmp.OriginalRMPAttractor(
                     **p['goal_attractor']
                 )
@@ -111,7 +111,7 @@ class Simulator:
             
             if p['collision_avoidance'] is None:
                 collision_avoidance = None
-            elif p['collision_avoidance']['name'] == 'original':
+            elif p['collision_avoidance']['name'] == 'Original':
                 goal_attractor = rmp.OriginalRMPCollisionAvoidance(
                     **p['collision_avoidance']
                 )
@@ -125,10 +125,10 @@ class Simulator:
             )
     
         
-        
+        p = rmp_param[-1]
         if p['joint_limit_avoidance'] is None:
             self.joint_limit_avoidance_RMP = None
-        elif p['joint_limit_avoidance']['name'] == 'original':
+        elif p['joint_limit_avoidance']['name'] == 'Original':
             self.joint_limit_avoidance_RMP = rmp.OriginalRMPJointLimitAvoidance(
                 **p['joint_limit_avoidance']
             )

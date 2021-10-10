@@ -12,7 +12,7 @@ import rmp_simulation
 def run(params):
     """シミュレーションを実行"""
     
-    with open(params) as file:
+    with open(params, encoding='UTF-8') as file:
         config = yaml.safe_load(file.read())
     
     sim_param = config['sim_param']
