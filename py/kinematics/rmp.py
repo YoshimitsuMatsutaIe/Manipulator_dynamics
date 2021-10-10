@@ -185,7 +185,7 @@ class OriginalRMPJointLimitAvoidance:
             D_sigma(q, q_min, q_max)) @ z
         return a
     
-    def _metric(self, q, dq, q_max, q_min):
+    def _metric(self, q, dq, q_max, q_min,):
         """ジョイント制限処理計量"""
         dof = len(q)
         return self.jl_lambda * np.eye(dof)
@@ -194,7 +194,7 @@ class OriginalRMPJointLimitAvoidance:
         """form []"""
         
         a = self._a(q, dq, q_max, q_min)
-        M = self._metric(q, dq, q_max, q_min, a)
+        M = self._metric(q, dq, q_max, q_min,)
         return a, M
 
     def get_natural(self, q, dq, q_max, q_min):

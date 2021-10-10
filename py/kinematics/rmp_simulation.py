@@ -112,11 +112,11 @@ class Simulator:
             if p['collision_avoidance'] is None:
                 collision_avoidance = None
             elif p['collision_avoidance']['name'] == 'Original':
-                goal_attractor = rmp.OriginalRMPCollisionAvoidance(
+                collision_avoidance = rmp.OriginalRMPCollisionAvoidance(
                     **p['collision_avoidance']
                 )
             elif p['collision_avoidance']['name'] == 'fromGDS':
-                goal_attractor = rmp.RMPfromGDSCollisionAvoidance(
+                collision_avoidance = rmp.RMPfromGDSCollisionAvoidance(
                     **p['collision_avoidance']
                 )
             
@@ -191,7 +191,7 @@ class Simulator:
         
 
         
-        dobs = np.zeros((3, 1))
+        self.dobs = np.zeros((3, 1))
         
 
         
@@ -223,7 +223,7 @@ class Simulator:
                     arm.Jos_cpoints_diff_by_t[i],
                 ):
                     
-                    if self.obs is not None:
+                    if self.obs is not None and _rmp.collision_avoidance is not None:
                         for o in self.obs:
                             f, M = _rmp.collision_avoidance.get_natural(x, dx, o, self.dobs)
 
@@ -232,7 +232,7 @@ class Simulator:
                             pulled_f_all.append(_pulled_f)
                             pulled_M_all.append(_pulled_M)
 
-                    if i == 7:
+                    if _rmp.goal_attractor is not None:
                         f, M = _rmp.goal_attractor.get_natural(x, dx, self.gl_goal(t), self.dobs)
                         
                         _pulled_f, _pulled_M = rmp.pullback(f, M, J, dJ, dq)
