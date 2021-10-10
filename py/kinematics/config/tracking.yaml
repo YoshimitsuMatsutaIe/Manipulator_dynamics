@@ -134,5 +134,13 @@ rmp_param :
     jl_lambda : 0.7
 env_param :
   goal :
+    name : 'tracking_circle'
+    center : [[0.3, -0.75, 1]]
+    r : 0.2
+    omega : 0.3
+    init_theta : 0
+    alpha : 0
+    beta : 0
+    gumma : 0
   
   obstacle : # None

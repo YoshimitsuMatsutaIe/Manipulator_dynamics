@@ -149,22 +149,29 @@ class Goal:
         if name == 'static':
             self.goal = self.static
             self.center = np.array(kwargs.pop('center')).T
+        
         elif name == 'tracking_circle':
             self.goal = self.tracking_circle
+            self.center = np.array(kwargs.pop('center')).T
+            self.r = kwargs.pop('r')
+            self.omega = kwargs.pop('omega')
+            self.init_theta = kwargs.pop('init_theta')
+            self.alpha = kwargs.pop('alpha')
+            self.beta = kwargs.pop('beta')
+            self.gumma = kwargs.pop('gumma')
         
         return
     
     
     def tracking_circle(self, t):
-        omega = 0.3
-        r = 0.5
-        g = np.array([[
-            r * np.cos(omega*t),
+        R = _rotate(self.alpha, self.beta, self.gumma)
+        X = np.array([[
+            self.r * np.cos(self.omega*t),
+            self.r * np.sin(self.omega * t),
             0,
-            r * np.sin(omega * t),
         ]]).T
-        g0 = np.array([[0.3, -0.6, 1]]).T
-        return g + g0
+        
+        return R @ X + self.center
 
 
     def static(self, t):
@@ -249,8 +256,6 @@ def _test(data):
     ax.scatter(
         obs[0,:], obs[1,:], obs[2,:], marker='.', color = 'k',
     )
-
-
 
     
     plt.show()

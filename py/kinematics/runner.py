@@ -20,8 +20,6 @@ def run(params):
     env_param = config['env_param']
     
     
-    
-    
     simulator = rmp_simulation.Simulator(**sim_param)
     simulator.set_controller(rmp_param)
     simulator.set_environment(env_param)
@@ -34,6 +32,6 @@ def run(params):
 
 if __name__ == '__main__':
     
-    run('./py/kinematics/config/scean_1.yaml')
+    #run('./py/kinematics/config/scean_1.yaml')
     
-    #run('./py/kinematics/config/tracking.yaml')
+    run('./py/kinematics/config/tracking.yaml')
