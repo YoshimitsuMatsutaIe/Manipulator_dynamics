@@ -12,9 +12,7 @@ import time
 import environment
 from new import BaxterRobotArmKinematics
 import rmp
-from rmp import RMPfromGDS
 
-from rmp import OriginalRMP
 
 
 class PositinData:
@@ -71,19 +69,6 @@ class SimulationData:
         return
 
 
-
-def pullback(f, M, J, dJ=None, dx= None):
-    """pullback演算"""
-    
-    if dJ is None and dx is None:
-        _f = J.T @ f
-        _M = J.T @ M @ J
-    else:
-        _f = J.T @ (f - M @ dJ @ dx)
-        _M = J.T @ M @ J
-    return _f, _M
-
-
 class Simulator:
     """"""
     
@@ -119,11 +104,19 @@ class Simulator:
                 goal_attractor = rmp.OriginalRMPAttractor(
                     **p['goal_attractor']
                 )
+            elif p['goal_attractor']['name'] == 'fromGDS':
+                goal_attractor = rmp.RMPfromGDSAttractor(
+                    **p['goal_attractor']
+                )
             
             if p['collision_avoidance'] is None:
                 collision_avoidance = None
             elif p['collision_avoidance']['name'] == 'original':
                 goal_attractor = rmp.OriginalRMPCollisionAvoidance(
+                    **p['collision_avoidance']
+                )
+            elif p['collision_avoidance']['name'] == 'fromGDS':
+                goal_attractor = rmp.RMPfromGDSCollisionAvoidance(
                     **p['collision_avoidance']
                 )
             
@@ -137,6 +130,10 @@ class Simulator:
             self.joint_limit_avoidance_RMP = None
         elif p['joint_limit_avoidance']['name'] == 'original':
             self.joint_limit_avoidance_RMP = rmp.OriginalRMPJointLimitAvoidance(
+                **p['joint_limit_avoidance']
+            )
+        elif p['joint_limit_avoidance']['name'] == 'fromGDS':
+            self.joint_limit_avoidance_RMP = rmp.RMPfromGDSJointLimitAvoidance(
                 **p['joint_limit_avoidance']
             )
         
@@ -203,11 +200,6 @@ class Simulator:
         
         arm = BaxterRobotArmKinematics(self.isLeft)
         
-        
-        
-        #self.data = SimulationData()
-        
-        
         def _eom(t, state):
             
             if t > 1 and (int(t) % 2 == 0):
@@ -222,7 +214,7 @@ class Simulator:
             pulled_M_all = []
             
             for i in range(8):
-                rmp = self.rmps[i]
+                _rmp = self.rmps[i]
                 
                 for x, dx, J, dJ, in zip(
                     arm.cpoints_x[i],
@@ -233,26 +225,17 @@ class Simulator:
                     
                     if self.obs is not None:
                         for o in self.obs:
-                            a = rmp.a_obs(x, dx, o)
-                            M = rmp.metric_obs(x, dx, o, a)
-                            f = M @ a
+                            f, M = _rmp.collision_avoidance.get_natural(x, dx, o, self.dobs)
 
-                            _pulled_f, _pulled_M = pullback(f, M, J, dJ, dq)
+                            _pulled_f, _pulled_M = rmp.pullback(f, M, J, dJ, dq)
                             
                             pulled_f_all.append(_pulled_f)
                             pulled_M_all.append(_pulled_M)
 
                     if i == 7:
-                        a = rmp.a_attract(x, dx, self.gl_goal(t))
-                        M = rmp.metric_attract(x, dx, self.gl_goal(t), a)
-                        f = M @ a
+                        f, M = _rmp.goal_attractor.get_natural(x, dx, self.gl_goal(t), self.dobs)
                         
-                        
-                        #M = rmp2.inertia_attract(x, dx, self.gl_goal, np.zeros((3,1)))
-                        #f = rmp2.f_attract(x, dx, self.gl_goal, np.zeros((3,1)),M)
-                        
-                        
-                        _pulled_f, _pulled_M = pullback(f, M, J, dJ, dq)
+                        _pulled_f, _pulled_M = rmp.pullback(f, M, J, dJ, dq)
                         
                         pulled_f_all.append(_pulled_f)
                         pulled_M_all.append(_pulled_M)
@@ -260,27 +243,18 @@ class Simulator:
             pulled_f_all = np.sum(pulled_f_all, axis=0)
             pulled_M_all = np.sum(pulled_M_all, axis=0)
             
-            # # ジョイント制限
-            # a_jl = rmp.a_joint_limit(q, dq, arm.q_max, qrm.q_min)
-            # M_jl = rmp.metric_joint_limit(q)
-            # f_jl = M_jl @ a_jl
-            # pulled_f_all += f_jl
-            # pulled_M_all += M_jl
-            
             
             # ジョイント制限
             if self.joint_limit_avoidance_RMP is not None:
-                M_jl = self.joint_limit_avoidance_RMP.M(q)
-                f_jl = 
+                f, M = self.joint_limit_avoidance_RMP.get_natural(q, dq, arm.q_max, arm.q_min)
+                pulled_f_all += f
+                pulled_M_all += M
             
             ddq = np.linalg.pinv(pulled_M_all) @ pulled_f_all
             
             dstate = np.concatenate([dq, ddq], axis=0)
             dstate = np.ravel(dstate).tolist()
             
-            
-            # 以下 視覚化のためのデータ保存
-            #self.data.add_data(arm, ddq)
             
             return dstate
         
