@@ -55,25 +55,18 @@ class OriginalRMPAttractor:
     def a_attract(self, z, dz, z0):
         """アトラクタ加速度"""
         
-        max_speed = self.attract_max_speed
-        gain = self.attract_gain
-        damp = gain / max_speed
-        alpha = self.attrat_a_damp_r
-        
-        return gain * soft_normal(z0 - z, alpha) - damp * dz
+        damp = self.attract_gain / self.attract_max_speed
+        _a = self.attract_gain * soft_normal(z0 - z, self.attrat_a_damp_r) - damp * dz
+        return _a
     
     def metric_attract(self, z, dz, z0, a):
         """アトラクタ計量"""
         
-        sigma_W = self.attract_sigma_W
-        sigma_H = self.attract_sigma_H
-        alpha = self.attract_A_damp_r
-        
         dis = np.linalg.norm(z0 - z)
-        weight = np.exp(-dis / sigma_W)
-        beta_attract = 1 - np.exp(-1 / 2 * (dis / sigma_H) ** 2)
+        weight = np.exp(-dis / self.attract_sigma_W)
+        beta_attract = 1 - np.exp(-1 / 2 * (dis / self.attract_sigma_H) ** 2)
         
-        return weight * basic_metric_H(a, alpha, beta_attract) # 論文
+        return weight * basic_metric_H(a, self.attract_A_damp_r, beta_attract) # 論文
 
 
 
@@ -82,7 +75,7 @@ class OriginalRMPCollisionAvoidance:
 
     def __init__(self, **kwargs):
         # 障害物加速度
-        self.obs_scale_rep = kwargs.pop('obs_scale_rep')
+        self.obs_scale_rep = kwargs.pop('obs_scale_rep')  # 感知半径？
         self.obs_scale_damp = kwargs.pop('obs_scale_damp')
         self.obs_ratio = kwargs.pop('obs_ratio')
         self.obs_rep_gain = kwargs.pop('obs_rep_gain')
@@ -92,11 +85,7 @@ class OriginalRMPCollisionAvoidance:
     def a_obs(self, z, dz, z0):
         """障害物加速度"""
         
-        scale_rep = self.obs_scale_rep  # 感知半径？
-        scale_damp = self.obs_scale_damp
-        ratio = self.obs_ratio
-        rep_gain = self.obs_rep_gain
-        damp_gain = rep_gain * ratio
+        damp_gain = self.obs_rep_gain * self.obs_ratio
         
         #x = z0 - z  # 反対かも？
         x = z - z0
@@ -106,12 +95,12 @@ class OriginalRMPCollisionAvoidance:
         dis_grad = x / dis  # 距離関数の勾配
         
         # 斥力項．障害物に対する位置ベースの反発力？
-        alpha_rep = rep_gain * np.exp(-dis / scale_rep)  # 斥力の活性化関数
+        alpha_rep = self.obs_rep_gain * np.exp(-dis / self.obs_scale_rep)  # 斥力の活性化関数
         a_rep = alpha_rep * dis_grad  # 斥力項
         
         # ダンピング項．障害物に向かう速度にペナルティを課す？
         P_obs = max(0, -(dz).T @ dis_grad) * dis_grad @ dis_grad.T @ dz  # 零空間射影演算子
-        alpha_damp = damp_gain / (dis / scale_damp + 1e-7)  # ダンピングの活性化関数
+        alpha_damp = damp_gain / (dis / self.obs_scale_damp + 1e-7)  # ダンピングの活性化関数
         a_damp = alpha_damp * P_obs  # ダンピング項
         #print("a_obs = ", a_rep + a_damp)
         return a_rep + a_damp
@@ -141,9 +130,7 @@ class OriginalRMPJointLimitAvoidance:
     def a_joint_limit(self, q, dq, q_max, q_min):
         """ジョイント制限処理加速度"""
         
-        gamma_p = self.jl_gamma_p
-        gamma_d = self.jl_gamma_d
-        z = gamma_p * (-q) - gamma_d * dq
+        z = self.jl_gamma_p * (-q) - self.jl_gamma_p * dq
         #print("z = ", z)
         a = np.linalg.inv(
             D_sigma(q, q_min, q_max)) @ z
@@ -243,16 +230,62 @@ class RMPfromGDSAttractor:
         return f
 
 
+
 class RMPfromGDSCollisionAvoidance:
-    """論文[R1]のRMP"""
+    """論文[R2]のRMP"""
 
     def __init__(self, **kwargs):
-        self.obs_scale_rep = kwargs.pop('obs_scale_rep')
-        self.obs_scale_damp = kwargs.pop('obs_scale_damp')
-        self.obs_ratio = kwargs.pop('obs_ratio')
-        self.obs_rep_gain = kwargs.pop('obs_rep_gain')
-        # 障害物計量
-        self.obs_r = kwargs.pop('obs_r')
+        self.rw = kwargs.pop('rw')
+        self.sigma = kwargs.pop('sigma')
+        self.alpha = kwargs.pop('alpha')
+
+    def _w(self, s):
+        """重み関数"""
+        w = max(0, self.rw - s)**2 / s
+        return w
+
+    def _dwds(self, s):
+        """重み関数のs微分"""
+        return 2 * self.rw**2 / s**3
+    
+    def _u(self, ds):
+        """速度依存計量の速度依存部分"""
+        if ds < 0:
+            return 1 - np.exp(-ds**2 / (2 * self.sigma**2))
+        else:
+            return 0
+    
+    def _dudsdot(self, ds,):
+        if ds < 0:
+            return -np.exp(-ds**2 / (2 * self.sigma**2)) * (-ds / self.sigma**2)
+        else:
+            0
+    
+    def _delta(self, s, ds,):
+        return self._u(ds) + 1/2 * ds * self._dudsdot(ds)
+
+    def _xi(self, s, ds):
+        """曲率"""
+        return 1/2 * self._u(ds) * self._dwds(s) * ds**2
+
+    def _phi_1(self, s):
+        """バリア型ポテンシャル（R2の2次元の例より）"""
+        return 1/2 * self.alpha * self._w(s)**2
+
+    def _grad_dphi_1(self, s):
+        return self.alpha * self._w(s) * self._dwds(s)
+
+    def metric(self, s, ds):
+        """障害物計量"""
+        return self._w(s) * self._delta(s, ds)
+    
+    def f(self, s, ds):
+        """障害物力"""
+        w = self._w(s)
+        grad_phi = self._grad_dphi_1(s)
+        xi = self._xi(s, ds)
+        
+        return -w * grad_phi - xi
 
 
 
