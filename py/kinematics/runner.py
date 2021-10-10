@@ -1,16 +1,16 @@
 """メイン"""
 
 import yaml
-
 import rmp_simulation
 
 
 
 
-
-
 def run(params):
-    """シミュレーションを実行"""
+    """シミュレーションを実行
+    
+    params : yamlでシミュレーション条件を教えて
+    """
     
     with open(params, encoding='UTF-8') as file:
         config = yaml.safe_load(file.read())
@@ -31,6 +31,6 @@ def run(params):
 
 if __name__ == '__main__':
     
-    run('./py/kinematics/config/scean_1.yaml')
+    #run('./py/kinematics/config/scean_1.yaml')
     
-    #run('./py/kinematics/config/tracking.yaml')
+    run('./py/kinematics/config/tracking.yaml')

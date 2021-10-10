@@ -87,14 +87,6 @@ class Simulator:
         start = time.time()
         
         self.rmps = []
-        # for i in range(8):
-        #     if rmp_param[i]['name'] == 'original':
-        #         self.rmps.append(OriginalRMP(**rmp_param[i]))
-        #     elif rmp_param[i]['name'] == 'fromGDS':
-        #         self.rmps.append(RMPfromGDS(**rmp_param[i]))
-    
-    
-        self.rmps = []
         for i in range(8):
             p = rmp_param[i]
             
@@ -169,41 +161,27 @@ class Simulator:
         return
     
     
+    
     def run_simulation(self,):
         
+        epoch = int(self.TIME_SPAN / self.TIME_INTERVAL)
         
-        
-        #self.obs = [np.array([[0.8, -0.6, 1]]).T]
-        
-        
-        # self.obs = [
-        #     np.array([[0.6, -0.6, 1]]).T,
-        #     np.array([[0.6, -0.6, 1.1]]).T,
-        #     np.array([[0.6, -0.6, 0.9]]).T,
-        #     np.array([[0.6, -0.6, 1.2]]).T,
-        # ]
-        
-        
-        # self.obs = environment.make_obstacle(name='curb', R=0.15, center=np.array([[0.6, -0.6, 1]]).T)
-        # self.obs.extend(make_obstacle(name='curb', R=0.15, center=np.array([[0.6, -0.6, 1.5]]).T))
-        # self.obs_plot = np.concatenate(self.obs, axis=1)
-        
-        
-
         
         self.dobs = np.zeros((3, 1))
         
-
-        
         t = np.arange(0.0, self.TIME_SPAN, self.TIME_INTERVAL)
-        print("t size = ", t.shape)
         
         arm = BaxterRobotArmKinematics(self.isLeft)
         
         def _eom(t, state):
+            """scipyに渡すやつ"""
             
+            # 進捗報告（計算の無駄）
             if t > 1 and (int(t) % 2 == 0):
                 print("t = ", '{:.2f}'.format(t))
+            
+            
+            
             
             q = np.array([state[0:7]]).T
             dq = np.array([state[7:14]]).T
@@ -308,14 +286,6 @@ class Simulator:
         print("データ作成時間 = ", time.time() - start)
         print("")
         
-        # # オイラー
-        # state = np.ravel(np.concatenate([arm.q, arm.dq])).tolist()
-        # for i in t:
-        #     dstate = _eom(i, state)
-        #     for j in range(14):
-        #         state[j] = state[j] + dstate[j] * self.TIME_INTERVAL
-        
-
 
         return
 
@@ -327,8 +297,6 @@ class Simulator:
         
         start = time.time()
         print("plot実行中...")
-        
-        
         
         
         # アニメーション
@@ -387,13 +355,6 @@ class Simulator:
                 self.gl_goal(t)[0, 0], self.gl_goal(t)[1, 0], self.gl_goal(t)[2, 0],
                 s = 100, label = 'goal point', marker = '*', color = '#ff7f00', 
                 alpha = 1, linewidths = 1.5, edgecolors = 'red')
-            
-            # _g = _moveing_goal(i*self.TIME_INTERVAL)
-            # ax.scatter(
-            #     _g[0, 0], _g[1, 0], _g[2, 0],
-            #     s = 100, label = 'goal point', marker = '*', color = '#ff7f00', 
-            #     alpha = 1, linewidths = 1.5, edgecolors = 'red')
-            
             
             
             # 障害物点
@@ -500,14 +461,6 @@ class Simulator:
             self.gl_goal(t)[0, 0], self.gl_goal(t)[1, 0], self.gl_goal(t)[2, 0],
             s = 100, label = 'goal point', marker = '*', color = '#ff7f00', 
             alpha = 1, linewidths = 1.5, edgecolors = 'red')
-        
-        # _g = _moveing_goal(i*self.TIME_INTERVAL)
-        # ax.scatter(
-        #     _g[0, 0], _g[1, 0], _g[2, 0],
-        #     s = 100, label = 'goal point', marker = '*', color = '#ff7f00', 
-        #     alpha = 1, linewidths = 1.5, edgecolors = 'red')
-        
-        
         
         # 障害物点
         if self.obs is not None:
