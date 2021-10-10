@@ -1,136 +1,78 @@
+# 基本
 sim_param : 
   isLeft : True
   TIME_INTERVAL : 10
   TIME_INTERVAL : 0.05
 rmp_param : 
   -  # 1
-    name : 'original'
-    attract_max_speed : 2
-    attract_gain : 10
-    attract_a_damp_r : 0.15
-    attract_sigma_W : 1
-    attract_sigma_H : 1
-    attract_A_damp_r : 5
-    obs_scale_rep : 0.2
-    obs_scale_damp : 1
-    obs_ratio : 0.5
-    obs_rep_gain : 0.5e-10
-    obs_r : 1
-    jl_gamma_p : 0.05
-    jl_gamma_d : 0.1
-    jl_lambda : 0.7
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.5
   -  # 2
-    name : 'original'
-    attract_max_speed : 2
-    attract_gain : 10
-    attract_a_damp_r : 0.15
-    attract_sigma_W : 1
-    attract_sigma_H : 1
-    attract_A_damp_r : 5
-    obs_scale_rep : 0.2
-    obs_scale_damp : 1
-    obs_ratio : 0.5
-    obs_rep_gain : 0.5e-10
-    obs_r : 1
-    jl_gamma_p : 0.05
-    jl_gamma_d : 0.1
-    jl_lambda : 0.7
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.5
   -  # 3
-    name : 'original'
-    attract_max_speed : 2
-    attract_gain : 10
-    attract_a_damp_r : 0.15
-    attract_sigma_W : 1
-    attract_sigma_H : 1
-    attract_A_damp_r : 5
-    obs_scale_rep : 0.2
-    obs_scale_damp : 1
-    obs_ratio : 0.5
-    obs_rep_gain : 0.5e-10
-    obs_r : 1
-    jl_gamma_p : 0.05
-    jl_gamma_d : 0.1
-    jl_lambda : 0.7
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.5
   -  # 4
-    name : 'original'
-    attract_max_speed : 2
-    attract_gain : 10
-    attract_a_damp_r : 0.15
-    attract_sigma_W : 1
-    attract_sigma_H : 1
-    attract_A_damp_r : 5
-    obs_scale_rep : 0.2
-    obs_scale_damp : 1
-    obs_ratio : 0.5
-    obs_rep_gain : 0.5e-10
-    obs_r : 1
-    jl_gamma_p : 0.05
-    jl_gamma_d : 0.1
-    jl_lambda : 0.7
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.5
   -  # 5
-    name : 'original'
-    attract_max_speed : 2
-    attract_gain : 10
-    attract_a_damp_r : 0.15
-    attract_sigma_W : 1
-    attract_sigma_H : 1
-    attract_A_damp_r : 5
-    obs_scale_rep : 0.2
-    obs_scale_damp : 1
-    obs_ratio : 0.5
-    obs_rep_gain : 0.5e-10
-    obs_r : 1
-    jl_gamma_p : 0.05
-    jl_gamma_d : 0.1
-    jl_lambda : 0.7
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.5
   -  # 6
-    name : 'original'
-    attract_max_speed : 2
-    attract_gain : 10
-    attract_a_damp_r : 0.15
-    attract_sigma_W : 1
-    attract_sigma_H : 1
-    attract_A_damp_r : 5
-    obs_scale_rep : 0.2
-    obs_scale_damp : 1
-    obs_ratio : 0.5
-    obs_rep_gain : 0.5e-10
-    obs_r : 1
-    jl_gamma_p : 0.05
-    jl_gamma_d : 0.1
-    jl_lambda : 0.7
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.5
   -  # 7
-    name : 'original'
-    attract_max_speed : 2
-    attract_gain : 10
-    attract_a_damp_r : 0.15
-    attract_sigma_W : 1
-    attract_sigma_H : 1
-    attract_A_damp_r : 5
-    obs_scale_rep : 0.2
-    obs_scale_damp : 1
-    obs_ratio : 0.5
-    obs_rep_gain : 0.5e-10
-    obs_r : 1
-    jl_gamma_p : 0.05
-    jl_gamma_d : 0.1
-    jl_lambda : 0.7
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.5
   -  # 8
-    name : 'original'
-    attract_max_speed : 2
-    attract_gain : 10
-    attract_a_damp_r : 0.15
-    attract_sigma_W : 1
-    attract_sigma_H : 1
-    attract_A_damp_r : 5
-    obs_scale_rep : 0.2
-    obs_scale_damp : 1
-    obs_ratio : 0.5
-    obs_rep_gain : 0.5e-10
-    obs_r : 1
-    jl_gamma_p : 0.05
-    jl_gamma_d : 0.1
-    jl_lambda : 0.7
+    goal_attractor :
+      name : 'Original'
+      attract_max_speed : 2
+      attract_gain : 10
+      attract_a_damp_r : 0.15
+      attract_sigma_W : 1
+      attract_sigma_H : 1
+      attract_A_damp_r : 5
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.5
+  -  # ジョイント制限
+    joint_limit_avoidance :
+      name : 'Original'
+      jl_gamma_p : 0.05
+      jl_gamma_d : 0.1
+      jl_lambda : 0.7
 env_param :
   goal :
     name : 'static'
@@ -142,7 +84,7 @@ env_param :
         r : 0.1
         L : 1.0
         center : [[0.25, -0.4, 1]]
-        n : 50
+        n : 1
         theta : 0
         phi : 90
         zeta : 0
@@ -152,7 +94,7 @@ env_param :
         r : 0.1
         L : 1.0
         center : [[0.25, -0.4, 1]]
-        n : 50
+        n : 1
         theta : 90
         phi : 0
         zeta : 0

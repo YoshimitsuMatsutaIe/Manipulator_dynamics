@@ -22,6 +22,7 @@ def pullback(f, M, J, dJ=None, dx= None):
         _f = J.T @ f
         _M = J.T @ M @ J
     else:
+
         _f = J.T @ (f - M @ dJ @ dx)
         _M = J.T @ M @ J
     return _f, _M
@@ -329,7 +330,7 @@ class RMPfromGDSCollisionAvoidance:
         if ds < 0:
             return -np.exp(-ds**2 / (2 * self.sigma**2)) * (-ds / self.sigma**2)
         else:
-            0
+            return 0
     
     def _delta(self, s, ds,):
         return self._u(ds) + 1/2 * ds * self._dudsdot(ds)
@@ -363,8 +364,10 @@ class RMPfromGDSCollisionAvoidance:
         ・RMP-treeを実装後には直す
         """
         
-        s = np.linalg.norm(x0 - x)
-        ds = np.linalg.norm(dx0 - dx)
+        S = x0 - x
+        V = dx0 - dx
+        s = np.linalg.norm(S)
+        ds = 1/s * (S.T @ V)
         
         m = self._inertia(s, ds)
         f = self._f(s, ds,)
@@ -372,8 +375,11 @@ class RMPfromGDSCollisionAvoidance:
         J = -(x - dx).T / s
         dJ = -1 / s**2 * ((dx0 - dx).T - (x0 - dx).T*ds)
         
-        f, M = pullback(f, m, J, dJ, ds)
+        f = J.T * (f - m * dJ @ dx)
+        M = J.T @ m @ J
         
+        # print('f = ', f)
+        # print('M = ', M)
         return f, M
 
 
