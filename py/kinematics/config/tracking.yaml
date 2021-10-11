@@ -1,7 +1,7 @@
 # 基本
 sim_param : 
   isLeft : True
-  TIME_INTERVAL : 10
+  TIME_SPAN : 60
   TIME_INTERVAL : 0.05
 rmp_param : 
   -  # 1

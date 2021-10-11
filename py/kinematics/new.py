@@ -95,9 +95,9 @@ class BaxterRobotArmKinematics:
     
     r_bars_in_1 = [
         np.array([[0, L1/2, -L0/2, 1]]).T,
-        np.array([[0, -L1/2, -L0/2, 1]]).T,
-        np.array([[L1/2, 0, -L0/2, 1]]).T,
-        np.array([[-L1/2, 0, -L0/2, 1]]).T,
+        # np.array([[0, -L1/2, -L0/2, 1]]).T,
+        # np.array([[L1/2, 0, -L0/2, 1]]).T,
+        # np.array([[-L1/2, 0, -L0/2, 1]]).T,
     ]  # 1座標系からみた制御点位置
 
     r_bars_in_2 = [

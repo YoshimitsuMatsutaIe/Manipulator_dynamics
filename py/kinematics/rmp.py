@@ -313,12 +313,17 @@ class RMPfromGDSCollisionAvoidance:
 
     def _w(self, s):
         """重み関数"""
-        w = max(0, self.rw - s)**2 / s
-        return w
+        if s < self.rw:
+            return (self.rw - s)**2 / s
+        else:
+            return 0
 
     def _dwds(self, s):
         """重み関数のs微分"""
-        return 2 * self.rw**2 / s**3
+        if s < self.rw:
+            return 1 - self.rw**2 / s**3
+        else:
+            return 0
     
     def _u(self, ds):
         """速度依存計量の速度依存部分"""

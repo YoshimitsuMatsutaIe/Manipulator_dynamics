@@ -128,15 +128,33 @@ def set_obstacle(obs_param):
     return obs
 
 
-data1 = [
-    ["cylinder", 0.1, 1.0, np.array([[0.25, -0.4, 1]]).T, 50, 0, pi/2, 0],
-    ["cylinder", 0.1, 1.0, np.array([[0.25, -0.4, 1]]).T, 50, pi/2, 0, 0]
+data1 =[
+    {
+        'name' : 'cylinder',
+        'data' : {
+            'r' : 0.1,
+            'L' : 1.0,
+            'center' : [[0.25, -0.7, 1]],
+            'n' : 100,
+            'theta' : 0,
+            'phi' : 0,
+            'zeta' : 0,
+        },
+    },
+    {
+        'name' : 'cylinder',
+        'data' : {
+            'r' : 0.06,
+            'L' : 1.0,
+            'center' : [[-0.25, -0.4, 1.25]],
+            'n' : 100,
+            'theta' : 60,
+            'phi' : 30,
+            'zeta' : 30,
+        },
+    },
 ]
 
-
-data2 = [
-    ['field', 1, 0.5, np.array([[0.25, -0.5, 1.15]]).T, 100, 0, 0, 0]
-]  # 机
 
 
 
@@ -179,6 +197,10 @@ class Goal:
 
 
 def _test(data):
+
+
+    goal = np.array([[0.0, -0.5, 1]]).T
+
 
     right = BaxterRobotArmKinematics(isLeft=False)
     os_r = right.get_joint_positions()
@@ -249,7 +271,10 @@ def _test(data):
     #ax.legend()
     ax.set_box_aspect((1, 1, 1))
 
-
+    ax.scatter(
+        goal[0, 0], goal[1, 0], goal[2, 0],
+        s = 100, label = 'goal point', marker = '*', color = '#ff7f00', 
+        alpha = 1, linewidths = 1.5, edgecolors = 'red')
 
     obs = set_obstacle(data)
     obs = np.concatenate(obs, axis=1)
@@ -263,4 +288,4 @@ def _test(data):
 
 
 if __name__ == '__main__':
-    _test(data2)
+    _test(data1)

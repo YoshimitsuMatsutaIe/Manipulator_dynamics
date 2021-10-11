@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as anm
 import scipy.integrate as integrate
 
+
+from numba import jit
 import tqdm
 import time
 
@@ -146,8 +148,7 @@ class Simulator:
         goal_param = env_param['goal']
         obs_param = env_param['obstacle']
         
-        
-        print(goal_param)
+        #print(goal_param)
         
         self.gl_goal = environment.Goal(**goal_param).goal
         #self.gl_goal = np.array([[0.3, -0.75, 1]]).T
@@ -173,6 +174,7 @@ class Simulator:
         
         arm = BaxterRobotArmKinematics(self.isLeft)
         
+        #@jit
         def _eom(t, state):
             """scipyに渡すやつ"""
             

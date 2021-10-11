@@ -1,0 +1,99 @@
+sim_param : 
+  isLeft : True
+  TIME_SPAN : 5
+  TIME_INTERVAL : 0.05
+rmp_param : 
+  -  # 1
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.3
+      sigma : 1
+      alpha : 0.05
+  -  # 2
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.3
+      sigma : 1
+      alpha : 0.05
+  -  # 3
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.3
+      sigma : 1
+      alpha : 0.05
+  -  # 4
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.3
+      sigma : 1
+      alpha : 0.05
+  -  # 5
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.3
+      sigma : 1
+      alpha : 0.05
+  -  # 6
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.3
+      sigma : 1
+      alpha : 0.05
+  -  # 7
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.3
+      sigma : 1
+      alpha : 0.05
+  -  # 8
+    goal_attractor :
+      name : 'Original'
+      attract_max_speed : 2
+      attract_gain : 10
+      attract_a_damp_r : 0.15
+      attract_sigma_W : 1
+      attract_sigma_H : 1
+      attract_A_damp_r : 5
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.5
+  -  # ジョイント制限
+    joint_limit_avoidance :
+      # name : 'Original'
+      # jl_gamma_p : 0.05
+      # jl_gamma_d : 0.1
+      # jl_lambda : 0.7
+env_param :
+  goal :
+    name : 'static'
+    center : [[0.0, -0.5, 1]]
+  obstacle :
+    -
+      name : 'cylinder'
+      data :
+        r : 0.1
+        L : 1.0
+        center : [[0.25, -0.7, 1]]
+        n : 100
+        theta : 0
+        phi : 0
+        zeta : 0
+    -
+      name : 'cylinder'
+      data:
+        r : 0.06
+        L : 1.0
+        center : [[-0.25, -0.4, 1.25]]
+        n : 50
+        theta : 60
+        phi : 30
+        zeta : 30
