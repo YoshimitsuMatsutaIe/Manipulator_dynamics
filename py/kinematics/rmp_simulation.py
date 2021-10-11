@@ -7,7 +7,7 @@ import matplotlib.animation as anm
 import scipy.integrate as integrate
 
 
-from numba import jit
+#from numba import jit
 import tqdm
 import time
 
