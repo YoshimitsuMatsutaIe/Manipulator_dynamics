@@ -2,6 +2,9 @@
 
 
 import numpy as np
+
+np.random.seed(0)  # 固定
+
 from math import cos, sin, tan, pi
 import matplotlib.pyplot as plt
 

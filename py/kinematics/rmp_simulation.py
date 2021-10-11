@@ -7,7 +7,7 @@ import matplotlib.animation as anm
 import scipy.integrate as integrate
 
 
-#from numba import jit
+
 import tqdm
 import time
 
@@ -74,7 +74,7 @@ class SimulationData:
 class Simulator:
     """"""
     
-    def __init__(self, isLeft=True, TIME_SPAN=30, TIME_INTERVAL=0.05):
+    def __init__(self, isLeft, TIME_SPAN, TIME_INTERVAL):
         self.isLeft = isLeft
         self.TIME_SPAN = TIME_SPAN
         self.TIME_INTERVAL = TIME_INTERVAL
@@ -165,25 +165,21 @@ class Simulator:
     
     def run_simulation(self,):
         
-        epoch = int(self.TIME_SPAN / self.TIME_INTERVAL)
-        
-        
         self.dobs = np.zeros((3, 1))
         
         t = np.arange(0.0, self.TIME_SPAN, self.TIME_INTERVAL)
         
         arm = BaxterRobotArmKinematics(self.isLeft)
         
-        #@jit
+
         def _eom(t, state):
             """scipyに渡すやつ"""
             
             # 進捗報告（計算の無駄）
-            if t > 1 and (int(t) % 2 == 0):
-                print("t = ", '{:.2f}'.format(t))
+            # if int(t/self.TIME_INTERVAL) % 100 == 0:
+            #     print("t = ", '{:.2f}'.format(t))
             
-            
-            
+            print(t)
             
             q = np.array([state[0:7]]).T
             dq = np.array([state[7:14]]).T
@@ -239,10 +235,9 @@ class Simulator:
             return dstate
         
         
+        ### scipy使用 ###
         print("シミュレーション実行中...")
         start = time.time()
-        
-        # scipy使用
         self.sol = integrate.solve_ivp(
             fun=_eom,
             t_span=(0.0, self.TIME_SPAN),
@@ -251,9 +246,42 @@ class Simulator:
             #method='LSODA',
             t_eval=t,
         )
+
         print("シミュレーション実行終了")
         print("シミュレーション実行時間 = ", time.time() - start)
         print("")
+        
+        
+        # ### 自作のオイラー法使用 ###
+        # class JisakuSol:
+        #     """solve_ivpのやつ"""
+        #     y = [
+        #         [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+        #     ]
+        
+        # print("シミュレーション実行中...")
+        
+        # start = time.time()
+        
+        # self.sol = JisakuSol()
+        
+        # state = np.ravel(np.concatenate([arm.q, arm.dq])).tolist()
+        # for i in range(14):
+        #     self.sol.y[i].append(state[i])
+        
+        # for i in range(int(self.TIME_SPAN / self.TIME_INTERVAL)):
+        #     print(i)
+        #     t = i * self.TIME_INTERVAL
+        #     print(type(state))
+        #     dstate = _eom(t, state)
+        #     print(type(dstate))
+        #     state = [state[j] + dstate[j]*self.TIME_INTERVAL for j in range(14)]
+        #     for k in range(14):
+        #         self.sol.y[k].append(state[k])
+        
+        # print("シミュレーション実行終了")
+        # print("シミュレーション実行時間 = ", time.time() - start)
+        # print("")
         
         # データ作成
         print("データ作成中...")
@@ -288,7 +316,12 @@ class Simulator:
         print("データ作成時間 = ", time.time() - start)
         print("")
         
+        
+        
 
+
+        
+        
         return
 
 

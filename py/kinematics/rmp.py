@@ -313,28 +313,34 @@ class RMPfromGDSCollisionAvoidance:
 
     def _w(self, s):
         """重み関数"""
-        if s < self.rw:
-            return (self.rw - s)**2 / s
-        else:
-            return 0
+        # if s < self.rw:
+        #     return (self.rw - s)**2 / s
+        # else:
+        #     return 0
+        
+        return 1/s**4
 
     def _dwds(self, s):
         """重み関数のs微分"""
-        if s < self.rw:
-            return 1 - self.rw**2 / s**3
-        else:
-            return 0
+        # if s < self.rw:
+        #     return 1 - self.rw**2 / s**3
+        # else:
+        #     return 0
+
+        return -4*s**-5
     
     def _u(self, ds):
         """速度依存計量の速度依存部分"""
         if ds < 0:
             return 1 - np.exp(-ds**2 / (2 * self.sigma**2))
+            #return 0
         else:
             return 0
     
     def _dudsdot(self, ds,):
         if ds < 0:
             return -np.exp(-ds**2 / (2 * self.sigma**2)) * (-ds / self.sigma**2)
+            #return 0
         else:
             return 0
     
@@ -347,10 +353,10 @@ class RMPfromGDSCollisionAvoidance:
 
     def _phi_1(self, s):
         """バリア型ポテンシャル（R2の2次元の例より）"""
-        return 1/2 * self.alpha * self._w(s)**2
+        return -1/2 * self.alpha * s**-2
 
     def _grad_dphi_1(self, s):
-        return self.alpha * self._w(s) * self._dwds(s)
+        return 1 * self.alpha * s**-3
 
     def _inertia(self, s, ds):
         """障害物計量"""
@@ -383,6 +389,9 @@ class RMPfromGDSCollisionAvoidance:
         
         f = J.T * (f - m * dJ @ dx)
         M = J.T @ m @ J
+        
+        # f = J.T * f
+        # M = J.T @ m @ J
         
         # print('f = ', f)
         # print('M = ', M)
