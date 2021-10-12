@@ -1,1 +1,4 @@
 *.gif
+*.vscide
+
+__pycache__/
