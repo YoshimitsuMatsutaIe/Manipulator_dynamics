@@ -35,6 +35,6 @@ if __name__ == '__main__':
     
     #run('./py/kinematics/config/tracking.yaml')
     
-    #run('./py/kinematics/config/use_RMPfromGDS_test.yaml')
+    run('./py/kinematics/config/use_RMPfromGDS_test.yaml')
     
-    run('./py/kinematics/config/test.yaml')
+    #run('./py/kinematics/config/test.yaml')

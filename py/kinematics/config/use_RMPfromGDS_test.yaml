@@ -78,23 +78,27 @@ env_param :
     name : 'static'
     center : [[0.3, -0.75, 1]]
   obstacle :
+    # -
+    #   name : 'cylinder'
+    #   data :
+    #     r : 0.1
+    #     L : 1.0
+    #     center : [[0.25, -0.4, 1]]
+    #     n : 100
+    #     theta : 0
+    #     phi : 90
+    #     zeta : 0
+    # -
+    #   name : 'cylinder'
+    #   data:
+    #     r : 0.1
+    #     L : 1.0
+    #     center : [[0.25, -0.4, 1]]
+    #     n : 100
+    #     theta : 90
+    #     phi : 0
+    #     zeta : 0
     -
-      name : 'cylinder'
+      name : 'point'
       data :
-        r : 0.1
-        L : 1.0
         center : [[0.25, -0.4, 1]]
-        n : 100
-        theta : 0
-        phi : 90
-        zeta : 0
-    -
-      name : 'cylinder'
-      data:
-        r : 0.1
-        L : 1.0
-        center : [[0.25, -0.4, 1]]
-        n : 100
-        theta : 90
-        phi : 0
-        zeta : 0

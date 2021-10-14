@@ -33,6 +33,10 @@ def _rotate(theta, phi, zeta):
     return Rx @ Ry @ Rz
 
 
+def _set_point(center):
+    """点を置く"""
+    return [np.array(center).T]
+
 def _set_sphere(r, center, n):
     """
     
@@ -103,6 +107,7 @@ def _set_field(lx, ly, center, n, theta=0, phi=0, zeta=0):
     return _rotate(theta, phi, zeta) @ obs + center
 
 
+
 def _set_box(lx, ly, lz, center, n, theta=0, phi=0, zeta=0,):
     
     pass
@@ -112,7 +117,9 @@ def set_obstacle(obs_param):
     """固定障害物を返す"""
     
     def _choice(name):
-        if name == "cylinder":
+        if name == 'point':
+            return _set_point
+        elif name == "cylinder":
             return _set_cylinder
         elif name == "sphere":
             return _set_sphere
