@@ -21,7 +21,7 @@ function pullback(f, M, J, dJ=nothing, dx=nothing)
 end
 
 
-mutable struct OriginalRMPAttractorParam{T}
+struct OriginalRMPAttractor{T}
     max_speed::T
     gain::T
     ddq_damp_r::T
@@ -30,7 +30,7 @@ mutable struct OriginalRMPAttractorParam{T}
     metric_damp_r::T
 end
 
-mutable struct OriginalRMPCollisionAvoidanceParam{T}
+struct OriginalRMPCollisionAvoidance{T}
     scale_rep::T
     scale_damp::T
     ratio::T
@@ -52,3 +52,6 @@ end
 
 function basic_metric_H(f, alpha, beta)
     return beta * metric_stretch(f, alpha) + (1 - beta) * eye()
+end
+
+
