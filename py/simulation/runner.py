@@ -1,7 +1,9 @@
 """メイン"""
 
 import yaml
-import rmp_simulation
+
+
+from . import rmp_simulation
 
 
 
@@ -31,10 +33,10 @@ def run(params):
 
 if __name__ == '__main__':
     
-    #run('./py/kinematics/config/scean_1.yaml')
+    #run('./config/scean_1.yaml')
     
-    #run('./py/kinematics/config/tracking.yaml')
+    #run('./config/tracking.yaml')
     
-    run('./py/kinematics/config/use_RMPfromGDS_test.yaml')
+    run('./config/use_RMPfromGDS_test.yaml')
     
-    #run('./py/kinematics/config/test.yaml')
+    #run('.//config/test.yaml')

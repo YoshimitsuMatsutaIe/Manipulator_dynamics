@@ -8,7 +8,8 @@ np.random.seed(0)  # 固定
 from math import cos, sin, tan, pi
 import matplotlib.pyplot as plt
 
-from new import BaxterRobotArmKinematics
+
+from ..kinematics.new import BaxterRobotArmKinematics
 
 
 def _rotate(theta, phi, zeta):
