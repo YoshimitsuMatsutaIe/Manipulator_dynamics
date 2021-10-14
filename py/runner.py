@@ -3,7 +3,7 @@
 import yaml
 
 
-from . import rmp_simulation
+import rmp_simulation
 
 
 

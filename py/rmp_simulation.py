@@ -11,9 +11,9 @@ import scipy.integrate as integrate
 import tqdm
 import time
 
-from . import environment
-from ..kinematics.new import BaxterRobotArmKinematics
-from . import rmp
+import environment
+from kinematics import BaxterRobotArmKinematics
+import rmp
 
 
 

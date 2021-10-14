@@ -256,7 +256,16 @@ fig = plot(aspect_ratio = 1,)
 fig = draw_arm(fig, qr, DHparams_r, true)
 fig = draw_arm(fig, ql, DHparams_l, false)
 
+# 回転
+@gif for i in range(0, stop = 360*2, length = 100)
+    plot!(fig, camera = (i, 0),)
+end
 
+# スライダー
+using Interact
+@manipulate for i in -180:15:180
+    plot!(fig, camera = (i, 0),)
+end
 
 # function draw_arm(ax, q, DHparams, name)
 #     """アームをplot by PyPlot

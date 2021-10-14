@@ -9,7 +9,7 @@ from math import cos, sin, tan, pi
 import matplotlib.pyplot as plt
 
 
-from ..kinematics.new import BaxterRobotArmKinematics
+from kinematics import BaxterRobotArmKinematics
 
 
 def _rotate(theta, phi, zeta):
