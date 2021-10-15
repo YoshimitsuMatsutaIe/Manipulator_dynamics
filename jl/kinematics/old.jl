@@ -1,9 +1,12 @@
 using CPUTime
 using Plots
 using LinearAlgebra
-using StaticArrays
-using ArraysOfArrays
 
+
+include("../utils.jl")
+
+
+"""DHパラメータ（修正？）"""
 mutable struct DHparam{T}
     α::T
     a::T
@@ -26,7 +29,15 @@ const L6 = 368.3e-3
 
 const q_neutral = [0; -31; 0; 43; 0; 72; 0] * pi/180  # ニュートラルの姿勢
 
-
+const DHparams_neutral = [
+    DHparam(0.0, 0.0, 0.0, q_neutral[1])
+    DHparam(-pi/2, L1, 0.0, q_neutral[2]+pi/2)
+    DHparam(pi/2, 0.0, L2, q_neutral[3])
+    DHparam(-pi/2, L3, 0.0, q_neutral[4])
+    DHparam(pi/2, 0.0, L4, q_neutral[5])
+    DHparam(-pi/2, L5, 0.0, q_neutral[6])
+    DHparam(pi/2, 0.0, 0.0, q_neutral[7])
+]
 
 # 制御点
 const cpoints_local = (
@@ -119,7 +130,7 @@ const HTM_A = [
 
 
 """DHparamを更新"""
-function update_DHparams(DHparams, q)
+function update_DHparams(q, DHparams=DHparams_neutral)
     q[2] = q[2] + pi/2
     for i in 1:7
         DHparams[i].θ = q[i]
@@ -127,15 +138,12 @@ function update_DHparams(DHparams, q)
     DHparams
 end
 
-function split_vec_of_arrays(u)
-    vec.(u) |>
-    x -> VectorOfSimilarVectors(x).data |>
-    transpose |>
-    VectorOfSimilarVectors
-end
 
 
-"""同時変換行列(i-1)T(i)"""
+"""
+    HTM(p::DHparam)
+同時変換行列(i-1)T(i)
+"""
 function HTM(p::DHparam{T}) where T
     [
         cos(p.θ) -sin(p.θ) 0.0 p.a
@@ -253,7 +261,9 @@ function calc_jacobians(
 end
 
 
-"""制御点の位置と速度を計算"""
+"""制御点の位置と速度を計算
+
+"""
 function calc_cpoint_x_and_dx_global(
     HTMs_global::Vector{Matrix{T}},
     Jos_cpoints_all::Vector{Vector{Matrix{T}}},
@@ -284,40 +294,23 @@ end
 
 
 """全部計算"""
-function calc_all(q=q_neutral, dq=zeros(Float64, 7, 1))
-    # qr = q_neutral  # 右手の関節角度ベクトル
-    # ql = q_neutral  # 左手の関節角度ベクトル
-
-    # DHparams_r = [
-    #     DHparam(0.0, 0.0, 0.0, qr[1])
-    #     DHparam(-pi/2, L1, 0.0, qr[2]+pi/2)
-    #     DHparam(pi/2, 0.0, L2, qr[3])
-    #     DHparam(-pi/2, L3, 0.0, qr[4])
-    #     DHparam(pi/2, 0.0, L4, qr[5])
-    #     DHparam(-pi/2, L5, 0.0, qr[6])
-    #     DHparam(pi/2, 0.0, 0.0, qr[7])
-    # ]
-
-    DHparams = [
-        DHparam(0.0, 0.0, 0.0, q[1])
-        DHparam(-pi/2, L1, 0.0, q[2]+pi/2)
-        DHparam(pi/2, 0.0, L2, q[3])
-        DHparam(-pi/2, L3, 0.0, q[4])
-        DHparam(pi/2, 0.0, L4, q[5])
-        DHparam(-pi/2, L5, 0.0, q[6])
-        DHparam(pi/2, 0.0, 0.0, q[7])
-    ]
-    
-    DHparams = update_DHparams(DHparams, q)
+function calc_all(q=q_neutral, dq=zeros(Float64, 7, 1),)
+    DHparams = update_DHparams(q)
     HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
     Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)
     Jos_joint_all, Jos_cpoint_all = calc_jacobians(Jax_all, Jay_all, Jaz_all, Jo_all)
     cpoints_x_global, cpoints_dx_global = calc_cpoint_x_and_dx_global(
         HTMs_global, Jos_cpoint_all, dq
     )
+    return (
+        HTMs_local, HTMs_global,
+        Jax_all, Jay_all, Jaz_all, Jo_all,
+        Jos_joint_all, Jos_cpoint_all,
+        cpoints_x_global, cpoints_dx_global,
+    )
 end
 
-#@time for i in 1:1; calc_all() end
+@time for i in 1:1; calc_all() end
 
 
 # function draw_arm(fig, q, DHparams, name)

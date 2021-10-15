@@ -62,7 +62,7 @@ end
 
 
 """目標加速度 from OirginalRMP"""
-function ddq(p::OriginalRMPAttractor{T}, z, dz, z0) where T
+function ddz(p::OriginalRMPAttractor{T}, z, dz, z0) where T
     damp = p.gain / p.max_speed
     a = p.gain * soft_normal(z0-z, p.r) - damp*dz
     return a
@@ -78,7 +78,7 @@ end
 
 """canonical form []"""
 function get_canonical(p::OriginalRMPAttractor{T}, z, dz, z0) where T
-    a = ddq(p, z, dz, z0)
+    a = ddz(p, z, dz, z0)
     M = inertia_matrix(p, z, dz, z0, a)
     return a, M
 end
@@ -101,7 +101,7 @@ struct OriginalRMPCollisionAvoidance{T}
 end
 
 """障害物回避加速度  from OirginalRMP"""
-function ddq(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
+function ddz(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
     
     x = z - z0
     d = norm(x)
@@ -129,7 +129,7 @@ end
 
 """canonical form []"""
 function get_canonical(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
-    a = ddq(p, z, dz, z0)
+    a = ddz(p, z, dz, z0)
     M = inertia_matrix(p, z, dz, z0, a)
     return a, M
 end
@@ -148,7 +148,8 @@ struct OriginalJointLimitAvoidance{T}
     λ::T
 end
 
-function ddq(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
+"""ジョイント制限回避加速度 from OriginalRMP"""
+function ddz(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
     z = p.γ_p * (-q) - p.γ_d * dq
     a = inv(D_sigma(q, q_min, q_max)) * z
     return a
@@ -160,7 +161,7 @@ end
 
 """canonical form []"""
 function get_canonical(p::OriginalJointLimitAvoidance{T}, q, dq, q_miax, q_min) where T
-    a = ddq(p, q, dq, q_max, q_min)
+    a = ddz(p, q, dq, q_max, q_min)
     M = inertia_matrix(p, q, dq)
     return a, M
 end
