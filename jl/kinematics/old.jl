@@ -181,49 +181,8 @@ function HTM(p::DHparam{T}) where T
 end
 
 
+
 function get_HTMs(DHparams::Vector{DHparam{T}}) where T
-    HTMs_all = Array{T}(undef, 4, 40)
-    HTMs_Wo_all = Array{T}(undef, 4, 40)
-    for i in 1:10
-        if i == 1
-            HTMs_all[:, 4*(i-1)+1:4*(i)] = HTM_BL_Wo
-            HTMs_Wo_all[:, 4*(i-1)+1:4*(i)] = HTM_BL_Wo
-        elseif i == 2
-            HTMs_all[:, 4*(i-1)+1:4*(i)] = HTM_0_BL
-            HTMs_Wo_all[:, 4*(i-1)+1:4*(i)] = HTMs_Wo_all[:, 4*(i-2)+1:4*(i-1)] * HTM_0_BL
-        elseif i == 10
-            HTMs_all[:, 4*(i-1)+1:4*(i)] = HTM_GR_7
-            HTMs_Wo_all[:, 4*(i-1)+1:4*(i)] = HTMs_Wo_all[:, 4*(i-2)+1:4*(i-1)] * HTM_GR_7
-        else
-            HTMs_all[:, 4*(i-1)+1:4*(i)] = HTM(DHparams[i-2])
-            HTMs_Wo_all[:, 4*(i-1)+1:4*(i)] = HTMs_Wo_all[:, 4*(i-2)+1:4*(i-1)] * HTMs_all[:, 4*(i-1)+1:4*(i)]
-        end
-    end
-    HTMs_all, HTMs_Wo_all
-end
-
-function get_HTMs_2(DHparams::Vector{DHparam{T}}) where T
-    HTMs = []
-    HTMs_Wo = []
-    for i in 1:10
-        if i == 1
-            push!(HTMs, HTM_BL_Wo)
-            push!(HTMs_Wo, HTM_BL_Wo)
-        elseif i == 2
-            push!(HTMs, HTM_0_BL)
-            push!(HTMs_Wo, HTMs_Wo[i-1] * HTM_0_BL)
-        elseif i == 10
-            push!(HTMs, HTM_GR_7)
-            push!(HTMs_Wo, HTMs_Wo[i-1] * HTM_GR_7)
-        else
-            push!(HTMs, HTM(DHparams[i-2]))
-            push!(HTMs_Wo, HTMs_Wo[i-1] * HTMs[i])
-        end
-    end
-    HTMs, HTMs_Wo
-end
-
-function get_HTMs_3(DHparams::Vector{DHparam{T}}) where T
     HTMs = Vector{Matrix{T}}(undef, 10)
     HTMs_Wo = Vector{Matrix{T}}(undef, 10)
     for i in 1:10
@@ -243,10 +202,6 @@ function get_HTMs_3(DHparams::Vector{DHparam{T}}) where T
     end
     HTMs, HTMs_Wo
 end
-
-@time HTMs_all, HTMs_W_all = get_HTMs(DHparams_l)
-@time HTMs_all_2, HTMs_W_all_2 = get_HTMs_2(DHparams_l)
-@time HTMs_all_3, HTMs_W_all_3 = get_HTMs_3(DHparams_l)
 
 
 
