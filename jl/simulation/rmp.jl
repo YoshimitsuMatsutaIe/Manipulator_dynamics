@@ -61,14 +61,14 @@ struct OriginalRMPAttractor{T}
 end
 
 
-"""加速度"""
+"""目標加速度 from OirginalRMP"""
 function ddq(p::OriginalRMPAttractor{T}, z, dz, z0) where T
     damp = p.gain / p.max_speed
     a = p.gain * soft_normal(z0-z, p.r) - damp*dz
     return a
 end
 
-"""計量"""
+"""目標計量  from OirginalRMP"""
 function inertia_matrix(p::OriginalRMPAttractor{T}, z, dz, z0, ddq) where T
     dis = norm(z0 - z)
     weight = exp(-dis / p.simga_W)
@@ -98,4 +98,24 @@ struct OriginalRMPCollisionAvoidance{T}
     ratio::T
     gain::T
     r::T
+end
+
+"""障害物回避加速度  from OirginalRMP"""
+function ddq(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
+    
+    x = z - z0
+    d = norm(x)
+    ∇d = x / d
+
+    # 斥力項
+    α_rep = p.gain * exp(-d / p.scale_rep)
+    ddq_rep = α_rep * ∇dis
+
+    # ダンピング項
+    P_obs = max(0, -dz' * ∇d) * ∇d * ∇d' * dz
+    damp_gain = p.gain * p.ratio
+    α_damp = damp_gain / (d / p.scale_damp + 1e-7)
+    ddq_damp = α_damp * P_obs
+
+    return ddq_rep + ddq_damp
 end
