@@ -180,7 +180,7 @@ class OriginalRMPJointLimitAvoidance:
     def _a(self, q, dq, q_max, q_min):
         """ジョイント制限処理加速度"""
         
-        z = self.jl_gamma_p * (-q) - self.jl_gamma_p * dq
+        z = self.jl_gamma_p * (-q) - self.jl_gamma_d * dq
         #print("z = ", z)
         a = np.linalg.inv(
             D_sigma(q, q_min, q_max)) @ z

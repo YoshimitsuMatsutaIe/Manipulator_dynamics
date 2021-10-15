@@ -50,7 +50,7 @@ function D_sigma(q, q_min, q_max)
 end
 
 
-
+"""OriginalRMPの目標到達制御器のパラメータ"""
 struct OriginalRMPAttractor{T}
     max_speed::T
     gain::T
@@ -105,11 +105,11 @@ function ddq(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
     
     x = z - z0
     d = norm(x)
-    ∇d = x / d
+    ∇d = x / d  # 勾配
 
     # 斥力項
     α_rep = p.gain * exp(-d / p.scale_rep)
-    ddq_rep = α_rep * ∇dis
+    ddq_rep = α_rep * ∇d
 
     # ダンピング項
     P_obs = max(0, -dz' * ∇d) * ∇d * ∇d' * dz
@@ -119,3 +119,58 @@ function ddq(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
 
     return ddq_rep + ddq_damp
 end
+
+"""障害物計量 from OriginalRMP"""
+function inertia_matrix(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0, ddq) where T
+    d = norm(z - z0)
+    weight = (d / p.r)^2 - 2 * d / r + 1
+    return weight * eye(3)
+end
+
+"""canonical form []"""
+function get_canonical(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
+    a = ddq(p, z, dz, z0)
+    M = inertia_matrix(p, z, dz, z0, a)
+    return a, M
+end
+
+"""natural form ()"""
+function get_natural(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
+    a, M = get_canonical(p, z, dz, z0)
+    f = M * a
+    return f, M
+end
+
+
+struct OriginalJointLimitAvoidance{T}
+    γ_p::T
+    γ_d::T
+    λ::T
+end
+
+function ddq(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
+    z = p.γ_p * (-q) - p.γ_d * dq
+    a = inv(D_sigma(q, q_min, q_max)) * z
+    return a
+end
+
+function inertia_matrix(p::OriginalJointLimitAvoidance{T}, q, dq) where T
+    return p.λ * eye(ndims(q))
+end
+
+"""canonical form []"""
+function get_canonical(p::OriginalJointLimitAvoidance{T}, q, dq, q_miax, q_min) where T
+    a = ddq(p, q, dq, q_max, q_min)
+    M = inertia_matrix(p, q, dq)
+    return a, M
+end
+
+
+"""natural form ()"""
+function get_natural(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
+    a, M = get_canonical(p, q, dq, q_max, q_min)
+    f = M * a
+    return f, M
+end
+
+
