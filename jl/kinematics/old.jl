@@ -26,28 +26,7 @@ const L6 = 368.3e-3
 
 const q_neutral = [0; -31; 0; 43; 0; 72; 0] * pi/180  # ニュートラルの姿勢
 
-qr = q_neutral  # 右手の関節角度ベクトル
-ql = q_neutral  # 左手の関節角度ベクトル
 
-DHparams_r = [
-    DHparam(0.0, 0.0, 0.0, qr[1])
-    DHparam(-pi/2, L1, 0.0, qr[2]+pi/2)
-    DHparam(pi/2, 0.0, L2, qr[3])
-    DHparam(-pi/2, L3, 0.0, qr[4])
-    DHparam(pi/2, 0.0, L4, qr[5])
-    DHparam(-pi/2, L5, 0.0, qr[6])
-    DHparam(pi/2, 0.0, 0.0, qr[7])
-]
-
-DHparams_l = [
-    DHparam(0.0, 0.0, 0.0, ql[1])
-    DHparam(-pi/2, L1, 0.0, ql[2]+pi/2)
-    DHparam(pi/2, 0.0, L2, ql[3])
-    DHparam(-pi/2, L3, 0.0, ql[4])
-    DHparam(pi/2, 0.0, L4, ql[5])
-    DHparam(-pi/2, L5, 0.0, ql[6])
-    DHparam(pi/2, 0.0, 0.0, ql[7])
-]
 
 # 制御点
 const cpoints_local = (
@@ -136,6 +115,7 @@ const HTM_A = [
     0.0 0.0 0.0 0.0
     0.0 0.0 0.0 0.0
 ]  # 偏微分演算行列
+
 
 
 """DHparamを更新"""
@@ -303,18 +283,41 @@ function calc_cpoint_x_and_dx_global(
 end
 
 
-function test(DHparams)
-    dq = zeros(Float64, 7, 1)
+"""全部計算"""
+function calc_all(q=q_neutral, dq=zeros(Float64, 7, 1))
+    # qr = q_neutral  # 右手の関節角度ベクトル
+    # ql = q_neutral  # 左手の関節角度ベクトル
+
+    # DHparams_r = [
+    #     DHparam(0.0, 0.0, 0.0, qr[1])
+    #     DHparam(-pi/2, L1, 0.0, qr[2]+pi/2)
+    #     DHparam(pi/2, 0.0, L2, qr[3])
+    #     DHparam(-pi/2, L3, 0.0, qr[4])
+    #     DHparam(pi/2, 0.0, L4, qr[5])
+    #     DHparam(-pi/2, L5, 0.0, qr[6])
+    #     DHparam(pi/2, 0.0, 0.0, qr[7])
+    # ]
+
+    DHparams = [
+        DHparam(0.0, 0.0, 0.0, q[1])
+        DHparam(-pi/2, L1, 0.0, q[2]+pi/2)
+        DHparam(pi/2, 0.0, L2, q[3])
+        DHparam(-pi/2, L3, 0.0, q[4])
+        DHparam(pi/2, 0.0, L4, q[5])
+        DHparam(-pi/2, L5, 0.0, q[6])
+        DHparam(pi/2, 0.0, 0.0, q[7])
+    ]
+    
+    DHparams = update_DHparams(DHparams, q)
     HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
     Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)
     Jos_joint_all, Jos_cpoint_all = calc_jacobians(Jax_all, Jay_all, Jaz_all, Jo_all)
     cpoints_x_global, cpoints_dx_global = calc_cpoint_x_and_dx_global(
         HTMs_global, Jos_cpoint_all, dq
     )
-
 end
 
-@time for i in 1:1; test(DHparams_l) end
+#@time for i in 1:1; calc_all() end
 
 
 # function draw_arm(fig, q, DHparams, name)
