@@ -50,75 +50,52 @@ DHparams_l = [
 ]
 
 # 制御点
-const c_points_1 = (
-    [0.0; L1/2; -L0/2; 1.0],
-    [0.0; -L1/2; -L0/2; 1.0],
-    [L1/2; 0.0; -L0/2; 1.0],
-    [-L1/2; 0.0; -L0/2; 1.0],
+const cpoints_local = (
+    (
+        [0.0; L1/2; -L0/2; 1.0],
+        [0.0; -L1/2; -L0/2; 1.0],
+        [L1/2; 0.0; -L0/2; 1.0],
+        [-L1/2; 0.0; -L0/2; 1.0],
+    ),  # 1
+    (
+        [0.0; 0.0; L3/2; 1.0],
+        [0.0; 0.0; -L3/2; 1.0],
+    ),  # 2
+    (
+        [0.0; L3/2; -L2*2/3; 1.0],
+        [0.0; -L3/2; -L2*2/3; 1.0],
+        [L3/2; 0.0; -L2*2/3; 1.0],
+        [-L3/2; 0.0; -L2*2/3; 1.0],
+        [0.0; L3/2; -L2*1/3; 1.0],
+        [0.0; -L3/2; -L2*1/3; 1.0],
+        [L3/2; 0.0; -L2*1/3; 1.0],
+        [-L3/2; 0.0; -L2*1/3; 1.0],
+    ),  # 3
+    (
+        [0.0; 0.0; L3/2; 1.0],
+        [0.0; 0.0; -L3/2; 1.0],
+    ),  # 4
+    (
+        [0.0; L5/2; -L4/2; 1.0],
+        [0.0; -L5/2; -L4/2; 1.0],
+        [L5/2; 0.0; -L4/2; 1.0],
+        [-L5/2; 0.0; -L4/2; 1.0],
+    ),  # 5
+    (
+        [0.0; 0.0; L5/2; 1.0],
+        [0.0; 0.0; -L5/2; 1.0]
+    ),  # 6
+    (
+        [0.0; L5/2; L6/2; 1.0],
+        [0.0; -L5/2; L6/2; 1.0],
+        [L5/2; 0.0; L6/2; 1.0],
+        [-L5/2; 0.0; L6/2; 1.0],
+    ),  # 7
+    (
+        [0.0; 0.0; L6/3; 1.0]
+    ),  # 8
 )
 
-
-const c_points_2 = (
-    [0.0; 0.0; L3/2; 1.0],
-    [0.0; 0.0; -L3/2; 1.0],
-)
-
-const c_points_3 = (
-    [0.0; L3/2; -L2*2/3; 1.0],
-    [0.0; -L3/2; -L2*2/3; 1.0],
-    [L3/2; 0.0; -L2*2/3; 1.0],
-    [-L3/2; 0.0; -L2*2/3; 1.0],
-    [0.0; L3/2; -L2*1/3; 1.0],
-    [0.0; -L3/2; -L2*1/3; 1.0],
-    [L3/2; 0.0; -L2*1/3; 1.0],
-    [-L3/2; 0.0; -L2*1/3; 1.0],
-)
-
-const c_points_4 = (
-    [0.0; 0.0; L3/2; 1.0],
-    [0.0; 0.0; -L3/2; 1.0],
-)
-
-const c_points_5 = (
-    [0.0; L5/2; -L4/2; 1.0],
-    [0.0; -L5/2; -L4/2; 1.0],
-    [L5/2; 0.0; -L4/2; 1.0],
-    [-L5/2; 0.0; -L4/2; 1.0],
-)
-
-const c_points_6 = (
-    [0.0; 0.0; L5/2; 1.0],
-    [0.0; 0.0; -L5/2; 1.0]
-)
-
-const c_points_7 = (
-    [0.0; L5/2; L6/2; 1.0],
-    [0.0; -L5/2; L6/2; 1.0],
-    [L5/2; 0.0; L6/2; 1.0],
-    [-L5/2; 0.0; L6/2; 1.0],
-)
-
-const c_points_GL = (
-    [0.0; 0.0; L6/3; 1.0]
-)
-
-const c_points_all = (
-    c_points_1, c_points_2, c_points_3, c_points_4, c_points_5, c_points_6, c_points_7, c_points_GL
-)
-
-
-const N_of_points_all = (
-    length(c_points_1),
-    length(c_points_2),
-    length(c_points_3),
-    length(c_points_4),
-    length(c_points_5),
-    length(c_points_6),
-    length(c_points_7),
-    length(c_points_GL),
-)
-
-const N_of_cpoints = sum(N_of_points_all)
 
 # 右手
 const HTM_BR_Wo = [
@@ -153,6 +130,14 @@ const HTM_GR_7 = [
     0.0 0.0 0.0 1.0
 ]
 
+const HTM_A = [
+    0.0 -1.0 0.0 0.0
+    1.0 0.0 0.0 0.0
+    0.0 0.0 0.0 0.0
+    0.0 0.0 0.0 0.0
+]  # 偏微分演算行列
+
+
 """DHparamを更新"""
 function update_DHparams(DHparams, q)
     q[2] = q[2] + pi/2
@@ -181,28 +166,97 @@ function HTM(p::DHparam{T}) where T
 end
 
 
-
-function get_HTMs(DHparams::Vector{DHparam{T}}) where T
-    HTMs = Vector{Matrix{T}}(undef, 10)
-    HTMs_Wo = Vector{Matrix{T}}(undef, 10)
+"""同時変換行列を全部計算"""
+function calc_HTMs_local_and_global(DHparams::Vector{DHparam{T}}) where T
+    HTMs_local = Vector{Matrix{T}}(undef, 10)
+    HTMs_global = Vector{Matrix{T}}(undef, 10)
     for i in 1:10
         if i == 1
-            HTMs[i] = HTM_BL_Wo
-            HTMs_Wo[i] = HTM_BL_Wo
+            HTMs_local[i] = HTM_BL_Wo
+            HTMs_global[i] = HTM_BL_Wo
         elseif i == 2
-            HTMs[i] = HTM_0_BL
-            HTMs_Wo[i] =  HTMs_Wo[i-1] * HTM_0_BL
+            HTMs_local[i] = HTM_0_BL
+            HTMs_global[i] =  HTMs_global[i-1] * HTM_0_BL
         elseif i == 10
-            HTMs[i] = HTM_GR_7
-            HTMs_Wo[i] = HTMs_Wo[i-1] * HTM_GR_7
+            HTMs_local[i] = HTM_GR_7
+            HTMs_global[i] = HTMs_global[i-1] * HTM_GR_7
         else
-            HTMs[i] = HTM(DHparams[i-2])
-            HTMs_Wo[i] = HTMs_Wo[i-1] * HTMs[i]
+            HTMs_local[i] = HTM(DHparams[i-2])
+            HTMs_global[i] = HTMs_global[i-1] * HTMs_local[i]
         end
     end
-    HTMs, HTMs_Wo
+    HTMs_local, HTMs_global
 end
 
+
+"""微分？同時変換行列を全部計算"""
+function calc_dHTMs(
+    HTMs_local::Vector{Matrix{T}},
+    HTMs_global::Vector{Matrix{T}},
+) where T
+    _dTdq_all = Vector{Vector{Matrix{T}}}(undef, 10)
+    for i in 1:7
+        _dTdq  = Vector{Matrix{T}}(undef, 10)
+        for j in 1:8
+            if j < i
+                _dTdq[j] = zeros(T, 4, 4)
+            elseif j == i
+                _dTdq[j] = HTMs_global[j+2] * HTM_A
+            else
+                _dTdq[j] = _dTdq[j-1] * HTMs_local[j+2]
+            end
+        end
+        _dTdq_all[i] = _dTdq
+    end
+    
+    Jax_all = Vector{Matrix{T}}(undef, 8)
+    Jay_all = Vector{Matrix{T}}(undef, 8)
+    Jaz_all = Vector{Matrix{T}}(undef, 8)
+    Jo_all = Vector{Matrix{T}}(undef, 8)
+
+    for i in 1:8
+        _Jax = Matrix{T}(undef, 4, 7)
+        _Jay = Matrix{T}(undef, 4, 7)
+        _Jaz = Matrix{T}(undef, 4, 7)
+        _Jo = Matrix{T}(undef, 4, 7)
+        for j in 1:7
+            _Jax[:, j] = _dTdq_all[j][i][:, 1]
+            _Jay[:, j] = _dTdq_all[j][i][:, 2]
+            _Jaz[:, j] = _dTdq_all[j][i][:, 3]
+            _Jo[:, j] = _dTdq_all[j][i][:, 4]
+        end
+        Jax_all[i] = _Jax
+        Jay_all[i] = _Jay
+        Jaz_all[i] = _Jaz
+        Jo_all[i] = _Jo
+    end
+    Jax_all, Jay_all, Jaz_all, Jo_all
+end
+
+
+
+
+function calc_cpoint_x_global(HTMs_global::Vector{Matrix{T}}) where T
+    cpoints_x_global = Vector{Vector{Matrix{T}}}(undef, 8)
+    for i in 1:8
+        n = length(cpoints_local[i])
+        c_ = Vector{Matrix{T}}(undef, n)
+        for j in 1:n
+            c_[j] = (HTMs_global[i+2] * cpoints_local[i][j])[1:3, :]
+        end
+        cpoints_x_global[i] = c_
+    end
+    cpoints_x_global
+end
+
+
+function test(DHparams)
+    HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
+    cpoints_x_global = calc_cpoint_x_global(HTMs_global)
+    Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)
+end
+
+@time for i in 1:1; test(DHparams_l) end
 
 
 # function draw_arm(fig, q, DHparams, name)
