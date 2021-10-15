@@ -92,7 +92,7 @@ const cpoints_local = (
         [-L5/2; 0.0; L6/2; 1.0],
     ),  # 7
     (
-        [0.0; 0.0; L6/3; 1.0]
+        [0.0; 0.0; L6/3; 1.0],
     ),  # 8
 )
 
@@ -234,26 +234,84 @@ function calc_dHTMs(
 end
 
 
+"""各制御点のヤコビ行列を計算"""
+function calc_jacobians(
+    Jax_all::Vector{Matrix{T}},
+    Jay_all::Vector{Matrix{T}},
+    Jaz_all::Vector{Matrix{T}},
+    Jo_all::Vector{Matrix{T}},
+) where T
+
+    """Joのヤコビ行列"""
+    function _calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar)
+        z_bar = Jax * r_bar[1,1] + Jay * r_bar[2,1] + Jaz * r_bar[3,1] + Jo
+        return z_bar[1:3, :]
+    end
+    
+    # ジョイント基底のヤコビ行列を計算
+    Jos_joint_all = Vector{Matrix{T}}(undef, 8)
+    for i in 1:8
+        Jos_joint_all[i] = _calc_Jo_global(
+            Jax_all[i], Jay_all[i], Jaz_all[i], Jo_all[i], zeros(T, 4),
+        )
+    end
+
+    # 制御点の位置に関するヤコビ行列を計算
+    Jos_cpoints_all = Vector{Vector{Matrix{T}}}(undef, 8)
+    for i in 1:8
+        n = length(cpoints_local[i])
+        _J = Vector{Matrix{T}}(undef, n)
+        for j in 1:n
+            _J[j] = _calc_Jo_global(
+                Jax_all[i], Jay_all[i], Jaz_all[i], Jo_all[i], cpoints_local[i][j],
+            )
+        end
+        Jos_cpoints_all[i] = _J
+    end
+
+    return Jos_joint_all, Jos_cpoints_all
+end
 
 
-function calc_cpoint_x_global(HTMs_global::Vector{Matrix{T}}) where T
+"""制御点の位置と速度を計算"""
+function calc_cpoint_x_and_dx_global(
+    HTMs_global::Vector{Matrix{T}},
+    Jos_cpoints_all::Vector{Vector{Matrix{T}}},
+    dq,
+) where T
     cpoints_x_global = Vector{Vector{Matrix{T}}}(undef, 8)
     for i in 1:8
         n = length(cpoints_local[i])
-        c_ = Vector{Matrix{T}}(undef, n)
+        _c = Vector{Matrix{T}}(undef, n)
         for j in 1:n
-            c_[j] = (HTMs_global[i+2] * cpoints_local[i][j])[1:3, :]
+            _c[j] = (HTMs_global[i+2] * cpoints_local[i][j])[1:3, :]
         end
-        cpoints_x_global[i] = c_
+        cpoints_x_global[i] = _c
     end
-    cpoints_x_global
+
+    cpoints_dx_global = Vector{Vector{Matrix{T}}}(undef, 8)
+    for i in 1:8
+        n = length(cpoints_local[i])
+        _dx = Vector{Matrix{T}}(undef, n)
+        for j in 1:n
+            _dx[j] = Jos_cpoints_all[i][j] * dq
+        end
+        cpoints_dx_global[i] = _dx
+    end
+
+    return cpoints_x_global, cpoints_dx_global
 end
 
 
 function test(DHparams)
+    dq = zeros(Float64, 7, 1)
     HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
-    cpoints_x_global = calc_cpoint_x_global(HTMs_global)
     Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)
+    Jos_joint_all, Jos_cpoint_all = calc_jacobians(Jax_all, Jay_all, Jaz_all, Jo_all)
+    cpoints_x_global, cpoints_dx_global = calc_cpoint_x_and_dx_global(
+        HTMs_global, Jos_cpoint_all, dq
+    )
+
 end
 
 @time for i in 1:1; test(DHparams_l) end
