@@ -269,22 +269,23 @@ end
 function calc_cpoint_x_and_dx_global(
     HTMs_global::Vector{Matrix{T}},
     Jos_cpoints_all::Vector{Vector{Matrix{T}}},
-    dq,
+    dq::Vector{T},
 ) where T
-    cpoints_x_global = Vector{Vector{Matrix{T}}}(undef, 8)
+    cpoints_x_global = Vector{Vector{Vector{T}}}(undef, 8)
     for i in 1:8
         n = length(cpoints_local[i])
-        _c = Vector{Matrix{T}}(undef, n)
+        _c = Vector{Vector{T}}(undef, n)
         for j in 1:n
-            _c[j] = (HTMs_global[i+2] * cpoints_local[i][j])[1:3, :]
+            _c[j] = (HTMs_global[i+2] * cpoints_local[i][j])[1:3]
+            #println(typeof(_c[j]))
         end
         cpoints_x_global[i] = _c
     end
 
-    cpoints_dx_global = Vector{Vector{Matrix{T}}}(undef, 8)
+    cpoints_dx_global = Vector{Vector{Vector{T}}}(undef, 8)
     for i in 1:8
         n = length(cpoints_local[i])
-        _dx = Vector{Matrix{T}}(undef, n)
+        _dx = Vector{Vector{T}}(undef, n)
         for j in 1:n
             _dx[j] = Jos_cpoints_all[i][j] * dq
         end
@@ -296,7 +297,7 @@ end
 
 
 """全部計算"""
-function calc_all(q=q_neutral, dq=zeros(Float64, 7, 1),)
+function calc_all(q=q_neutral, dq=zeros(Float64, 7),)
     DHparams = update_DHparams(q)
     HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
     Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)
@@ -315,7 +316,7 @@ end
 
 
 
-#@time for i in 1:1; calc_all() end
+@time for i in 1:1; calc_all() end
 
 
 

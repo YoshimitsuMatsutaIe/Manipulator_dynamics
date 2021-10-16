@@ -110,12 +110,15 @@ function calc_ddq(
         end
     end
 
-    ddq = pinv(pulled_M) * pulled_f
+    #println(root_M)
+    ddq = pinv(root_M) * root_f
     return ddq
 end
 
-
+"""nodeを更新"""
 function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T}) where T
+
+    #println("not nothing")
     # 更新
     DHparams = update_DHparams(q)
     HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
@@ -124,8 +127,12 @@ function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T
     cpoints_x_global, cpoints_dx_global = calc_cpoint_x_and_dx_global(
         HTMs_global, Jos_cpoint_all, dq
     )
+    #println("www")
     for i in 1:9
+        #println("sinu")
+        #println(nodes[2])
         for j in 1:length(nodes[i])
+            #println("???")
             if i == 1
                 nodes[i][j].x = q
                 nodes[i][j].dx = dq
@@ -136,10 +143,15 @@ function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T
             end
         end
     end
+    #println("hh")
     return nodes
 end
 
+
+"""nodeを新規作成"""
 function update_nodes(nodes::Nothing, q::Vector{T}, dq::Vector{T}) where T
+
+    #println("nothing")
     # 更新
     DHparams = update_DHparams(q)
     HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
@@ -148,22 +160,25 @@ function update_nodes(nodes::Nothing, q::Vector{T}, dq::Vector{T}) where T
     cpoints_x_global, cpoints_dx_global = calc_cpoint_x_and_dx_global(
         HTMs_global, Jos_cpoint_all, dq
     )
-    nodes = Vector{T}(undef, 9)
+    nodes = Vector{Vector{Node{T}}}(undef, 9)
     for i in 1:9
-        n = length(cpoints_local[i-1])
-        _children_node = Vector{T}(undef, n)
-        for j in 1:n
-            if i == 1
-                _children_node[j] = Node(q, dq, eye(T, 7))
-            else
+        #println("i = ", i)
+        if i == 1
+            _children_node = Vector{Node{T}}(undef, 1)
+            _children_node[1] = Node(q, dq, Matrix{T}(I, 7, 7))
+            #println("wow")
+        else
+            n = length(cpoints_local[i-1])
+            _children_node = Vector{Node{T}}(undef, n)
+            for j in 1:n
                 _children_node[j] = Node(
                     cpoints_x_global[i-1][j],
                     cpoints_dx_global[i-1][j],
                     Jos_cpoint_all[i-1][j]
                 )
             end
-            nodes[i] = _children_node
         end
+        nodes[i] = _children_node
     end
     return nodes
 end
@@ -172,19 +187,46 @@ end
 """ひとまずシミュレーションやってみｓる"""
 function run_simulation(TIME_SPAN::T, Δt::T) where T
 
-    goal = State([1.0 ,1.0, 1.0], [0.0, 0.0, 0.0])
-    obs = [
-        State([1.0 ,1.0, 1.0], [0.0, 0.0, 0.0])
-    ]
 
-    q = q_neutral
-    dq = zeros(T, 7)
-    nodes = update_nodes(nothing, q, dq)
 
+    q₀ = q_neutral
+    dq₀ = zeros(T, 7)
+
+
+    function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T) where T
+
+        t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
+        q = Vector{Vector{T}}(undef, length(t))  # 解を格納する1次元配列
+        dq = Vector{Vector{T}}(undef, length(t))  # 解を格納する1次元配列
+        
+        # 初期値
+        #println("OK0")
+        nodes = update_nodes(nothing, q₀, dq₀)
+        #println("OK")
+        q[1] = q₀
+        dq[1] = dq₀
+        goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
+        obs = [
+            State([0.25, -0.4, 1.0], [0.0, 0.0, 0.0])
+        ]
+
+        for i in 1:length(q)-1
+            println("i = ", i)
+            nodes = update_nodes(nodes, q[i], dq[i])
+            #println("OK3")
+            ddq = calc_ddq(nodes, goal, obs)
+            println(ddq)
+            q[i+1] = q[i] + dq[i]*Δt
+            dq[i+1] = dq[i] + ddq*Δt
+        end
     
+        t, q, dq
+    end
+
+    t, q, dq = euler_method(q₀, dq₀, TIME_SPAN, Δt)
 
 end
 
 
 
-@time run_simulation()
+@time t, q, dq = run_simulation(5.0, 0.01)

@@ -4,8 +4,8 @@
 #using Parameters
 
 using LinearAlgebra
-eye(T::Type, n) = Diagonal{T}(I, n)
-eye(n) = eye(Float64, n)
+# eye(T::Type, n) = Diagonal{T}(I, n)
+# eye(n) = eye(Float64, n)
 
 
 """pullback演算"""
@@ -40,16 +40,17 @@ function metric_stretch(v, alpha)
 end
 
 """基本の計量"""
-function basic_metric_H(f, alpha, beta)
-    return beta * metric_stretch(f, alpha) + (1 - beta) * eye(3)
+function basic_metric_H(f, alpha::T, beta::T) where T
+    return beta * metric_stretch(f, alpha) + (1 - beta) * Matrix{T}(I, 3, 3)
 end
 
-"""アフィン変換されたシグモイド写像"""
-sigma_L(q, q_min, q_max) = (q_max - q_min) * (1 / (1 + exp.(-q))) + q_min
+# """アフィン変換されたシグモイド写像"""
+# sigma_L(q, q_min, q_max) = (q_max - q_min) * (1 / (1 + exp.(-q))) + q_min
 
 """ジョイント制限に関する対角ヤコビ行列"""
 function D_sigma(q, q_min, q_max)
-    diags = (q_max - q_min) * (exp.(-q) / (1 + exp.(-q))^.2)
+    diags = (q_max - q_min) .* (exp.(-q) ./ (1 .+ exp.(-q)).^2)
+    #println(diags)
     return diagm(diags)
 end
 
@@ -68,7 +69,7 @@ end
 """目標加速度 from OirginalRMP"""
 function ddz(p::OriginalRMPAttractor{T}, z, dz, z0) where T
     damp = p.gain / p.max_speed
-    a = p.gain * soft_normal(z0-z, p.r) - damp*dz
+    a = p.gain * soft_normal(z0-z, p.metric_damp_r) - damp*dz
     return a
 end
 
@@ -127,8 +128,8 @@ end
 """障害物計量 from OriginalRMP"""
 function inertia_matrix(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0, ddq) where T
     d = norm(z - z0)
-    weight = (d / p.r)^2 - 2 * d / r + 1
-    return weight * eye(3)
+    weight = (d / p.r)^2 - 2 * d / p.r + 1
+    return weight * Matrix{T}(I, 3, 3)
 end
 
 """canonical form []"""
@@ -159,12 +160,13 @@ function ddz(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
     return a
 end
 
+"""ジョイント制限回避計量 from OriginalRMP"""
 function inertia_matrix(p::OriginalJointLimitAvoidance{T}, q, dq) where T
-    return p.λ * eye(ndims(q))
+    return p.λ * Matrix{T}(I, 7, 7)
 end
 
 """canonical form []"""
-function get_canonical(p::OriginalJointLimitAvoidance{T}, q, dq, q_miax, q_min) where T
+function get_canonical(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
     a = ddz(p, q, dq, q_max, q_min)
     M = inertia_matrix(p, q, dq)
     return a, M
@@ -174,6 +176,8 @@ end
 """natural form ()"""
 function get_natural(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
     a, M = get_canonical(p, q, dq, q_max, q_min)
+    # println(a)
+    # println(M)
     f = M * a
     return f, M
 end
