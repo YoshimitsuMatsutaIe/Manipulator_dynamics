@@ -1,13 +1,15 @@
 """RMP制御器"""
 
 
+#using Parameters
+
 using LinearAlgebra
 eye(T::Type, n) = Diagonal{T}(I, n)
 eye(n) = eye(Float64, n)
 
 
 """pullback演算"""
-function pullback(f, M, J, dJ=nothing, dx=nothing)
+function pullbacked_rmp(f, M, J, dJ=nothing, dx=nothing)
     #pulled_f = zero(f)
     #pulled_M = zero(M)
     if isnothing(dJ) && isnothing(dx)
@@ -19,6 +21,8 @@ function pullback(f, M, J, dJ=nothing, dx=nothing)
     
     return pulled_f, pulled_M
 end
+
+
 
 
 

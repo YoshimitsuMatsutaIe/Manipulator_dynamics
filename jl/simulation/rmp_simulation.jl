@@ -1,6 +1,7 @@
 using CPUTime
 using Plots
 using LinearAlgebra
+#using Parameters
 
 include("../utils.jl")
 
@@ -43,34 +44,99 @@ include("../kinematics/old.jl")
 #     t, x
 # end
 
+"""点の位置と速度"""
+mutable struct State{T}
+    x::Vector{T}
+    dx::Vector{T}
+end
+
+
+"""ノード（今回は制御点+ジョイント位置点）"""
+mutable struct Node{T}
+    x::Vector{T}  # 位置
+    dx::Vector{T}
+    Jax::Matrix{T}
+    Jay::Matrix{T}
+    Jaz::Matrix{T}
+    Jo::Matrix{T}
+end
+
+
+"""システムの状態"""
+mutable struct SysthemState{T}
+    obs::Vector{State{T}}
+end
 
 
 """加速度指令を計算（resolve演算結果を返す）"""
-function calc_ddq()
+function calc_ddq(
+    nodes::Vector{Vector{Node{T}}},
+    goal::State{T},
+    obs::Vector{State{T}}
+) where T
 
+    root_f = Vector{T}(undef, 7)
+    root_M = Matrix{T}(undef, 7, 7)
 
+    attractor = OriginalRMPAttractor(2.0, 10.0, 0.15, 1.0, 1.0, 5.0)
+    obs_avovidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
+    joint_limit_avoidance = OriginalJointLimitAvoidance(0.05, 0.1, 0.7)
 
+    for i in 1:9
+        if i == 1
+            _f, _M = get_natural(
+                joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx, q_max, q_min
+            )
+            root_f += _f
+            root_M += _M
+        elseif i == 9
+            _f, _M = get_natural(
+                attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
+            )
+            _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][1].J,)
+            root_f += _pulled_f
+            root_M += _pulled_M
+        else
+            for j in 1:length(nodes[i])
+                for k in 1:length(obs)
+                    _f, _M = get_natural(
+                        obs_avovidance, nodes[i][j].x, nodes[i][j].dx, obs[k].x
+                    )
+                    _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].J,)
+                    root_f += _pulled_f
+                    root_M += _pulled_M
+                end
+            end
+        end
+    end
 
-
+    ddq = pinv(pulled_M) * pulled_f
     return ddq
 end
 
 
+function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T}) where T
 
-
+end
 
 
 """ひとまずシミュレーションやってみｓる"""
 function run_simulation()
 
-    const TIME_SPAN = 10
-    const Δt = 0.01
+    TIME_SPAN = 10.0
+    Δt = 0.01
 
-    goal = [1; 1; 1]
-    obs = [2; 2; 2]
+    goal = State([1.0 ,1.0, 1.0], [0.0, 0.0, 0.0])
+    obs = [
+        State([1.0 ,1.0, 1.0], [0.0, 0.0, 0.0])
+    ]
 
-
+    println(typeof(obs))
 
 
 
 end
+
+
+
+@time run_simulation()

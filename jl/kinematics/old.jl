@@ -27,7 +27,9 @@ const L4 = 374.29e-3
 const L5 = 10e-3
 const L6 = 368.3e-3
 
-const q_neutral = [0; -31; 0; 43; 0; 72; 0] * pi/180  # ニュートラルの姿勢
+const q_neutral = [0.0; -31.0; 0.0; 43.0; 0.0; 72.0; 0.0] * pi/180  # ニュートラルの姿勢
+const q_max = [51.0, 60.0, 173.0, 150.0, 175.0, 120.0, 175.0] * pi/180
+const q_min = [-141.0, -123.0, -173.0, -3.0, -175.0, -90.0, -175.0] * pi/180
 
 const DHparams_neutral = [
     DHparam(0.0, 0.0, 0.0, q_neutral[1])
@@ -310,7 +312,12 @@ function calc_all(q=q_neutral, dq=zeros(Float64, 7, 1),)
     )
 end
 
-@time for i in 1:1; calc_all() end
+
+
+
+#@time for i in 1:1; calc_all() end
+
+
 
 
 # function draw_arm(fig, q, DHparams, name)
