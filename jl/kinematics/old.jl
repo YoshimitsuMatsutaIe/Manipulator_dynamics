@@ -296,6 +296,32 @@ function calc_cpoint_x_and_dx_global(
 end
 
 
+"""原点+ジョイント位置を取得（図示用）"""
+function calc_joints_x_and_dx_global(
+    HTMs_global::Vector{Matrix{T}},
+    Jos_joint_all::Vector{Matrix{T}},
+    dq::Vector{T},
+) where T
+    joints_x_global = Vector{Vector{T}}(undef, 11)
+    joints_x_global[1] = zeros(T, 3)
+    for i in 2:length(joints_x_global)
+        joints_x_global[i] = HTMs_global[i-1][1:3, 4]
+    end
+
+    joints_dx_global = Vector{Vector{T}}(undef, 11)
+    joints_dx_global[1] = zeros(T, 3)
+    joints_dx_global[2] = zeros(T, 3)
+    joints_dx_global[3] = zeros(T, 3)
+    for i in 4:length(joints_dx_global)
+        joints_dx_global[i] = Jos_joint_all[i-3] * dq
+    end
+
+    return joints_x_global, joints_dx_global
+end
+
+
+
+
 """全部計算"""
 function calc_all(q=q_neutral, dq=zeros(Float64, 7),)
     DHparams = update_DHparams(q)
@@ -305,20 +331,63 @@ function calc_all(q=q_neutral, dq=zeros(Float64, 7),)
     cpoints_x_global, cpoints_dx_global = calc_cpoint_x_and_dx_global(
         HTMs_global, Jos_cpoint_all, dq
     )
+    joints_x_global, joints_dx_global = calc_joints_x_and_dx_global(
+        HTMs_global, Jos_joint_all, dq
+    )
+    # for i in 1:8
+    #     println("i = ", i)
+    #     println(Jos_joint_all[i])
+    # end
+
     return (
         HTMs_local, HTMs_global,
         Jax_all, Jay_all, Jaz_all, Jo_all,
         Jos_joint_all, Jos_cpoint_all,
         cpoints_x_global, cpoints_dx_global,
+        joints_x_global, joints_dx_global,
     )
 end
 
 
 
 
-@time for i in 1:1; calc_all() end
+#@time for i in 1:1; calc_all() end
 
 
+
+function draw_arm()
+
+    _, _, _, _, _, _, _, _, cpoints_x_global, _, joints_x_global, _, = calc_all()
+    fig = plot()
+
+
+    x, y, z = split_vec_of_arrays(joints_x_global)
+    plot!(
+        fig,
+        x, y, z,
+        aspect_ratio = 1,
+        marker=:circle,
+        markerα = 0.5,
+        label = "joints",
+    )
+
+    cname = ("1", "2", "3", "4", "5", "6", "7", "GL")
+    for (i, cs) in enumerate(cpoints_x_global)
+        x, y, z = split_vec_of_arrays(cs)
+        scatter!(
+            fig,
+            x, y, z,
+            label = cname[i]
+        )
+    end
+
+
+    return fig
+end
+
+
+
+@time fig = draw_arm()
 
 
 # function draw_arm(fig, q, DHparams, name)
