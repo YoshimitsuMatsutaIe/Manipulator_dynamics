@@ -55,9 +55,9 @@ end
 mutable struct Node{T}
     x::Vector{T}  # 位置
     dx::Vector{T}
-    Jax::Matrix{T}
-    Jay::Matrix{T}
-    Jaz::Matrix{T}
+    # Jax::Matrix{T}
+    # Jay::Matrix{T}
+    # Jaz::Matrix{T}
     Jo::Matrix{T}
 end
 
@@ -93,7 +93,7 @@ function calc_ddq(
             _f, _M = get_natural(
                 attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
             )
-            _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][1].J,)
+            _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][1].Jo,)
             root_f += _pulled_f
             root_M += _pulled_M
         else
@@ -102,7 +102,7 @@ function calc_ddq(
                     _f, _M = get_natural(
                         obs_avovidance, nodes[i][j].x, nodes[i][j].dx, obs[k].x
                     )
-                    _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].J,)
+                    _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].Jo,)
                     root_f += _pulled_f
                     root_M += _pulled_M
                 end
@@ -116,24 +116,72 @@ end
 
 
 function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T}) where T
+    # 更新
+    DHparams = update_DHparams(q)
+    HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
+    Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)
+    Jos_joint_all, Jos_cpoint_all = calc_jacobians(Jax_all, Jay_all, Jaz_all, Jo_all)
+    cpoints_x_global, cpoints_dx_global = calc_cpoint_x_and_dx_global(
+        HTMs_global, Jos_cpoint_all, dq
+    )
+    for i in 1:9
+        for j in 1:length(nodes[i])
+            if i == 1
+                nodes[i][j].x = q
+                nodes[i][j].dx = dq
+            else
+                nodes[i][j].x = cpoints_x_global[i-1][j]
+                nodes[i][j].dx = cpoints_dx_global[i-1][j]
+                nodes[i][j].Jo = Jos_cpoint_all[i-1][j]
+            end
+        end
+    end
+    return nodes
+end
 
+function update_nodes(nodes::Nothing, q::Vector{T}, dq::Vector{T}) where T
+    # 更新
+    DHparams = update_DHparams(q)
+    HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
+    Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)
+    Jos_joint_all, Jos_cpoint_all = calc_jacobians(Jax_all, Jay_all, Jaz_all, Jo_all)
+    cpoints_x_global, cpoints_dx_global = calc_cpoint_x_and_dx_global(
+        HTMs_global, Jos_cpoint_all, dq
+    )
+    nodes = Vector{T}(undef, 9)
+    for i in 1:9
+        n = length(cpoints_local[i-1])
+        _children_node = Vector{T}(undef, n)
+        for j in 1:n
+            if i == 1
+                _children_node[j] = Node(q, dq, eye(T, 7))
+            else
+                _children_node[j] = Node(
+                    cpoints_x_global[i-1][j],
+                    cpoints_dx_global[i-1][j],
+                    Jos_cpoint_all[i-1][j]
+                )
+            end
+            nodes[i] = _children_node
+        end
+    end
+    return nodes
 end
 
 
 """ひとまずシミュレーションやってみｓる"""
-function run_simulation()
-
-    TIME_SPAN = 10.0
-    Δt = 0.01
+function run_simulation(TIME_SPAN::T, Δt::T) where T
 
     goal = State([1.0 ,1.0, 1.0], [0.0, 0.0, 0.0])
     obs = [
         State([1.0 ,1.0, 1.0], [0.0, 0.0, 0.0])
     ]
 
-    println(typeof(obs))
+    q = q_neutral
+    dq = zeros(T, 7)
+    nodes = update_nodes(nothing, q, dq)
 
-
+    
 
 end
 
