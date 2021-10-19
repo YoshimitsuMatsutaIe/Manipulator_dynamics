@@ -133,9 +133,13 @@ const HTM_A = [
 
 """DHparamを更新"""
 function update_DHparams(q, DHparams=DHparams_neutral)
-    q[2] = q[2] + pi/2
+    #q[2] = q[2] + pi/2
     for i in 1:7
-        DHparams[i].θ = q[i]
+        if i == 2
+            DHparams[i].θ = q[i] + pi/2
+        else
+            DHparams[i].θ = q[i]
+        end
     end
     DHparams
 end
@@ -387,7 +391,7 @@ end
 
 
 
-@time fig = draw_arm()
+#@time fig = draw_arm()
 
 
 # function draw_arm(fig, q, DHparams, name)

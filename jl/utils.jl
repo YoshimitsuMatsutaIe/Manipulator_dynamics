@@ -6,7 +6,8 @@ using ArraysOfArrays
 
 function split_vec_of_arrays(u)
     vec.(u) |>
-    x -> VectorOfSimilarVectors(x).data |>
+    x ->
+    VectorOfSimilarVectors(x).data |>
     transpose |>
     VectorOfSimilarVectors
 end

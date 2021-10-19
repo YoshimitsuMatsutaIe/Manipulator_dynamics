@@ -3,29 +3,15 @@ using Plots
 using LinearAlgebra
 #using Parameters
 
+
+using PyCall
+np = pyimport("numpy")
+
 include("../utils.jl")
 
 include("./rmp.jl")
 include("../kinematics/old.jl")
 
-
-# function jisaku_solve_RungeKutta(dx, x₀, t_span, Δt)
-#     """ルンゲクッタ法（4次）"""
-
-#     t = range(t_span..., step = Δt)  # 時間軸
-#     x = Vector{typeof(x₀)}(undef, length(t))  # 解を格納する1次元配列
-
-#     x[1] = x₀  # 初期値
-#     for i in 1:length(x)-1
-#         k₁ = dx(t[i], x[i])
-#         k₂ = dx(t[i]+Δt/2, x[i]+k₁*Δt/2)
-#         k₃ = dx(t[i]+Δt/2, x[i]+k₂*Δt/2)
-#         k₄ = dx(t[i]+Δt, x[i]+k₃*Δt)
-#         x[i+1] = x[i] + (k₁ + 2k₂ + 2k₃ +k₄)Δt/6
-#     end
-
-#     t, x
-# end
 
 """点の位置と速度"""
 mutable struct State{T}
@@ -93,8 +79,17 @@ function calc_ddq(
         end
     end
 
-    #println(root_M)
+    #root_f += zeros(T, 7)
+    #root_M += zeros(T, 7, 7)
+
+    #println("root_f = ", root_f)
+    #println("root_M = ", root_M)
+
     ddq = pinv(root_M) * root_f
+
+    #ddq = np.linalg.pinv(root_M) * root_f
+
+    #ddq = zeros(T, 7)
     return ddq
 end
 
@@ -167,49 +162,103 @@ function update_nodes(nodes::Nothing, q::Vector{T}, dq::Vector{T}) where T
 end
 
 
+
+
+
+function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T) where T
+
+    t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
+    q = Vector{Vector{T}}(undef, length(t))  # 解を格納する1次元配列
+    dq = Vector{Vector{T}}(undef, length(t))
+    ddq = Vector{Vector{T}}(undef, length(t))
+    error = Vector{T}(undef, length(t))
+
+    goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
+    obs = [
+        State([0.25, -0.4, 1.0], [0.0, 0.0, 0.0])
+    ]
+
+    # 初期値
+    #println("OK0")
+    nodes = update_nodes(nothing, q₀, dq₀)
+
+    error[1] = norm(goal.x - nodes[9][1].x)
+
+
+    #println("OK")
+    q[1] = q₀
+    dq[1] = dq₀
+    ddq[1] = zeros(T, 7)
+
+
+
+    for i in 1:length(q)-1
+        #println("i = ", i)
+        nodes = update_nodes(nodes, q[i], dq[i])
+        #println("OK3")
+        error[i+1] = norm(goal.x - nodes[9][1].x)
+
+        ddq[i+1] = calc_ddq(nodes, goal, obs)
+        #ddq[i+1] = zeros(T,7)
+        #println("q = ", q[i])
+        #println("dq = ", dq[i])
+        println("ddq = ", ddq[i])
+
+        q[i+1] = q[i] + dq[i]*Δt
+        #q[i+1] = zeros(T,7)
+        dq[i+1] = dq[i] + ddq[i]*Δt
+    end
+
+    t, q, dq, ddq, error
+end
+
+
+
 """ひとまずシミュレーションやってみｓる"""
 function run_simulation(TIME_SPAN::T, Δt::T) where T
 
-
-
-    q₀ = q_neutral
+    #q₀ = q_neutral
+    q₀ = zeros(T, 7)
     dq₀ = zeros(T, 7)
 
+    t, q, dq, ddq, error = euler_method(q₀, dq₀, TIME_SPAN, Δt)
 
-    function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T) where T
+    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(q)
+    fig_q = plot(t, q1, ylabel="q")
+    plot!(fig_q, t, q2)
+    plot!(fig_q, t, q3)
+    plot!(fig_q, t, q4)
+    plot!(fig_q, t, q5)
+    plot!(fig_q, t, q6)
+    plot!(fig_q, t, q7)
 
-        t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
-        q = Vector{Vector{T}}(undef, length(t))  # 解を格納する1次元配列
-        dq = Vector{Vector{T}}(undef, length(t))  # 解を格納する1次元配列
-        
-        # 初期値
-        #println("OK0")
-        nodes = update_nodes(nothing, q₀, dq₀)
-        #println("OK")
-        q[1] = q₀
-        dq[1] = dq₀
-        goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
-        obs = [
-            State([0.25, -0.4, 1.0], [0.0, 0.0, 0.0])
-        ]
+    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(dq)
+    fig_dq = plot(t, q1, ylabel="dq")
+    plot!(fig_dq, t, q2)
+    plot!(fig_dq, t, q3)
+    plot!(fig_dq, t, q4)
+    plot!(fig_dq, t, q5)
+    plot!(fig_dq, t, q6)
+    plot!(fig_dq, t, q7)
 
-        for i in 1:length(q)-1
-            println("i = ", i)
-            nodes = update_nodes(nodes, q[i], dq[i])
-            #println("OK3")
-            ddq = calc_ddq(nodes, goal, obs)
-            println(ddq)
-            q[i+1] = q[i] + dq[i]*Δt
-            dq[i+1] = dq[i] + ddq*Δt
-        end
-    
-        t, q, dq
-    end
+    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(ddq)
+    fig_ddq = plot(t, q1, ylabel="ddq")
+    plot!(fig_ddq, t, q2)
+    plot!(fig_ddq, t, q3)
+    plot!(fig_ddq, t, q4)
+    plot!(fig_ddq, t, q5)
+    plot!(fig_ddq, t, q6)
+    plot!(fig_ddq, t, q7)
 
-    t, q, dq = euler_method(q₀, dq₀, TIME_SPAN, Δt)
+    fig_error = plot(t, error, ylabel="error")
+
+    plot(
+        fig_q, fig_dq, fig_ddq, fig_error, layout=(4,1),
+        size=(500,1200)
+    )
 
 end
 
 
 
-@time t, q, dq = run_simulation(5.0, 0.01)
+@time run_simulation(1.5, 0.01)
