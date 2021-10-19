@@ -265,11 +265,11 @@ function run_simulation(TIME_SPAN::T, Δt::T) where T
     fig2 = draw_arm(q[end], dq[end])
 
     anim = Animation()
-    @gif for i in 1:length(t)
+    @gif for i in 1:10:length(t)
         _fig=draw_arm(q[i], dq[i], goal, obs)
         frame(anim,_fig)
     end
-    #gif(anim, "test.gif", fps = 30)
+    gif(anim, "test5.gif", fps = 12)
 
     return fig, fig2, anim
 end
