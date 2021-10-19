@@ -55,11 +55,11 @@ function calc_ddq(
 
     for i in 1:9
         if i == 1
-            _f, _M = get_natural(
-                joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx, q_max, q_min
-            )
-            root_f += _f
-            root_M += _M
+            # _f, _M = get_natural(
+            #     joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx, q_max, q_min
+            # )
+            # root_f += _f
+            # root_M += _M
         elseif i == 9
             _f, _M = get_natural(
                 attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
@@ -68,16 +68,16 @@ function calc_ddq(
             root_f += _pulled_f
             root_M += _pulled_M
         else
-            # for j in 1:length(nodes[i])
-            #     for k in 1:length(obs)
-            #         _f, _M = get_natural(
-            #             obs_avovidance, nodes[i][j].x, nodes[i][j].dx, obs[k].x
-            #         )
-            #         _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].Jo,)
-            #         root_f += _pulled_f
-            #         root_M += _pulled_M
-            #     end
-            # end
+            for j in 1:length(nodes[i])
+                for k in 1:length(obs)
+                    _f, _M = get_natural(
+                        obs_avovidance, nodes[i][j].x, nodes[i][j].dx, obs[k].x
+                    )
+                    _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].Jo,)
+                    root_f += _pulled_f
+                    root_M += _pulled_M
+                end
+            end
         end
     end
 
@@ -259,12 +259,14 @@ function run_simulation(TIME_SPAN::T, Δt::T) where T
         size=(500,1200)
     )
 
+    goal = [0.3, -0.75, 1.0]
+    obs = [[0.25, -0.4, 1.0]]
     
     fig2 = draw_arm(q[end], dq[end])
 
     anim = Animation()
     @gif for i in 1:length(t)
-        _fig=draw_arm(q[i], dq[i])
+        _fig=draw_arm(q[i], dq[i], goal, obs)
         frame(anim,_fig)
     end
     #gif(anim, "test.gif", fps = 30)

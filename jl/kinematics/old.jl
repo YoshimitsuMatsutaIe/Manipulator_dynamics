@@ -359,7 +359,7 @@ end
 
 
 
-function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing)
+function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing)
 
     _, _, _, _, _, _, _, _, cpoints_x_global, _, joints_x_global, _, = calc_all(q, dq)
     fig = plot()
@@ -385,13 +385,14 @@ function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing)
         )
     end
 
-    scatter!([0.3], [-0.75], [1.0])
-    # goal = [0.3, -0.75, 1.0]
-    # if isnothing(goal)
-    # else
-    #     scatter!(goal[1], goal[2], goal[3])
-    # end
+    if !isnothing(goal)
+        scatter!([goal[1]], [goal[2]], [goal[3]], markershape=:star6)
+    end
 
+    if !isnothing(obs)
+        x, y, z = split_vec_of_arrays(obs)
+        scatter!(x, y, z, markershape=:diamond)
+    end
 
     return fig
 end
