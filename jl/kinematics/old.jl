@@ -359,9 +359,9 @@ end
 
 
 
-function draw_arm()
+function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing)
 
-    _, _, _, _, _, _, _, _, cpoints_x_global, _, joints_x_global, _, = calc_all()
+    _, _, _, _, _, _, _, _, cpoints_x_global, _, joints_x_global, _, = calc_all(q, dq)
     fig = plot()
 
 
@@ -385,13 +385,21 @@ function draw_arm()
         )
     end
 
+    scatter!([0.3], [-0.75], [1.0])
+    # goal = [0.3, -0.75, 1.0]
+    # if isnothing(goal)
+    # else
+    #     scatter!(goal[1], goal[2], goal[3])
+    # end
+
 
     return fig
 end
 
 
 
-#@time fig = draw_arm()
+
+@time fig = draw_arm()
 
 
 # function draw_arm(fig, q, DHparams, name)

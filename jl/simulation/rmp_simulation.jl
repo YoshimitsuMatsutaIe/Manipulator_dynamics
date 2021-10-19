@@ -44,8 +44,10 @@ function calc_ddq(
     obs::Vector{State{T}}
 ) where T
 
-    root_f = Vector{T}(undef, 7)
-    root_M = Matrix{T}(undef, 7, 7)
+    #root_f = Vector{T}(undef, 7)
+    #root_M = Matrix{T}(undef, 7, 7)
+    root_f = zeros(T, 7)
+    root_M = zeros(T, 7, 7)
 
     attractor = OriginalRMPAttractor(2.0, 10.0, 0.15, 1.0, 1.0, 5.0)
     obs_avovidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
@@ -53,11 +55,11 @@ function calc_ddq(
 
     for i in 1:9
         if i == 1
-            # _f, _M = get_natural(
-            #     joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx, q_max, q_min
-            # )
-            # root_f += _f
-            # root_M += _M
+            _f, _M = get_natural(
+                joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx, q_max, q_min
+            )
+            root_f += _f
+            root_M += _M
         elseif i == 9
             _f, _M = get_natural(
                 attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
@@ -202,7 +204,7 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T) w
         #ddq[i+1] = zeros(T,7)
         #println("q = ", q[i])
         #println("dq = ", dq[i])
-        println("ddq = ", ddq[i])
+        #println("ddq = ", ddq[i])
 
         q[i+1] = q[i] + dq[i]*Δt
         #q[i+1] = zeros(T,7)
@@ -217,8 +219,8 @@ end
 """ひとまずシミュレーションやってみｓる"""
 function run_simulation(TIME_SPAN::T, Δt::T) where T
 
-    #q₀ = q_neutral
-    q₀ = zeros(T, 7)
+    q₀ = q_neutral
+    #q₀ = zeros(T, 7)
     dq₀ = zeros(T, 7)
 
     t, q, dq, ddq, error = euler_method(q₀, dq₀, TIME_SPAN, Δt)
@@ -250,15 +252,27 @@ function run_simulation(TIME_SPAN::T, Δt::T) where T
     plot!(fig_ddq, t, q6)
     plot!(fig_ddq, t, q7)
 
-    fig_error = plot(t, error, ylabel="error")
+    fig_error = plot(t, error, ylabel="error", ylims=(0.0,))
 
-    plot(
+    fig = plot(
         fig_q, fig_dq, fig_ddq, fig_error, layout=(4,1),
         size=(500,1200)
     )
 
+    
+    fig2 = draw_arm(q[end], dq[end])
+
+    anim = Animation()
+    @gif for i in 1:length(t)
+        _fig=draw_arm(q[i], dq[i])
+        frame(anim,_fig)
+    end
+    #gif(anim, "test.gif", fps = 30)
+
+    return fig, fig2, anim
 end
 
 
 
-@time run_simulation(1.5, 0.01)
+@time fig, fig2, anim = run_simulation(5.0, 0.01)
+#gif(anim, "test.gif")
