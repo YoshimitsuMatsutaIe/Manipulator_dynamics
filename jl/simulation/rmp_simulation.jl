@@ -5,8 +5,6 @@ using LinearAlgebra
 
 import YAML
 
-using PyCall
-np = pyimport("numpy")
 
 include("../utils.jl")
 
@@ -277,6 +275,7 @@ function run_simulation(TIME_SPAN::T, Δt::T) where T
 
     return data, fig
 end
+
 
 
 function make_animation(q, dq, nodes, goal=nothing, obs=nothing)
