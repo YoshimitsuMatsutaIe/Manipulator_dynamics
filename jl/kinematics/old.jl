@@ -386,11 +386,12 @@ function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing)
     end
 
     if !isnothing(goal)
-        scatter!([goal[1]], [goal[2]], [goal[3]], markershape=:star6)
+        scatter!([goal.x[1]], [goal.x[2]], [goal.x[3]], markershape=:star6)
     end
 
     if !isnothing(obs)
-        x, y, z = split_vec_of_arrays(obs)
+        _o = get_x_from_State(obs)
+        x, y, z = split_vec_of_arrays(_o)
         scatter!(x, y, z, markershape=:diamond)
     end
 
@@ -398,6 +399,41 @@ function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing)
 end
 
 
+# function draw_arm(nodes, goal=nothing, obs=nothing)
+#     fig = plot()
+
+#     nodes
+#     x, y, z = split_vec_of_arrays(joints_x_global)
+#     plot!(
+#         fig,
+#         x, y, z,
+#         aspect_ratio = 1,
+#         marker=:circle,
+#         markerα = 0.5,
+#         label = "joints",
+#     )
+
+#     cname = ("1", "2", "3", "4", "5", "6", "7", "GL")
+#     for (i, cs) in enumerate(cpoints_x_global)
+#         x, y, z = split_vec_of_arrays(cs)
+#         scatter!(
+#             fig,
+#             x, y, z,
+#             label = cname[i]
+#         )
+#     end
+
+#     if !isnothing(goal)
+#         scatter!([goal[1]], [goal[2]], [goal[3]], markershape=:star6)
+#     end
+
+#     if !isnothing(obs)
+#         x, y, z = split_vec_of_arrays(obs)
+#         scatter!(x, y, z, markershape=:diamond)
+#     end
+
+#     return fig
+# end
 
 
 @time fig = draw_arm()

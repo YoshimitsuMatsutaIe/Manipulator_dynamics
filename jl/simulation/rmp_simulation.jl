@@ -3,19 +3,28 @@ using Plots
 using LinearAlgebra
 #using Parameters
 
-import YAML
+using YAML
 
 
 include("../utils.jl")
 
 include("./rmp.jl")
 include("../kinematics/old.jl")
-
+include("environment.jl")
 
 """点の位置と速度"""
 mutable struct State{T}
     x::Vector{T}
     dx::Vector{T}
+end
+
+
+function get_x_from_State(obs)
+    x = Vector{Vector{typeof(obs[1].x[1])}}(undef, length(obs))
+    for i in 1:length(obs)
+        x[i] = obs[i].x
+    end
+    return x
 end
 
 
@@ -175,13 +184,13 @@ end
 """
 オイラー法でシミュレーション
 """
-function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T) where T
+function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs) where T
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
     goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
-    obs = [
-        State([0.25, -0.4, 1.0], [0.0, 0.0, 0.0])
-    ]
+    # obs = [
+    #     State([0.25, -0.4, 1.0], [0.0, 0.0, 0.0])
+    # ]
 
     # 初期値
     nodes₀ = update_nodes(nothing, q₀, dq₀)
@@ -204,6 +213,7 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T) w
     data.nodes[1] = nodes₀
     data.goal[1] = goal
     data.obs[1] = obs
+    println(length(obs))
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
@@ -232,12 +242,12 @@ end
 
 
 """ひとまずシミュレーションやってみｓる"""
-function run_simulation(TIME_SPAN::T, Δt::T) where T
+function run_simulation(TIME_SPAN::T, Δt::T, obs) where T
 
     q₀ = q_neutral
     dq₀ = zeros(T, 7)
 
-    data = euler_method(q₀, dq₀, TIME_SPAN, Δt)
+    data = euler_method(q₀, dq₀, TIME_SPAN, Δt, obs)
 
     q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.q)
     fig_q = plot(data.t, q1, ylabel="q")
@@ -278,10 +288,10 @@ end
 
 
 
-function make_animation(q, dq, nodes, goal=nothing, obs=nothing)
+function make_animation(data)
     anim = Animation()
-    @gif for i in 1:10:length(t)
-        _fig=draw_arm(q[i], dq[i], goal, obs)
+    @gif for i in 1:10:length(data.q)
+        _fig=draw_arm(data.q[i], data.dq[i], data.goal[i], data.obs[i])
         frame(anim,_fig)
     end
     gif(anim, "test5.gif", fps = 12)
@@ -289,8 +299,27 @@ end
 
 
 
-@time data, fig = run_simulation(1.0, 0.01)
-plot(fig)
+
+function runner(name)
+    params = YAML.load_file(name)
+    sim_param = params["sim_param"]
+    rmp_param = params["rmp_param"]
+    env_param = params["env_param"]
+    obs = set_obs(env_param["obstacle"])
+    data, fig = run_simulation(
+        sim_param["TIME_SPAN"], sim_param["TIME_INTERVAL"], obs
+    )
+
+
+
+    data, fig
+end
+
+
+
+@time data, fig = runner("./config/use_RMPfromGDS_test.yaml")
+make_animation(data)
+
 
 # @time t, q, dq, ddq, error, fig, fig2= run_simulation(5.0, 0.01)
 # make_animation(q, dq)
