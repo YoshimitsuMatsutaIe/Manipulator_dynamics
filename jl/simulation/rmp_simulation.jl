@@ -3,6 +3,7 @@ using Plots
 using LinearAlgebra
 #using Parameters
 
+import YAML
 
 using PyCall
 np = pyimport("numpy")
@@ -30,11 +31,6 @@ mutable struct Node{T}
     Jo::Matrix{T}
 end
 
-
-"""システムの状態"""
-mutable struct SysthemState{T}
-    obs::Vector{State{T}}
-end
 
 
 """加速度指令を計算（resolve演算結果を返す）"""
@@ -94,6 +90,7 @@ function calc_ddq(
     #ddq = zeros(T, 7)
     return ddq
 end
+
 
 """nodeを更新"""
 function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T}) where T
@@ -164,55 +161,75 @@ function update_nodes(nodes::Nothing, q::Vector{T}, dq::Vector{T}) where T
 end
 
 
+"""シミュレーションのデータ"""
+mutable struct Data{T}
+    t::StepRangeLen{T}  # 時刻
+    q::Vector{Vector{T}}  # ジョイントベクトル
+    dq::Vector{Vector{T}}  # ジョイント角速度ベクトル
+    ddq::Vector{Vector{T}}  # 制御入力ベクトル
+    error::Vector{T}  # eeと目標位置との誤差
+    nodes::Vector{Vector{Vector{Node{T}}}}  # ノード
+    goal::Vector{State{T}}
+    obs::Vector{Vector{State{T}}}
+end
 
 
-
+"""
+オイラー法でシミュレーション
+"""
 function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T) where T
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
-    q = Vector{Vector{T}}(undef, length(t))  # 解を格納する1次元配列
-    dq = Vector{Vector{T}}(undef, length(t))
-    ddq = Vector{Vector{T}}(undef, length(t))
-    error = Vector{T}(undef, length(t))
-
     goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
     obs = [
         State([0.25, -0.4, 1.0], [0.0, 0.0, 0.0])
     ]
 
     # 初期値
-    #println("OK0")
-    nodes = update_nodes(nothing, q₀, dq₀)
+    nodes₀ = update_nodes(nothing, q₀, dq₀)
 
-    error[1] = norm(goal.x - nodes[9][1].x)
+    data = Data(
+        t,
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{T}(undef, length(t)),
+        Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
+        Vector{State{T}}(undef, length(t)),
+        Vector{Vector{State{T}}}(undef, length(t))
+    )
 
+    data.q[1] = q₀
+    data.dq[1] = dq₀
+    data.ddq[1] = zeros(T, 7)
+    data.error[1] = norm(goal.x - nodes₀[9][1].x)
+    data.nodes[1] = nodes₀
+    data.goal[1] = goal
+    data.obs[1] = obs
 
-    #println("OK")
-    q[1] = q₀
-    dq[1] = dq₀
-    ddq[1] = zeros(T, 7)
-
-
-
-    for i in 1:length(q)-1
+    # ぐるぐる回す
+    for i in 1:length(data.t)-1
         #println("i = ", i)
-        nodes = update_nodes(nodes, q[i], dq[i])
+        data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
         #println("OK3")
-        error[i+1] = norm(goal.x - nodes[9][1].x)
+        data.error[i+1] = norm(data.goal[i].x - data.nodes[i][9][1].x)
 
-        ddq[i+1] = calc_ddq(nodes, goal, obs)
+        data.ddq[i+1] = calc_ddq(data.nodes[i], data.goal[i], data.obs[i])
         #ddq[i+1] = zeros(T,7)
         #println("q = ", q[i])
         #println("dq = ", dq[i])
         #println("ddq = ", ddq[i])
 
-        q[i+1] = q[i] + dq[i]*Δt
+        data.q[i+1] = data.q[i] + data.dq[i]*Δt
         #q[i+1] = zeros(T,7)
-        dq[i+1] = dq[i] + ddq[i]*Δt
+        data.dq[i+1] = data.dq[i] + data.ddq[i]*Δt
+        data.goal[i+1] = goal
+        data.obs[i+1] = obs
     end
 
-    t, q, dq, ddq, error
+    data
 end
+
 
 
 
@@ -220,61 +237,61 @@ end
 function run_simulation(TIME_SPAN::T, Δt::T) where T
 
     q₀ = q_neutral
-    #q₀ = zeros(T, 7)
     dq₀ = zeros(T, 7)
 
-    t, q, dq, ddq, error = euler_method(q₀, dq₀, TIME_SPAN, Δt)
+    data = euler_method(q₀, dq₀, TIME_SPAN, Δt)
 
-    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(q)
-    fig_q = plot(t, q1, ylabel="q")
-    plot!(fig_q, t, q2)
-    plot!(fig_q, t, q3)
-    plot!(fig_q, t, q4)
-    plot!(fig_q, t, q5)
-    plot!(fig_q, t, q6)
-    plot!(fig_q, t, q7)
+    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.q)
+    fig_q = plot(data.t, q1, ylabel="q")
+    plot!(fig_q, data.t, q2)
+    plot!(fig_q, data.t, q3)
+    plot!(fig_q, data.t, q4)
+    plot!(fig_q, data.t, q5)
+    plot!(fig_q, data.t, q6)
+    plot!(fig_q, data.t, q7)
 
-    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(dq)
-    fig_dq = plot(t, q1, ylabel="dq")
-    plot!(fig_dq, t, q2)
-    plot!(fig_dq, t, q3)
-    plot!(fig_dq, t, q4)
-    plot!(fig_dq, t, q5)
-    plot!(fig_dq, t, q6)
-    plot!(fig_dq, t, q7)
+    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.dq)
+    fig_dq = plot(data.t, q1, ylabel="dq")
+    plot!(fig_dq, data.t, q2)
+    plot!(fig_dq, data.t, q3)
+    plot!(fig_dq, data.t, q4)
+    plot!(fig_dq, data.t, q5)
+    plot!(fig_dq, data.t, q6)
+    plot!(fig_dq, data.t, q7)
 
-    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(ddq)
-    fig_ddq = plot(t, q1, ylabel="ddq")
-    plot!(fig_ddq, t, q2)
-    plot!(fig_ddq, t, q3)
-    plot!(fig_ddq, t, q4)
-    plot!(fig_ddq, t, q5)
-    plot!(fig_ddq, t, q6)
-    plot!(fig_ddq, t, q7)
+    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.ddq)
+    fig_ddq = plot(data.t, q1, ylabel="ddq")
+    plot!(fig_ddq, data.t, q2)
+    plot!(fig_ddq, data.t, q3)
+    plot!(fig_ddq, data.t, q4)
+    plot!(fig_ddq, data.t, q5)
+    plot!(fig_ddq, data.t, q6)
+    plot!(fig_ddq, data.t, q7)
 
-    fig_error = plot(t, error, ylabel="error", ylims=(0.0,))
+    fig_error = plot(data.t, data.error, ylabel="error", ylims=(0.0,))
 
     fig = plot(
         fig_q, fig_dq, fig_ddq, fig_error, layout=(4,1),
         size=(500,1200)
     )
 
-    goal = [0.3, -0.75, 1.0]
-    obs = [[0.25, -0.4, 1.0]]
-    
-    fig2 = draw_arm(q[end], dq[end])
+    return data, fig
+end
 
+
+function make_animation(q, dq, nodes, goal=nothing, obs=nothing)
     anim = Animation()
     @gif for i in 1:10:length(t)
         _fig=draw_arm(q[i], dq[i], goal, obs)
         frame(anim,_fig)
     end
     gif(anim, "test5.gif", fps = 12)
-
-    return fig, fig2, anim
 end
 
 
 
-@time fig, fig2, anim = run_simulation(5.0, 0.01)
-#gif(anim, "test.gif")
+@time data, fig = run_simulation(1.0, 0.01)
+plot(fig)
+
+# @time t, q, dq, ddq, error, fig, fig2= run_simulation(5.0, 0.01)
+# make_animation(q, dq)
