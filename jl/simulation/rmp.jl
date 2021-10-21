@@ -218,7 +218,7 @@ end
 
 
 """障害物回避力"""
-function f(p::RMPfromGDSCollisionAvoidance{T}) where T
+function f(p::RMPfromGDSCollisionAvoidance{T}, s, ds) where T
 
     """重み関数"""
     w(s) = s^(-4)
@@ -250,6 +250,6 @@ function f(p::RMPfromGDSCollisionAvoidance{T}) where T
 
     ∇Φ₁(s) = p.α * s^(-3)
 
-
-
+    return -w(s) * ∇Φ₁(s) - ξ(s, ds)
 end
+
