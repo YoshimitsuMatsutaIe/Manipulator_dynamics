@@ -216,8 +216,40 @@ struct RMPfromGDSCollisionAvoidance{T}
     α::T
 end
 
-"""重み関数"""
-w(s) = s^(-4)
 
-"""重み関数の微分"""
-dwds(s) = -4 * s^(-5)
+"""障害物回避力"""
+function f(p::RMPfromGDSCollisionAvoidance{T}) where T
+
+    """重み関数"""
+    w(s) = s^(-4)
+
+    """重み関数の微分"""
+    dwds(s) = -4 * s^(-5)
+
+    function u(ds)
+        if ds < 0.0
+            return -exp(-ds^2 / (2*p.σ^2))
+        else
+            return 0.0
+        end
+    end
+
+    function dudsdot(ds)
+        if ds < 0.0
+            return -exp(-ds^2 / (2*p.σ^2)) * (-ds / p.σ^2)
+        else
+            return 0.0
+        end
+    end
+
+    δ(s, ds) = u(ds) + 1/2 * ds * dudsdot(ds)
+
+    ξ(s, ds) = 1/2 * u(ds) * dwds(s) * ds^2
+
+    Φ₁(s) = -1/2 * p.α * s^(-2)
+
+    ∇Φ₁(s) = p.α * s^(-3)
+
+
+
+end
