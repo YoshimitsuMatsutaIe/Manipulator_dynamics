@@ -238,7 +238,7 @@ function calc_jacobians(
 
     """Joのヤコビ行列"""
     function _calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar)
-        z_bar = Jax * r_bar[1,1] + Jay * r_bar[2,1] + Jaz * r_bar[3,1] + Jo
+        z_bar = Jax .* r_bar[1,1] .+ Jay .* r_bar[2,1] .+ Jaz .* r_bar[3,1] .+ Jo
         return z_bar[1:3, :]
     end
     
@@ -281,7 +281,6 @@ function calc_cpoint_x_and_dx_global(
         _c = Vector{Vector{T}}(undef, n)
         for j in 1:n
             _c[j] = (HTMs_global[i+2] * cpoints_local[i][j])[1:3]
-            #println(typeof(_c[j]))
         end
         cpoints_x_global[i] = _c
     end

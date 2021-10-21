@@ -4,8 +4,6 @@
 #using Parameters
 
 using LinearAlgebra
-# eye(T::Type, n) = Diagonal{T}(I, n)
-# eye(n) = eye(Float64, n)
 
 
 """pullback演算"""
@@ -15,7 +13,7 @@ function pullbacked_rmp(f, M, J, dJ=nothing, dx=nothing)
     if isnothing(dJ) && isnothing(dx)
         pulled_f = J' * f
     else
-        pulled_f = J' * (f - M * dJ * dx)
+        pulled_f = J' * (f .- M * dJ * dx)
     end
     pulled_M = J' * M * J
     
@@ -23,14 +21,25 @@ function pullbacked_rmp(f, M, J, dJ=nothing, dx=nothing)
 end
 
 
+# mutable struct NaturalFormRMP{T}
+#     f::Vector{T}
+#     M::Matrix{T}
+# end
+
+# mutable struct CanonicalFormRMP{T}
+#     a::Vector{T}
+#     M::Matrix{T}
+# end
 
 
+
+#### オリジナルのRMP ###
 
 """ソフト正規化関数"""
 function soft_normal(v, alpha)
     v_norm = norm(v)
     softmax = v_norm + 1/alpha * log(1 + exp(-2 * alpha * v_norm))
-    return v / softmax
+    return v ./ softmax
 end
 
 """空間を一方向に伸ばす計量"""
@@ -41,7 +50,7 @@ end
 
 """基本の計量"""
 function basic_metric_H(f, alpha::T, beta::T) where T
-    return beta * metric_stretch(f, alpha) + (1 - beta) * Matrix{T}(I, 3, 3)
+    return beta .* metric_stretch(f, alpha) + (1 - beta) .* Matrix{T}(I, 3, 3)
 end
 
 # """アフィン変換されたシグモイド写像"""
@@ -49,7 +58,7 @@ end
 
 """ジョイント制限に関する対角ヤコビ行列"""
 function D_sigma(q, q_min, q_max)
-    diags = (q_max - q_min) .* (exp.(-q) ./ (1 .+ exp.(-q)).^2)
+    diags = (q_max .- q_min) .* (exp.(-q) ./ (1 .+ exp.(-q)).^2)
     #println(diags)
     return diagm(diags)
 end
@@ -69,16 +78,16 @@ end
 """目標加速度 from OirginalRMP"""
 function ddz(p::OriginalRMPAttractor{T}, z, dz, z0) where T
     damp = p.gain / p.max_speed
-    a = p.gain * soft_normal(z0-z, p.metric_damp_r) - damp*dz
+    a = p.gain .* soft_normal(z0.-z, p.metric_damp_r) .- damp*dz
     return a
 end
 
 """目標計量  from OirginalRMP"""
 function inertia_matrix(p::OriginalRMPAttractor{T}, z, dz, z0, ddq) where T
-    dis = norm(z0 - z)
-    weight = exp(-dis / p.simga_W)
+    dis = norm(z0 .- z)
+    weight = exp(-dis ./ p.simga_W)
     beta = 1 - exp(-1/2 * (dis / p.sigma_H)^2)
-    return weight * basic_metric_H(ddq, p.ddq_damp_r, beta)
+    return weight .* basic_metric_H(ddq, p.ddq_damp_r, beta)
 end
 
 """canonical form []"""
@@ -162,7 +171,7 @@ end
 
 """ジョイント制限回避計量 from OriginalRMP"""
 function inertia_matrix(p::OriginalJointLimitAvoidance{T}, q, dq) where T
-    return p.λ * Matrix{T}(I, 7, 7)
+    return p.λ .* Matrix{T}(I, 7, 7)
 end
 
 """canonical form []"""
@@ -183,3 +192,32 @@ function get_natural(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) whe
 end
 
 
+
+
+### fromGDS ###
+
+struct RMPfromGDSAttractor{T}
+    max_speed::T
+    gain::T
+    f_α::T
+    σ_α::T
+    σ_γ::T
+    wᵤ::T
+    wₗ::T
+    ddq_damp_r::T
+    α::T
+    ϵ::T
+end
+
+
+struct RMPfromGDSCollisionAvoidance{T}
+    rw::T
+    σ::T
+    α::T
+end
+
+"""重み関数"""
+w(s) = s^(-4)
+
+"""重み関数の微分"""
+dwds(s) = -4 * s^(-5)
