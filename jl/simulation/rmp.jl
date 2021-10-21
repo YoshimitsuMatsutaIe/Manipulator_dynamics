@@ -108,28 +108,28 @@ end
 """障害物回避加速度  from OirginalRMP"""
 function ddz(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
     
-    x = z - z0
+    x = z .- z0
     d = norm(x)
-    ∇d = x / d  # 勾配
+    ∇d = x ./ d  # 勾配
 
     # 斥力項
-    α_rep = p.gain * exp(-d / p.scale_rep)
-    ddq_rep = α_rep * ∇d
+    α_rep = p.gain .* exp(-d / p.scale_rep)
+    ddq_rep = α_rep .* ∇d
 
     # ダンピング項
-    P_obs = max(0, -dz' * ∇d) * ∇d * ∇d' * dz
-    damp_gain = p.gain * p.ratio
-    α_damp = damp_gain / (d / p.scale_damp + 1e-7)
+    P_obs = max(0.0, -dz' * ∇d) * ∇d * ∇d' * dz
+    damp_gain = p.gain .* p.ratio
+    α_damp = damp_gain ./ (d / p.scale_damp + 1e-7)
     ddq_damp = α_damp * P_obs
 
-    return ddq_rep + ddq_damp
+    return ddq_rep .+ ddq_damp
 end
 
 """障害物計量 from OriginalRMP"""
 function inertia_matrix(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0, ddq) where T
-    d = norm(z - z0)
+    d = norm(z .- z0)
     weight = (d / p.r)^2 - 2 * d / p.r + 1
-    return weight * Matrix{T}(I, 3, 3)
+    return weight .* Matrix{T}(I, 3, 3)
 end
 
 """canonical form []"""

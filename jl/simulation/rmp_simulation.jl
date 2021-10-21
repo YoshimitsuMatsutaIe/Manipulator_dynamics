@@ -68,8 +68,8 @@ function calc_ddq(
                 attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
             )
             _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][1].Jo,)
-            root_f += _pulled_f
-            root_M += _pulled_M
+            @. root_f += _pulled_f
+            @. root_M += _pulled_M
         else
             for j in 1:length(nodes[i])
                 for k in 1:length(obs)
@@ -77,8 +77,8 @@ function calc_ddq(
                         obs_avovidance, nodes[i][j].x, nodes[i][j].dx, obs[k].x
                     )
                     _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].Jo,)
-                    root_f += _pulled_f
-                    root_M += _pulled_M
+                    @. root_f += _pulled_f
+                    @. root_M += _pulled_M
                 end
             end
         end
@@ -104,8 +104,9 @@ function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T
 
     #println("not nothing")
     # 更新
-    DHparams = update_DHparams(q)
-    HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
+    #DHparams = update_DHparams(q)
+    #HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
+    HTMs_local, HTMs_global = update_DHparams(q) |> calc_HTMs_local_and_global
     Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)
     Jos_joint_all, Jos_cpoint_all = calc_jacobians(Jax_all, Jay_all, Jaz_all, Jo_all)
     cpoints_x_global, cpoints_dx_global = calc_cpoint_x_and_dx_global(
@@ -213,14 +214,14 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, o
     data.nodes[1] = nodes₀
     data.goal[1] = goal
     data.obs[1] = obs
-    println(length(obs))
+    #println(length(obs))
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
         #println("i = ", i)
         data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
         #println("OK3")
-        data.error[i+1] = norm(data.goal[i].x - data.nodes[i][9][1].x)
+        data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
 
         data.ddq[i+1] = calc_ddq(data.nodes[i], data.goal[i], data.obs[i])
         #ddq[i+1] = zeros(T,7)
@@ -228,9 +229,9 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, o
         #println("dq = ", dq[i])
         #println("ddq = ", ddq[i])
 
-        data.q[i+1] = data.q[i] + data.dq[i]*Δt
+        data.q[i+1] = data.q[i] .+ data.dq[i]*Δt
         #q[i+1] = zeros(T,7)
-        data.dq[i+1] = data.dq[i] + data.ddq[i]*Δt
+        data.dq[i+1] = data.dq[i] .+ data.ddq[i]*Δt
         data.goal[i+1] = goal
         data.obs[i+1] = obs
     end
@@ -318,7 +319,8 @@ end
 
 
 @time data, fig = runner("./config/use_RMPfromGDS_test.yaml")
-make_animation(data)
+plot(fig)
+#make_animation(data)
 
 
 # @time t, q, dq, ddq, error, fig, fig2= run_simulation(5.0, 0.01)
