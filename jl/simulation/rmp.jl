@@ -59,7 +59,7 @@ end
 # sigma_L(q, q_min, q_max) = (q_max - q_min) * (1 / (1 + exp.(-q))) + q_min
 
 """ジョイント制限に関する対角ヤコビ行列"""
-function D_sigma(q::Vector{T}, q_min::Vector{T}, q_max::Vecor{T}) where T
+function D_sigma(q::Vector{T}, q_min::Vector{T}, q_max::Vector{T}) where T
     diags = (q_max .- q_min) .* (exp.(-q) ./ (1 .+ exp.(-q)).^2)
     #println(diags)
     return diagm(diags)
@@ -232,26 +232,59 @@ end
 w(x, σ_γ, wᵤ, wₗ) = (wᵤ-wₗ) * α_or_γ(x, σ_γ) + wₗ
 
 """fromGDSのアトラクター慣性行列"""
-function inertia_matrix(p::RNOfromGDSAttractor{T}, x, x₀) where T
+function inertia_matrix(x, p::RMPfromGDSAttractor{T}, x₀) where T
     z = x₀ .- x
     ∇pot = ∇potential_2(z, p.α)
-    α = α_or_γ(z, σ_α)
+    α = α_or_γ(z, p.σ_α)
     return w(z, p.σ_γ, p.wᵤ, p.wₗ) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.ϵ).*Matrix{T}(I, 3, 3))
 end
 
 """力用"""
-function xMx(x, p::RNOfromGDSAttractor{T}, ẋ, x₀)
-    ẋ' * inertia_matrix(p, x, x₀) * ẋ
+function xMx(x, p::RMPfromGDSAttractor{T}, ẋ, x₀) where T
+    ẋ' * inertia_matrix(x, p, x₀) * ẋ
 end
 
-function ξₘ(p::RNOfromGDSAttractor{T}, x, ẋ, x₀)
+"""曲率項"""
+function ξ(p::RMPfromGDSAttractor{T}, x, ẋ, x₀) where T
+    # 第一項を計算
+    A = Matrix{T}(undef, 3, 3)
+    for i in 1:3
+        _M(x) = inertia_matrix(x, p, x₀)[:, i]
+        _jacobian_M = ForwardDiff.jacobian(_M, x)
+        #println(_jacobian_M)
+        A[:, i] = _jacobian_M * ẋ
+    end
+    A *= ẋ
+
+    # 第二項を計算
     _xMx(x) = xMx(x, p, ẋ, x₀)
-    B = ForwardDiff.gradient(_xMx, x)
-    println(B)
+    B = 1/2 .* ForwardDiff.gradient(_xMx, x)  # 便利
+    
+    return A .- B
+end
+
+"""fromGDSのアトラクター力"""
+function f(p::RMPfromGDSAttractor{T}, x, ẋ, x₀, M) where T
+    z = x₀ .- x
+    damp = p.gain / p.max_speed
+    return M * (-p.gain .* soft_normal(z, p.f_α) .- damp * ẋ) .- ξ(p, x, ẋ, x₀)
+end
+
+""""""
+function get_natural(p::RMPfromGDSAttractor{T}, x, ẋ, x₀)
+    M = inertia_matrix(x, p, x₀)
+    return f(p, x, ẋ, x₀, M), M
 end
 
 
+# # テスト
+# p = RMPfromGDSAttractor(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0)
+# x = [1.0, 2.0, 3.0]
+# dx = [1.0, 2.0, 3.0]
+# x0 = [0.0, 0.0, 0.0]
 
+# M = inertia_matrix(x, p, x0)
+# temp = ξ(p, x, dx, x0, M)
 
 
 struct RMPfromGDSCollisionAvoidance{T}
@@ -294,12 +327,12 @@ end
 ∇Φ₁(s, α) = α * s^(-3)
 
 
-"""障害物回避力"""
+"""fromGDSの障害物回避力"""
 function f(p::RMPfromGDSCollisionAvoidance{T}, s, ṡ) where T
     return -w(s) * ∇Φ₁(s, p.α) - ξ(s, ṡ, p.σ)
 end
 
-"""障害物回避慣性行列"""
+"""fromGDSの障害物回避慣性行列"""
 function inertia_matrix(p::RMPfromGDSCollisionAvoidance{T}, s, ṡ) where T
     return w(s) * δ(s, ṡ, p.σ)
 end
