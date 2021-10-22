@@ -60,7 +60,7 @@ end
 
 """ジョイント制限に関する対角ヤコビ行列"""
 function D_sigma(q::Vector{T}, q_min::Vector{T}, q_max::Vector{T}) where T
-    diags = (q_max .- q_min) .* (exp.(-q) ./ (1 .+ exp.(-q)).^2)
+    diags = (q_max .- q_min) .* (exp.(-q) ./ (1.0 .+ exp.(-q)).^2)
     #println(diags)
     return diagm(diags)
 end
@@ -131,10 +131,10 @@ function ddz(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
     ddq_rep = α_rep .* ∇d
 
     # ダンピング項
-    P_obs = max(0.0, -dz' * ∇d) * ∇d * ∇d' * dz
-    damp_gain = p.gain .* p.ratio
-    α_damp = damp_gain ./ (d / p.scale_damp + 1e-7)
-    ddq_damp = α_damp * P_obs
+    P_obs = max(0.0, dot(-dz, ∇d)) * ∇d * ∇d' * dz
+    damp_gain = p.gain * p.ratio
+    α_damp = damp_gain / (d / p.scale_damp + 1e-7)
+    ddq_damp = α_damp .* P_obs
 
     return ddq_rep .+ ddq_damp
 end
@@ -216,12 +216,12 @@ struct RMPfromGDSAttractor{T}
 end
 
 """目標吸引ポテンシャル2"""
-potential_2(x, η) = soft_normal(x, η)
+potential_2 = soft_normal
 
 """ポテンシャルの勾配"""
 function ∇potential_2(x, η)
     x_norm = norm(x)
-    return (1-exp(-2*η*x_norm)) / (1+exp(-2*η*x_norm)) * x / x_norm
+    return (1-exp(-2*η*x_norm)) / (1+exp(-2*η*x_norm)) .* x ./ x_norm
 end
 
 """?"""
@@ -343,10 +343,7 @@ function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, ẋ, x₀, ẋ₀=ze
     ṡ_vec = ẋ₀ .- ẋ
     s = norm(s_vec)
     ṡ = (1/s .* dot(s_vec, ṡ_vec))[1]
-    println("x = ", x)
-    println("dx = ", ẋ)
-    println("s = ", s)
-    println("s_dot_vec = ", ṡ_vec)
+
 
     m = inertia_matrix(p, s, ṡ)
     _f = f(p, s, ṡ)
@@ -355,9 +352,14 @@ function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, ẋ, x₀, ẋ₀=ze
     J̇ = -s^(-2) .* (ṡ_vec' .- s_vec' .* ṡ)
 
     _f, M = pullbacked_rmp(_f, m, J, J̇, ẋ)
-    println(_f)
-    println(M)
-    println()
+
+    # println("x = ", x)
+    # println("dx = ", ẋ)
+    # println("s = ", s)
+    # println("s_dot_vec = ", ṡ_vec)
+    # println(_f)
+    # println(M)
+    # println()
     return _f, M
 end
 

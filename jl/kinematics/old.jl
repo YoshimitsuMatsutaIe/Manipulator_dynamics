@@ -27,7 +27,7 @@ const L4 = 374.29e-3
 const L5 = 10e-3
 const L6 = 368.3e-3
 
-const q_neutral = [0.0; -31.0; 0.0; 43.0; 0.0; 72.0; 0.0] * pi/180  # ニュートラルの姿勢
+const q_neutral = [0.0, -31.0, 0.0, 43.0, 0.0, 72.0, 0.0] * pi/180  # ニュートラルの姿勢
 const q_max = [51.0, 60.0, 173.0, 150.0, 175.0, 120.0, 175.0] * pi/180
 const q_min = [-141.0, -123.0, -173.0, -3.0, -175.0, -90.0, -175.0] * pi/180
 
@@ -246,7 +246,7 @@ function calc_jacobians(
     Jos_joint_all = Vector{Matrix{T}}(undef, 8)
     for i in 1:8
         Jos_joint_all[i] = _calc_Jo_global(
-            Jax_all[i], Jay_all[i], Jaz_all[i], Jo_all[i], zeros(T, 4),
+            Jax_all[i], Jay_all[i], Jaz_all[i], Jo_all[i], zeros(T, 4),  # <-正確には[0,0,0,1]
         )
     end
 
@@ -394,6 +394,24 @@ function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing)
         scatter!(x, y, z, markershape=:diamond)
     end
 
+    x_max = 1.0
+    x_min = -1.0
+    y_max = 0.2
+    y_min = -1.0
+    z_max = 2.0
+    z_min = 0.0
+    max_range = max(x_max-x_min, y_max-y_min, z_max-z_min)*0.5
+    x_mid = (x_max + x_min) / 2
+    y_mid = (y_max + y_min) / 2
+    z_mid = (z_max + z_min) / 2
+    plot!(
+        fig,
+        xlims=(x_mid-max_range, x_mid+max_range),
+        ylims=(y_mid-max_range, y_mid+max_range),
+        zlims=(z_mid-max_range, z_mid+max_range),
+        legend = false,
+    )
+
     return fig
 end
 
@@ -437,95 +455,3 @@ end
 
 @time fig = draw_arm()
 
-
-# function draw_arm(fig, q, DHparams, name)
-#     """アームをplot by Plots
-#     name : trueならright、falseならleft
-#     """
-#     DHparams = update_DHparams(DHparams, q)
-#     os = []
-#     Ts = []
-#     push!(os, [0.0, 0.0, 0.0])
-
-#     if name
-#         T_temp = HTM_BR_Wo
-#         push!(Ts, T_temp)
-#         push!(os, T_temp[1:3, 4])
-
-#         T_temp = T_temp * HTM_0_BR
-#         push!(Ts, T_temp)
-#         push!(os, T_temp[1:3, 4])
-#     else
-#         T_temp = HTM_BL_Wo
-#         push!(Ts, T_temp)
-#         push!(os, T_temp[1:3, 4])
-
-#         T_temp = T_temp * HTM_0_BL
-#         push!(Ts, T_temp)
-#         push!(os, T_temp[1:3, 4])
-#     end
-
-#     for i in 1:7
-#         T_temp = T_temp * T(DHparams[i])
-#         push!(Ts, T_temp)
-#         push!(os, T_temp[1:3, 4])
-#     end
-
-#     T_temp = T_temp * HTM_GR_7
-#     push!(Ts, T_temp)
-#     push!(os, T_temp[1:3, 4])
-#     println(T_temp[1:3, 4])
-
-#     x, y, z = split_vec_of_arrays(os)
-#     if name
-#         s = "R-"
-#     else
-#         s = "L-"
-#     end
-
-#     plot!(
-#         fig,
-#         x, y, z,
-#         aspect_ratio = 1,
-#         marker=:circle,
-#         markerα = 0.5,
-#         label = s * "joints",
-#         )
-
-#     cs_global_all = []
-#     for (i, cs_local) in enumerate(c_points_all)
-#         cs_global = []
-#         for r in cs_local
-#             o = Ts[i+2] * r
-#             push!(cs_global, o[1:3, :])
-#         end
-#         push!(cs_global_all, cs_global)
-#     end
-#     cname = (
-#         "1", "2", "3", "4", "5", "6", "7", "GL"
-#     )
-
-#     for (i, cs) in enumerate(cs_global_all)
-#         if i == 8
-#             continue
-#         else
-#             x, y, z = split_vec_of_arrays(cs)
-#             scatter!(
-#                 fig, 
-#                 x, y, z, label = s * cname[i],
-#                 aspect_ratio = 1,
-#             )
-#         end
-#     end
-#     fig
-# end
-
-# ### neutralを図示 ###
-# fig = plot(aspect_ratio = 1,)
-# @time fig = draw_arm(fig, qr, DHparams_r, true)
-# @time fig = draw_arm(fig, ql, DHparams_l, false)
-
-# # # # 回転
-# # # @gif for i in range(0, stop = 360*2, length = 100)
-# # #     plot!(fig, camera = (i, 0),)
-# # # end

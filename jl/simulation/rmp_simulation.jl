@@ -41,6 +41,15 @@ end
 
 
 
+#attractor = OriginalRMPAttractor(2.0, 10.0, 0.15, 1.0, 1.0, 5.0)
+const obs_avoidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
+const joint_limit_avoidance = OriginalJointLimitAvoidance(0.05, 0.1, 0.7)
+
+const attractor = RMPfromGDSAttractor(5.0, 20.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5)
+#const obs_avoidance = RMPfromGDSCollisionAvoidance(0.1, 1.0, 0.01)
+
+
+
 """加速度指令を計算（resolve演算結果を返す）"""
 function calc_ddq(
     nodes::Vector{Vector{Node{T}}},
@@ -53,12 +62,6 @@ function calc_ddq(
     root_f = zeros(T, 7)
     root_M = zeros(T, 7, 7)
 
-    #attractor = OriginalRMPAttractor(2.0, 10.0, 0.15, 1.0, 1.0, 5.0)
-    #obs_avoidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
-    joint_limit_avoidance = OriginalJointLimitAvoidance(0.05, 0.1, 0.7)
-
-    attractor = RMPfromGDSAttractor(2.0, 10.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5)
-    obs_avoidance = RMPfromGDSCollisionAvoidance(0.1, 1.0, 0.01)
 
     for i in 1:9
         if i == 1
@@ -91,11 +94,11 @@ function calc_ddq(
     #root_f += zeros(T, 7)
     #root_M += zeros(T, 7, 7)
 
-    println("root_f = ", root_f)
-    println("root_M = ", root_M)
+    #println("root_f = ", root_f)
+    #println("root_M = ", root_M)
 
     ddq = pinv(root_M) * root_f
-    println("ddq = ", ddq)
+    #println("ddq = ", ddq)
     #ddq = np.linalg.pinv(root_M) * root_f
 
     #ddq = zeros(T, 7)
@@ -108,8 +111,6 @@ function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T
 
     #println("not nothing")
     # 更新
-    #DHparams = update_DHparams(q)
-    #HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
     HTMs_local, HTMs_global = update_DHparams(q) |> calc_HTMs_local_and_global
     Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)
     Jos_joint_all, Jos_cpoint_all = calc_jacobians(Jax_all, Jay_all, Jaz_all, Jo_all)
@@ -142,8 +143,6 @@ function update_nodes(nodes::Nothing, q::Vector{T}, dq::Vector{T}) where T
 
     #println("nothing")
     # 更新
-    #DHparams = update_DHparams(q)
-    #HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
     HTMs_local, HTMs_global = update_DHparams(q) |> calc_HTMs_local_and_global
     Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)
     Jos_joint_all, Jos_cpoint_all = calc_jacobians(Jax_all, Jay_all, Jaz_all, Jo_all)
@@ -223,7 +222,7 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, o
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
-        println("i = ", i)
+        #println("i = ", i)
         data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
         #println("OK3")
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
@@ -282,7 +281,7 @@ function run_simulation(TIME_SPAN::T, Δt::T, obs) where T
     plot!(fig_ddq, data.t, q6)
     plot!(fig_ddq, data.t, q7)
 
-    fig_error = plot(data.t, data.error, ylabel="error", ylims=(0.0,))
+    fig_error = plot(data.t, data.error, ylabel="error [m]", ylims=(0.0,))
 
     fig = plot(
         fig_q, fig_dq, fig_ddq, fig_error, layout=(4,1),
@@ -300,7 +299,7 @@ function make_animation(data)
         _fig=draw_arm(data.q[i], data.dq[i], data.goal[i], data.obs[i])
         frame(anim,_fig)
     end
-    gif(anim, "test5.gif", fps = 12)
+    #gif(anim, "test5.gif", fps = 12)
 end
 
 
@@ -315,9 +314,6 @@ function runner(name)
     data, fig = run_simulation(
         sim_param["TIME_SPAN"], sim_param["TIME_INTERVAL"], obs
     )
-
-
-
     data, fig
 end
 
