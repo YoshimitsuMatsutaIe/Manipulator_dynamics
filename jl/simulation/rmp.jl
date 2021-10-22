@@ -295,19 +295,21 @@ end
 """重み関数"""
 w(s) = s^(-4)
 
+#function w(s)
+
 """重み関数の微分"""
 dwds(s) = -4 * s^(-5)
 
 function u(ṡ, σ)
     if ṡ < 0.0
-        return -exp(-ṡ^2 / (2*σ^2))
+        return 1 - exp(-ṡ^2 / (2*σ^2))
     else
         return 0.0
     end
 end
 
 function dudṡ(ṡ, σ)
-    if ds < 0.0
+    if ṡ < 0.0
         return -exp(-ṡ^2 / (2*σ^2)) * (-ṡ / σ^2)
     else
         return 0.0
@@ -336,19 +338,26 @@ function inertia_matrix(p::RMPfromGDSCollisionAvoidance{T}, s, ṡ) where T
     return w(s) * δ(s, ṡ, p.σ)
 end
 
-function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, ẋ, x₀, ẋ₀) where T
+function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, ẋ, x₀, ẋ₀=zeros(Float64, 3)) where T
     s_vec = x₀ .- x
-    ṡ_vec = ẋ₀ - ẋ
+    ṡ_vec = ẋ₀ .- ẋ
     s = norm(s_vec)
-    ṡ = 1/s * s_vec * (ṡ_vec)
+    ṡ = (1/s .* dot(s_vec, ṡ_vec))[1]
+    println("x = ", x)
+    println("dx = ", ẋ)
+    println("s = ", s)
+    println("s_dot_vec = ", ṡ_vec)
 
     m = inertia_matrix(p, s, ṡ)
-    f = f(p, s, ṡ)
+    _f = f(p, s, ṡ)
 
     J = -(x .- ẋ)' ./ s
     J̇ = -s^(-2) .* (ṡ_vec' .- s_vec' .* ṡ)
 
-    f, M = pullbacked_rmp(f, m, J, J̇, ẋ)
-    return f, M
+    _f, M = pullbacked_rmp(_f, m, J, J̇, ẋ)
+    println(_f)
+    println(M)
+    println()
+    return _f, M
 end
 

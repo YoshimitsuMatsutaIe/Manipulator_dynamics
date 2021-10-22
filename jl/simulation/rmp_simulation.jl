@@ -54,10 +54,11 @@ function calc_ddq(
     root_M = zeros(T, 7, 7)
 
     #attractor = OriginalRMPAttractor(2.0, 10.0, 0.15, 1.0, 1.0, 5.0)
-    obs_avovidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
+    #obs_avoidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
     joint_limit_avoidance = OriginalJointLimitAvoidance(0.05, 0.1, 0.7)
 
-    attractor = RMPfromGDSAttractor(2.0, 5.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5)
+    attractor = RMPfromGDSAttractor(2.0, 10.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5)
+    obs_avoidance = RMPfromGDSCollisionAvoidance(0.1, 1.0, 0.01)
 
     for i in 1:9
         if i == 1
@@ -77,7 +78,7 @@ function calc_ddq(
             for j in 1:length(nodes[i])
                 for k in 1:length(obs)
                     _f, _M = get_natural(
-                        obs_avovidance, nodes[i][j].x, nodes[i][j].dx, obs[k].x
+                        obs_avoidance, nodes[i][j].x, nodes[i][j].dx, obs[k].x
                     )
                     _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].Jo,)
                     @. root_f += _pulled_f
@@ -90,11 +91,11 @@ function calc_ddq(
     #root_f += zeros(T, 7)
     #root_M += zeros(T, 7, 7)
 
-    #println("root_f = ", root_f)
-    #println("root_M = ", root_M)
+    println("root_f = ", root_f)
+    println("root_M = ", root_M)
 
     ddq = pinv(root_M) * root_f
-
+    println("ddq = ", ddq)
     #ddq = np.linalg.pinv(root_M) * root_f
 
     #ddq = zeros(T, 7)
@@ -222,7 +223,7 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, o
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
-        #println("i = ", i)
+        println("i = ", i)
         data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
         #println("OK3")
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
