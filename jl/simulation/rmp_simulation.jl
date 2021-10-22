@@ -19,6 +19,7 @@ mutable struct State{T}
 end
 
 
+
 function get_x_from_State(obs)
     x = Vector{Vector{typeof(obs[1].x[1])}}(undef, length(obs))
     for i in 1:length(obs)
@@ -52,9 +53,11 @@ function calc_ddq(
     root_f = zeros(T, 7)
     root_M = zeros(T, 7, 7)
 
-    attractor = OriginalRMPAttractor(2.0, 10.0, 0.15, 1.0, 1.0, 5.0)
+    #attractor = OriginalRMPAttractor(2.0, 10.0, 0.15, 1.0, 1.0, 5.0)
     obs_avovidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
     joint_limit_avoidance = OriginalJointLimitAvoidance(0.05, 0.1, 0.7)
+
+    attractor = RMPfromGDSAttractor(2.0, 5.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5)
 
     for i in 1:9
         if i == 1

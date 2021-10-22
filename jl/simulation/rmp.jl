@@ -211,7 +211,6 @@ struct RMPfromGDSAttractor{T}
     σ_γ::T
     wᵤ::T
     wₗ::T
-    ddq_damp_r::T
     α::T
     ϵ::T
 end
@@ -233,7 +232,7 @@ w(x, σ_γ, wᵤ, wₗ) = (wᵤ-wₗ) * α_or_γ(x, σ_γ) + wₗ
 
 """fromGDSのアトラクター慣性行列"""
 function inertia_matrix(x, p::RMPfromGDSAttractor{T}, x₀) where T
-    z = x₀ .- x
+    z = x .- x₀
     ∇pot = ∇potential_2(z, p.α)
     α = α_or_γ(z, p.σ_α)
     return w(z, p.σ_γ, p.wᵤ, p.wₗ) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.ϵ).*Matrix{T}(I, 3, 3))
@@ -265,13 +264,13 @@ end
 
 """fromGDSのアトラクター力"""
 function f(p::RMPfromGDSAttractor{T}, x, ẋ, x₀, M) where T
-    z = x₀ .- x
+    z = x .- x₀
     damp = p.gain / p.max_speed
-    return M * (-p.gain .* soft_normal(z, p.f_α) .- damp * ẋ) .- ξ(p, x, ẋ, x₀)
+    return M * (-p.gain .* soft_normal(z, p.f_α) .- damp .* ẋ) .- ξ(p, x, ẋ, x₀)
 end
 
 """"""
-function get_natural(p::RMPfromGDSAttractor{T}, x, ẋ, x₀)
+function get_natural(p::RMPfromGDSAttractor{T}, x, ẋ, x₀) where T
     M = inertia_matrix(x, p, x₀)
     return f(p, x, ẋ, x₀, M), M
 end
