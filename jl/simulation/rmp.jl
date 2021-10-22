@@ -216,40 +216,59 @@ struct RMPfromGDSCollisionAvoidance{T}
     α::T
 end
 
+"""重み関数"""
+w(s) = s^(-4)
 
-"""障害物回避力"""
-function f(p::RMPfromGDSCollisionAvoidance{T}, s, ds) where T
+"""重み関数の微分"""
+dwds(s) = -4 * s^(-5)
 
-    """重み関数"""
-    w(s) = s^(-4)
-
-    """重み関数の微分"""
-    dwds(s) = -4 * s^(-5)
-
-    function u(ds)
-        if ds < 0.0
-            return -exp(-ds^2 / (2*p.σ^2))
-        else
-            return 0.0
-        end
+function u(ṡ, σ)
+    if ṡ < 0.0
+        return -exp(-ṡ^2 / (2*σ^2))
+    else
+        return 0.0
     end
-
-    function dudsdot(ds)
-        if ds < 0.0
-            return -exp(-ds^2 / (2*p.σ^2)) * (-ds / p.σ^2)
-        else
-            return 0.0
-        end
-    end
-
-    δ(s, ds) = u(ds) + 1/2 * ds * dudsdot(ds)
-
-    ξ(s, ds) = 1/2 * u(ds) * dwds(s) * ds^2
-
-    Φ₁(s) = -1/2 * p.α * s^(-2)
-
-    ∇Φ₁(s) = p.α * s^(-3)
-
-    return -w(s) * ∇Φ₁(s) - ξ(s, ds)
 end
 
+function dudṡ(ṡ, σ)
+    if ds < 0.0
+        return -exp(-ṡ^2 / (2*σ^2)) * (-ṡ / σ^2)
+    else
+        return 0.0
+    end
+end
+
+δ(s, ṡ, σ) = u(ṡ, σ) + 1/2 * ṡ * dudṡ(ṡ, σ)
+
+ξ(s, ṡ, σ) = 1/2 * u(ṡ, σ) * dwds(s) * ṡ^2
+
+Φ₁(s, α) = -1/2 * α * s^(-2)
+
+∇Φ₁(s, α) = α * s^(-3)
+
+
+"""障害物回避力"""
+function f(p::RMPfromGDSCollisionAvoidance{T}, s, ṡ) where T
+    return -w(s) * ∇Φ₁(s, p.α) - ξ(s, ṡ, p.σ)
+end
+
+"""障害物回避慣性行列"""
+function inertia_matrix(p::RMPfromGDSCollisionAvoidance{T}, s, ṡ) where T
+    return w(s) * δ(s, ṡ, p.σ)
+end
+
+function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, ẋ, x₀, ẋ₀) where T
+    s_vec = x₀ .- x
+    ṡ_vec = ẋ₀ - ẋ
+    s = norm(s_vec)
+    ṡ = 1/s * s_vec * (ṡ_vec)
+
+    m = inertia_matrix(p, s, ṡ)
+    f = f(p, s, ṡ)
+
+    J = -(x .- ẋ)' ./ s
+    J̇ = -s^(-2) .* (ṡ_vec' .- s_vec' .* ṡ)
+
+    f, M = pullbacked_rmp(f, m, J, J̇, ẋ)
+    return f, M
+end
