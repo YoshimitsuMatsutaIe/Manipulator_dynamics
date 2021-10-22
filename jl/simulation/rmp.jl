@@ -232,12 +232,26 @@ end
 w(x, σ_γ, wᵤ, wₗ) = (wᵤ-wₗ) * α_or_γ(x, σ_γ) + wₗ
 
 """fromGDSのアトラクター慣性行列"""
-function inertia_matrix(p::RNOfromGDSAttractor{T}, x, dx, x₀) where T
+function inertia_matrix(p::RNOfromGDSAttractor{T}, x, x₀) where T
     z = x₀ .- x
     ∇pot = ∇potential_2(z, p.α)
     α = α_or_γ(z, σ_α)
     return w(z, p.σ_γ, p.wᵤ, p.wₗ) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.ϵ).*Matrix{T}(I, 3, 3))
 end
+
+"""力用"""
+function xMx(x, p::RNOfromGDSAttractor{T}, ẋ, x₀)
+    ẋ' * inertia_matrix(p, x, x₀) * ẋ
+end
+
+function ξₘ(p::RNOfromGDSAttractor{T}, x, ẋ, x₀)
+    _xMx(x) = xMx(x, p, ẋ, x₀)
+    B = ForwardDiff.gradient(_xMx, x)
+    println(B)
+end
+
+
+
 
 
 struct RMPfromGDSCollisionAvoidance{T}
