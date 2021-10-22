@@ -77,15 +77,18 @@ struct OriginalRMPAttractor{T}
 end
 
 
+
 """目標加速度 from OirginalRMP"""
-function ddz(p::OriginalRMPAttractor{T}, z, dz, z0) where T
+function ddz(p::OriginalRMPAttractor{T}, z::Vector{T}, dz::Vector{T}, z0::Vector{T}) where T
     damp = p.gain / p.max_speed
     a = p.gain .* soft_normal(z0.-z, p.metric_damp_r) .- damp*dz
     return a
 end
 
 """目標計量  from OirginalRMP"""
-function inertia_matrix(p::OriginalRMPAttractor{T}, z, dz, z0, ddq) where T
+function inertia_matrix(
+    p::OriginalRMPAttractor{T}, z::Vector{T}, dz::Vector{T}, z0::Vector{T}, ddq::Vector{T}
+) where T
     dis = norm(z0 .- z)
     weight = exp(-dis ./ p.simga_W)
     beta = 1 - exp(-1/2 * (dis / p.sigma_H)^2)
@@ -213,8 +216,28 @@ struct RMPfromGDSAttractor{T}
     ϵ::T
 end
 
+"""目標吸引ポテンシャル2"""
+potential_2(x, η) = soft_normal(x, η)
 
+"""ポテンシャルの勾配"""
+function ∇potential_2(x, η)
+    x_norm = norm(x)
+    return (1-exp(-2*η*x_norm)) / (1+exp(-2*η*x_norm)) * x / x_norm
+end
 
+"""?"""
+α_or_γ(x, σ) = exp(-(norm(x))^2 / (2*σ^2))
+
+"""重み行列（fromGDSのアトラクターで使用）"""
+w(x, σ_γ, wᵤ, wₗ) = (wᵤ-wₗ) * α_or_γ(x, σ_γ) + wₗ
+
+"""fromGDSのアトラクター慣性行列"""
+function inertia_matrix(p::RNOfromGDSAttractor{T}, x, dx, x₀) where T
+    z = x₀ .- x
+    ∇pot = ∇potential_2(z, p.α)
+    α = α_or_γ(z, σ_α)
+    return w(z, p.σ_γ, p.wᵤ, p.wₗ) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.ϵ).*Matrix{T}(I, 3, 3))
+end
 
 
 struct RMPfromGDSCollisionAvoidance{T}
@@ -247,10 +270,13 @@ end
 
 δ(s, ṡ, σ) = u(ṡ, σ) + 1/2 * ṡ * dudṡ(ṡ, σ)
 
+"""曲率項"""
 ξ(s, ṡ, σ) = 1/2 * u(ṡ, σ) * dwds(s) * ṡ^2
 
+"""障害物回避ポテンシャル"""
 Φ₁(s, α) = -1/2 * α * s^(-2)
 
+"""障害物回避ポテンシャルの勾配"""
 ∇Φ₁(s, α) = α * s^(-3)
 
 
