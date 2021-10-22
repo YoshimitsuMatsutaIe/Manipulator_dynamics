@@ -138,8 +138,9 @@ function update_nodes(nodes::Nothing, q::Vector{T}, dq::Vector{T}) where T
 
     #println("nothing")
     # 更新
-    DHparams = update_DHparams(q)
-    HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
+    #DHparams = update_DHparams(q)
+    #HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
+    HTMs_local, HTMs_global = update_DHparams(q) |> calc_HTMs_local_and_global
     Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)
     Jos_joint_all, Jos_cpoint_all = calc_jacobians(Jax_all, Jay_all, Jaz_all, Jo_all)
     cpoints_x_global, cpoints_dx_global = calc_cpoint_x_and_dx_global(

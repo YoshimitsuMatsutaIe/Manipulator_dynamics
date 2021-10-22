@@ -4,6 +4,7 @@
 #using Parameters
 
 using LinearAlgebra
+using ForwardDiff  # 自動微分パッケージ?
 
 
 """pullback演算"""
@@ -34,12 +35,13 @@ end
 
 
 #### オリジナルのRMP ###
+"""ソフトマックス関数"""
+soft_max(s, α) = s + 1/α * log(1 + exp(-2 * α * s))
 
 """ソフト正規化関数"""
 function soft_normal(v, alpha)
     v_norm = norm(v)
-    softmax = v_norm + 1/alpha * log(1 + exp(-2 * alpha * v_norm))
-    return v ./ softmax
+    return v ./ soft_max(v_norm, alpha)
 end
 
 """空間を一方向に伸ばす計量"""
@@ -49,7 +51,7 @@ function metric_stretch(v, alpha)
 end
 
 """基本の計量"""
-function basic_metric_H(f, alpha::T, beta::T) where T
+function basic_metric_H(f::Vector{T}, alpha::T, beta::T) where T
     return beta .* metric_stretch(f, alpha) + (1 - beta) .* Matrix{T}(I, 3, 3)
 end
 
@@ -57,7 +59,7 @@ end
 # sigma_L(q, q_min, q_max) = (q_max - q_min) * (1 / (1 + exp.(-q))) + q_min
 
 """ジョイント制限に関する対角ヤコビ行列"""
-function D_sigma(q, q_min, q_max)
+function D_sigma(q::Vector{T}, q_min::Vector{T}, q_max::Vecor{T}) where T
     diags = (q_max .- q_min) .* (exp.(-q) ./ (1 .+ exp.(-q)).^2)
     #println(diags)
     return diagm(diags)
@@ -196,6 +198,8 @@ end
 
 ### fromGDS ###
 
+
+"""fromGDSのアトラクター　パラメータ"""
 struct RMPfromGDSAttractor{T}
     max_speed::T
     gain::T
@@ -208,6 +212,9 @@ struct RMPfromGDSAttractor{T}
     α::T
     ϵ::T
 end
+
+
+
 
 
 struct RMPfromGDSCollisionAvoidance{T}
@@ -272,3 +279,4 @@ function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, ẋ, x₀, ẋ₀) w
     f, M = pullbacked_rmp(f, m, J, J̇, ẋ)
     return f, M
 end
+
