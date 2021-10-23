@@ -1,5 +1,4 @@
 using CPUTime
-using Plots
 using LinearAlgebra
 #using Parameters
 
@@ -11,6 +10,10 @@ include("../utils.jl")
 include("./rmp.jl")
 include("../kinematics/old.jl")
 include("environment.jl")
+include("plot_using_Plots.jl")
+
+
+
 
 """点の位置と速度"""
 mutable struct State{T}
@@ -253,54 +256,10 @@ function run_simulation(TIME_SPAN::T, Δt::T, obs) where T
     dq₀ = zeros(T, 7)
 
     data = euler_method(q₀, dq₀, TIME_SPAN, Δt, obs)
-
-    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.q)
-    fig_q = plot(data.t, q1, ylabel="q")
-    plot!(fig_q, data.t, q2)
-    plot!(fig_q, data.t, q3)
-    plot!(fig_q, data.t, q4)
-    plot!(fig_q, data.t, q5)
-    plot!(fig_q, data.t, q6)
-    plot!(fig_q, data.t, q7)
-
-    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.dq)
-    fig_dq = plot(data.t, q1, ylabel="dq")
-    plot!(fig_dq, data.t, q2)
-    plot!(fig_dq, data.t, q3)
-    plot!(fig_dq, data.t, q4)
-    plot!(fig_dq, data.t, q5)
-    plot!(fig_dq, data.t, q6)
-    plot!(fig_dq, data.t, q7)
-
-    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.ddq)
-    fig_ddq = plot(data.t, q1, ylabel="ddq")
-    plot!(fig_ddq, data.t, q2)
-    plot!(fig_ddq, data.t, q3)
-    plot!(fig_ddq, data.t, q4)
-    plot!(fig_ddq, data.t, q5)
-    plot!(fig_ddq, data.t, q6)
-    plot!(fig_ddq, data.t, q7)
-
-    fig_error = plot(data.t, data.error, ylabel="error [m]", ylims=(0.0,))
-
-    fig = plot(
-        fig_q, fig_dq, fig_ddq, fig_error, layout=(4,1),
-        size=(500,1200)
-    )
-
+    fig = plot_simulation_data(data)
     return data, fig
 end
 
-
-
-function make_animation(data)
-    anim = Animation()
-    @gif for i in 1:10:length(data.q)
-        _fig=draw_arm(data.q[i], data.dq[i], data.goal[i], data.obs[i])
-        frame(anim,_fig)
-    end
-    #gif(anim, "test5.gif", fps = 12)
-end
 
 
 
@@ -321,7 +280,7 @@ end
 
 @time data, fig = runner("./config/use_RMPfromGDS_test.yaml")
 plot(fig)
-#make_animation(data)
+make_animation(data)
 
 
 # @time t, q, dq, ddq, error, fig, fig2= run_simulation(5.0, 0.01)

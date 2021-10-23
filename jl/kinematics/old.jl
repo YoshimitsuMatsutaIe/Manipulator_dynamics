@@ -1,5 +1,3 @@
-using CPUTime
-using Plots
 using LinearAlgebra
 
 
@@ -358,68 +356,9 @@ end
 
 
 
-function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing)
-
-    _, _, _, _, _, _, _, _, cpoints_x_global, _, joints_x_global, _, = calc_all(q, dq)
-    fig = plot()
-
-
-    x, y, z = split_vec_of_arrays(joints_x_global)
-    plot!(
-        fig,
-        x, y, z,
-        aspect_ratio = 1,
-        marker=:circle,
-        markerα = 0.5,
-        label = "joints",
-    )
-
-    cname = ("1", "2", "3", "4", "5", "6", "7", "GL")
-    for (i, cs) in enumerate(cpoints_x_global)
-        x, y, z = split_vec_of_arrays(cs)
-        scatter!(
-            fig,
-            x, y, z,
-            label = cname[i]
-        )
-    end
-
-    if !isnothing(goal)
-        scatter!([goal.x[1]], [goal.x[2]], [goal.x[3]], markershape=:star6)
-    end
-
-    if !isnothing(obs)
-        _o = get_x_from_State(obs)
-        x, y, z = split_vec_of_arrays(_o)
-        scatter!(x, y, z, markershape=:diamond)
-    end
-
-    x_max = 1.0
-    x_min = -1.0
-    y_max = 0.2
-    y_min = -1.0
-    z_max = 2.0
-    z_min = 0.0
-    max_range = max(x_max-x_min, y_max-y_min, z_max-z_min)*0.5
-    x_mid = (x_max + x_min) / 2
-    y_mid = (y_max + y_min) / 2
-    z_mid = (z_max + z_min) / 2
-    plot!(
-        fig,
-        xlims=(x_mid-max_range, x_mid+max_range),
-        ylims=(y_mid-max_range, y_mid+max_range),
-        zlims=(z_mid-max_range, z_mid+max_range),
-        legend = false,
-    )
-
-    return fig
-end
-
-
 # function draw_arm(nodes, goal=nothing, obs=nothing)
-#     fig = plot()
+#     fig = plot(size=(500,500))
 
-#     nodes
 #     x, y, z = split_vec_of_arrays(joints_x_global)
 #     plot!(
 #         fig,
@@ -453,5 +392,5 @@ end
 # end
 
 
-@time fig = draw_arm()
+# #@time fig = draw_arm()
 
