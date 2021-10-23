@@ -65,6 +65,7 @@ function calc_ddq(
     root_f = zeros(T, 7)
     root_M = zeros(T, 7, 7)
 
+    dis_to_obs = 0.0
 
     for i in 1:9
         if i == 1
@@ -82,13 +83,19 @@ function calc_ddq(
             @. root_M += _pulled_M
         else
             for j in 1:length(nodes[i])
+                _temp_dis_to_obs = Vector{T}(undef, length(obs))
                 for k in 1:length(obs)
+                    _temp_dis_to_obs[k] = norm(obs[k].x .- nodes[i][j].x)
                     _f, _M = get_natural(
                         obs_avoidance, nodes[i][j].x, nodes[i][j].dx, obs[k].x
                     )
                     _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].Jo,)
                     @. root_f += _pulled_f
                     @. root_M += _pulled_M
+                end
+                _d = minimum(_temp_dis_to_obs)
+                if dis_to_obs < _d
+                    dis_to_obs = _d
                 end
             end
         end
@@ -105,7 +112,7 @@ function calc_ddq(
     #ddq = np.linalg.pinv(root_M) * root_f
 
     #ddq = zeros(T, 7)
-    return ddq
+    return ddq, dis_to_obs
 end
 
 
@@ -183,6 +190,7 @@ mutable struct Data{T}
     dq::Vector{Vector{T}}  # ジョイント角速度ベクトル
     ddq::Vector{Vector{T}}  # 制御入力ベクトル
     error::Vector{T}  # eeと目標位置との誤差
+    dis_to_obs::Vector{T}
     nodes::Vector{Vector{Vector{Node{T}}}}  # ノード
     goal::Vector{State{T}}
     obs::Vector{Vector{State{T}}}
@@ -209,6 +217,7 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, o
         Vector{Vector{T}}(undef, length(t)),
         Vector{Vector{T}}(undef, length(t)),
         Vector{T}(undef, length(t)),
+        Vector{T}(undef, length(t)),
         Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
         Vector{State{T}}(undef, length(t)),
         Vector{Vector{State{T}}}(undef, length(t))
@@ -218,6 +227,7 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, o
     data.dq[1] = dq₀
     data.ddq[1] = zeros(T, 7)
     data.error[1] = norm(goal.x - nodes₀[9][1].x)
+    data.dis_to_obs[1] = 0.0
     data.nodes[1] = nodes₀
     data.goal[1] = goal
     data.obs[1] = obs
@@ -230,7 +240,7 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, o
         #println("OK3")
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
 
-        data.ddq[i+1] = calc_ddq(data.nodes[i], data.goal[i], data.obs[i])
+        data.ddq[i+1], data.dis_to_obs[i+1] = calc_ddq(data.nodes[i], data.goal[i], data.obs[i])
         #ddq[i+1] = zeros(T,7)
         #println("q = ", q[i])
         #println("dq = ", dq[i])
@@ -279,8 +289,8 @@ end
 
 
 @time data, fig = runner("./config/use_RMPfromGDS_test.yaml")
-plot(fig)
-make_animation(data)
+fig
+#@time make_animation(data)
 
 
 # @time t, q, dq, ddq, error, fig, fig2= run_simulation(5.0, 0.01)

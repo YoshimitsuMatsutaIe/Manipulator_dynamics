@@ -32,10 +32,12 @@ function plot_simulation_data(data)
     plot!(fig_ddq, data.t, q6, label="6")
     plot!(fig_ddq, data.t, q7, label="7")
 
-    fig_error = plot(data.t, data.error, ylabel="error [m]", ylims=(0.0,))
+    fig_error = plot(data.t, data.error, label="error", ylabel="error [m]", ylims=(0.0,))
+    fig_dis_to_obs = plot(data.t, data.dis_to_obs, label="min dis to obs", ylabel="min distance to obs [m]", ylims=(0.0,))
 
     fig = plot(
-        fig_q, fig_dq, fig_ddq, fig_error, layout=(4,1),
+        fig_q, fig_dq, fig_ddq, fig_error, fig_dis_to_obs,
+        layout=(5,1),
         size=(500,1200)
     )
 
@@ -45,12 +47,12 @@ end
 
 
 
-function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing)
+function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing, t=nothing)
 
     _, _, _, _, _, _, _, _, cpoints_x_global, _, joints_x_global, _, = calc_all(q, dq)
-    fig = plot(size=(800,700))
+    #fig = plot(size=(800,700))
 
-
+    fig = plot()
     x, y, z = split_vec_of_arrays(joints_x_global)
     plot!(
         fig,
@@ -111,14 +113,24 @@ function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing)
         legend = false,
     )
 
-    return fig
+
+    fig2 = plot(fig, camera=(90, 0))
+    fig3 = plot(fig, camera=(0, 90))
+    fig4 = plot(fig, camera=(0,0))
+    fig_all = plot(
+        fig, fig2, fig3, fig4, layout=(2, 2),
+        size=(1000, 1000),
+        title = string(t) * "[s]"
+    )
+    return fig_all
 end
 
 function make_animation(data)
     anim = Animation()
-    @gif for i in 1:10:length(data.q)
-        _fig=draw_arm(data.q[i], data.dq[i], data.goal[i], data.obs[i])
+    @gif for i in 1:20:length(data.q)
+        _fig=draw_arm(data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i])
         frame(anim,_fig)
     end
-    #gif(anim, "test5.gif", fps = 12)
-end
+    gif(anim, "test5.gif", fps = 12)
+    #return anim
+end 
