@@ -166,12 +166,15 @@ end
 function calc_HTMs_local_and_global(DHparams::Vector{DHparam{T}}) where T
     HTMs_local = Vector{Matrix{T}}(undef, 10)
     HTMs_global = Vector{Matrix{T}}(undef, 10)
+    #_H = Matrix{T}(undef, 4, 4)
     for i in 1:10
         if i == 1
             HTMs_local[i] = HTM_BL_Wo
             HTMs_global[i] = HTM_BL_Wo
         elseif i == 2
             HTMs_local[i] = HTM_0_BL
+            # mul!(_H, HTMs_global[i-1], HTM_0_BL)
+            # copy!(HTMs_global[i], _H)
             HTMs_global[i] =  HTMs_global[i-1] * HTM_0_BL
         elseif i == 10
             HTMs_local[i] = HTM_GR_7

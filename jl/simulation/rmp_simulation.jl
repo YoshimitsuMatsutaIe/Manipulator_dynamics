@@ -81,6 +81,8 @@ function calc_ddq(
             _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][1].Jo,)
             @. root_f += _pulled_f
             @. root_M += _pulled_M
+
+
         else
             for j in 1:length(nodes[i])
                 _temp_dis_to_obs = Vector{T}(undef, length(obs))
@@ -106,6 +108,7 @@ function calc_ddq(
 
     #println("root_f = ", root_f)
     #println("root_M = ", root_M)
+
 
     ddq = pinv(root_M) * root_f
     #println("ddq = ", ddq)
@@ -197,6 +200,8 @@ mutable struct Data{T}
 end
 
 
+
+
 """
 オイラー法でシミュレーション
 """
@@ -204,9 +209,6 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, o
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
     goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
-    # obs = [
-    #     State([0.25, -0.4, 1.0], [0.0, 0.0, 0.0])
-    # ]
 
     # 初期値
     nodes₀ = update_nodes(nothing, q₀, dq₀)
@@ -248,6 +250,60 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, o
 
         data.q[i+1] = data.q[i] .+ data.dq[i]*Δt
         #q[i+1] = zeros(T,7)
+        data.dq[i+1] = data.dq[i] .+ data.ddq[i]*Δt
+        data.goal[i+1] = goal
+        data.obs[i+1] = obs
+    end
+
+    data
+end
+
+
+
+
+"""
+ルンゲクッタ．たぶんすごく遅い
+"""
+function runge_kutta_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs) where T
+
+    t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
+    goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
+
+    # 初期値
+    nodes₀ = update_nodes(nothing, q₀, dq₀)
+
+    data = Data(
+        t,
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{T}(undef, length(t)),
+        Vector{T}(undef, length(t)),
+        Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
+        Vector{State{T}}(undef, length(t)),
+        Vector{Vector{State{T}}}(undef, length(t))
+    )
+
+    data.q[1] = q₀
+    data.dq[1] = dq₀
+    data.ddq[1] = zeros(T, 7)
+    data.error[1] = norm(goal.x - nodes₀[9][1].x)
+    data.dis_to_obs[1] = 0.0
+    data.nodes[1] = nodes₀
+    data.goal[1] = goal
+    data.obs[1] = obs
+    #println(length(obs))
+
+    # ぐるぐる回す
+    for i in 1:length(data.t)-1
+        #println("i = ", i)
+        data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
+        data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
+
+        k1 = 
+
+        data.ddq[i+1], data.dis_to_obs[i+1] = calc_ddq(data.nodes[i], data.goal[i], data.obs[i])
+        data.q[i+1] = data.q[i] .+ data.dq[i]*Δt
         data.dq[i+1] = data.dq[i] .+ data.ddq[i]*Δt
         data.goal[i+1] = goal
         data.obs[i+1] = obs
