@@ -45,11 +45,11 @@ end
 
 
 #attractor = OriginalRMPAttractor(2.0, 10.0, 0.15, 1.0, 1.0, 5.0)
-const obs_avoidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
+#const obs_avoidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
 const joint_limit_avoidance = OriginalJointLimitAvoidance(0.05, 0.1, 0.7)
 
 const attractor = RMPfromGDSAttractor(5.0, 20.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5)
-#const obs_avoidance = RMPfromGDSCollisionAvoidance(0.1, 1.0, 0.01)
+const obs_avoidance = RMPfromGDSCollisionAvoidance(0.1, 1.0, 0.01)
 
 
 
@@ -69,11 +69,11 @@ function calc_ddq(
 
     for i in 1:9
         if i == 1
-            # _f, _M = get_natural(
-            #     joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx, q_max, q_min
-            # )
-            # root_f += _f
-            # root_M += _M
+            _f, _M = get_natural(
+                joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx, q_max, q_min
+            )
+            root_f += _f
+            root_M += _M
         elseif i == 9
             _f, _M = get_natural(
                 attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
@@ -346,7 +346,7 @@ end
 
 @time data, fig = runner("./config/use_RMPfromGDS_test.yaml")
 fig
-#@time make_animation(data)
+@time make_animation(data)
 
 
 # @time t, q, dq, ddq, error, fig, fig2= run_simulation(5.0, 0.01)

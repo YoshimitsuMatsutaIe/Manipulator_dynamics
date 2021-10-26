@@ -1,7 +1,7 @@
 # 基本
 sim_param : 
   isLeft : True
-  TIME_SPAN : 30.0
+  TIME_SPAN : 0.05
   TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1
@@ -108,3 +108,9 @@ env_param :
         x : 0.25e+0
         y : -0.4e+0
         z : 1.0e+0
+    # -
+    #   name : 'point'
+    #   data :
+    #     x : 0.25e+0
+    #     y : -0.4e+0
+    #     z : 2.0e+0

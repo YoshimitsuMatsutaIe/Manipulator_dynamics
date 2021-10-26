@@ -156,7 +156,7 @@ end
 """natural form ()"""
 function get_natural(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
     a, M = get_canonical(p, z, dz, z0)
-    f = M * a
+    f = M * a * 0.01
     return f, M
 end
 
@@ -169,7 +169,7 @@ end
 
 """ジョイント制限回避加速度 from OriginalRMP"""
 function ddz(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
-    z = p.γ_p * (-q) - p.γ_d * dq
+    z = p.γ_p .* (-q) .- p.γ_d .* dq
     a = inv(D_sigma(q, q_min, q_max)) * z
     return a
 end
