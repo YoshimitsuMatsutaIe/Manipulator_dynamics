@@ -353,10 +353,10 @@ class RMPfromGDSCollisionAvoidance:
 
     def _phi_1(self, s):
         """バリア型ポテンシャル（R2の2次元の例より）"""
-        return -1/2 * self.alpha * s**-2
+        return 1/2 * self.alpha * self._w(s)**2
 
     def _grad_dphi_1(self, s):
-        return 1 * self.alpha * s**-3
+        return self.alpha * self._w(s) * self._dwds(s)
 
     def _inertia(self, s, ds):
         """障害物計量"""

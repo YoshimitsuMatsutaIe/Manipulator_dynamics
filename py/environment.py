@@ -12,31 +12,31 @@ import matplotlib.pyplot as plt
 from kinematics import BaxterRobotArmKinematics
 
 
-def _rotate(theta, phi, zeta):
+def _rotate(alpha, beta, gamma):
     """3次元回転行列"""
     
     Rx = np.array([
         [1, 0, 0],
-        [0, cos(theta), -sin(theta)],
-        [0, sin(theta), cos(theta)],
+        [0, cos(alpha), -sin(alpha)],
+        [0, sin(alpha), cos(alpha)],
     ])
     Ry = np.array([
-        [cos(phi), 0, sin(phi)],
+        [cos(beta), 0, sin(beta)],
         [0, 1, 0],
-        [-sin(phi), 0, cos(phi)],
+        [-sin(beta), 0, cos(beta)],
     ])
     Rz = np.array([
-        [cos(zeta), -sin(zeta), 0],
-        [sin(zeta), cos(zeta), 0],
+        [cos(gamma), -sin(gamma), 0],
+        [sin(gamma), cos(gamma), 0],
         [0, 0, 1],
     ])
     
     return Rx @ Ry @ Rz
 
 
-def _set_point(center):
+def _set_point(x, y, z):
     """点を置く"""
-    return [np.array(center).T]
+    return [np.array([[x, y, z]]).T]
 
 def _set_sphere(r, center, n):
     """
@@ -49,25 +49,25 @@ def _set_sphere(r, center, n):
     obs = []
     rand = np.random.RandomState(123)
     for i in range(n):
-        theta = np.arccos(rand.uniform(-1, 1))
-        phi = rand.uniform(0, 2*pi)
-        x = r * sin(theta) * cos(phi)
-        y = r * sin(theta) * sin(phi)
-        z = r * cos(theta)
+        alpha = np.arccos(rand.uniform(-1, 1))
+        beta = rand.uniform(0, 2*pi)
+        x = r * sin(alpha) * cos(beta)
+        y = r * sin(alpha) * sin(beta)
+        z = r * cos(alpha)
         obs.append(np.array([[x, y, z]]).T + center)
     
     return obs
 
 
-def _set_cylinder(r, L, center, n, theta=0, phi=0, zeta=0,):
+def _set_cylinder(r, L, x, y, z, n, alpha=0, beta=0, gamma=0,):
     """円筒を設置
     
     r : 半径
     L : 長さ
     n : 点の数
-    theta : 回転
-    phi : 回転
-    zeta : 回転
+    alpha : 回転
+    beta : 回転
+    gamma : 回転
     """
     
     obs = []
@@ -75,23 +75,23 @@ def _set_cylinder(r, L, center, n, theta=0, phi=0, zeta=0,):
     
     rand = np.random.RandomState(123)
     for i in range(n):
-        _theta = rand.uniform(0, 2*pi)
+        _alpha = rand.uniform(0, 2*pi)
         X = np.array([
-            [r * cos(_theta)],
-            [r * sin(_theta)],
+            [r * cos(_alpha)],
+            [r * sin(_alpha)],
             [rand.uniform(-L/2, L/2)],
             ])
         obs.append(X)
     
     R = _rotate(
-        np.deg2rad(theta),
-        np.deg2rad(phi),
-        np.deg2rad(zeta),
+        np.deg2rad(alpha),
+        np.deg2rad(beta),
+        np.deg2rad(gamma),
     )
-    return R @ obs + np.array(center).T
+    return R @ obs + np.array([[x, y, z]]).T
 
 
-def _set_field(lx, ly, center, n, theta=0, phi=0, zeta=0):
+def _set_field(lx, ly, x, y, z, n, alpha=0, beta=0, gamma=0):
     """面を表現"""
     
     obs = []
@@ -105,11 +105,11 @@ def _set_field(lx, ly, center, n, theta=0, phi=0, zeta=0):
             ])
         obs.append(X)
     
-    return _rotate(theta, phi, zeta) @ obs + center
+    return _rotate(alpha, beta, gamma) @ obs + np.array([[x, y, z]]).T
 
 
 
-def _set_box(lx, ly, lz, center, n, theta=0, phi=0, zeta=0,):
+def _set_box(lx, ly, lz, x, y, z, n, alpha=0, beta=0, gamma=0,):
     
     pass
 
@@ -147,9 +147,9 @@ data1 =[
             'L' : 1.0,
             'center' : [[0.25, -0.7, 1]],
             'n' : 100,
-            'theta' : 0,
-            'phi' : 0,
-            'zeta' : 0,
+            'alpha' : 0,
+            'beta' : 0,
+            'gamma' : 0,
         },
     },
     {
@@ -159,9 +159,9 @@ data1 =[
             'L' : 1.0,
             'center' : [[-0.25, -0.4, 1.25]],
             'n' : 100,
-            'theta' : 60,
-            'phi' : 30,
-            'zeta' : 30,
+            'alpha' : 60,
+            'beta' : 30,
+            'gamma' : 30,
         },
     },
 ]
@@ -184,7 +184,7 @@ class Goal:
             self.center = np.array(kwargs.pop('center')).T
             self.r = kwargs.pop('r')
             self.omega = kwargs.pop('omega')
-            self.init_theta = kwargs.pop('init_theta')
+            self.init_alpha = kwargs.pop('init_alpha')
             self.alpha = kwargs.pop('alpha')
             self.beta = kwargs.pop('beta')
             self.gumma = kwargs.pop('gumma')

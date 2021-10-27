@@ -34,7 +34,9 @@ end
 
 #### オリジナルのRMP ###
 """ソフトマックス関数"""
-soft_max(s, α) = s + 1/α * log(1 + exp(-2 * α * s))
+function soft_max(s::T, α::T) where T
+    s + 1/α * log(1 + exp(-2 * α * s))
+end
 
 """ソフト正規化関数"""
 function soft_normal(v, alpha)
@@ -89,7 +91,7 @@ function inertia_matrix(
 ) where T
     dis = norm(z0 .- z)
     weight = exp(-dis ./ p.simga_W)
-    beta = 1 - exp(-1/2 * (dis / p.sigma_H)^2)
+    beta = 1.0 - exp(-1/2 * (dis / p.sigma_H)^2)
     return weight .* basic_metric_H(ddq, p.ddq_damp_r, beta)
 end
 
