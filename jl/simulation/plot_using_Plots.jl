@@ -61,6 +61,7 @@ function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing, 
         marker=:circle,
         markerα = 0.5,
         label = "joints",
+        xlabel = "X[m]", ylabel = "Y[m]", zlabel = "Z[m]"
     )
 
     cname = ("1", "2", "3", "4", "5", "6", "7", "GL")
@@ -120,17 +121,32 @@ function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing, 
     fig_all = plot(
         fig, fig2, fig3, fig4, layout=(2, 2),
         size=(1000, 1000),
-        title = string(t) * "[s]"
+        title = string(round(t, digits=2)) * "[s]"
     )
     return fig_all
 end
 
+
+"""アニメ制作"""
 function make_animation(data)
-    anim = Animation()
-    @gif for i in 1:20:length(data.q)
-        _fig=draw_arm(data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i])
-        frame(anim,_fig)
+    # 枚数決める
+    epoch_max = 100
+    epoch = length(data.t)
+    if epoch < epoch_max
+        step = 1
+    else
+        step = div(epoch, epoch_max)
     end
-    gif(anim, "test5.gif", fps = 12)
+
+    println(step)
+
+    anim = Animation()
+    @gif for i in 1:step:length(data.q)
+        _fig = draw_arm(
+            data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i]
+        )
+        frame(anim, _fig)
+    end
+    gif(anim, "test5.gif", fps = 60)
     #return anim
 end 

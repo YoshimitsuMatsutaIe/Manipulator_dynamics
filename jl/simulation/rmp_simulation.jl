@@ -48,8 +48,8 @@ end
 #const obs_avoidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
 const joint_limit_avoidance = OriginalJointLimitAvoidance(0.05, 0.1, 0.7)
 
-const attractor = RMPfromGDSAttractor(5.0, 20.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5)
-const obs_avoidance = RMPfromGDSCollisionAvoidance(0.1, 1.0, 0.01)
+const attractor = RMPfromGDSAttractor(10.0, 20.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5)
+const obs_avoidance = RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1)
 
 
 
@@ -208,7 +208,8 @@ end
 function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs) where T
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
-    goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
+    #goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
+    goal = State([0.5, -0.5, 1.3], [0.0, 0.0, 0.0])
 
     # 初期値
     nodes₀ = update_nodes(nothing, q₀, dq₀)
@@ -261,56 +262,57 @@ end
 
 
 
-"""
-ルンゲクッタ．たぶんすごく遅い
-"""
-function runge_kutta_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs) where T
+# """
+# ルンゲクッタ．たぶんすごく遅い
+# """
+# function runge_kutta_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs) where T
 
-    t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
-    goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
+#     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
+#     #goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
+#     goal = State([0.0, -0.5, 1.3], [0.0, 0.0, 0.0])
 
-    # 初期値
-    nodes₀ = update_nodes(nothing, q₀, dq₀)
+#     # 初期値
+#     nodes₀ = update_nodes(nothing, q₀, dq₀)
 
-    data = Data(
-        t,
-        Vector{Vector{T}}(undef, length(t)),
-        Vector{Vector{T}}(undef, length(t)),
-        Vector{Vector{T}}(undef, length(t)),
-        Vector{T}(undef, length(t)),
-        Vector{T}(undef, length(t)),
-        Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
-        Vector{State{T}}(undef, length(t)),
-        Vector{Vector{State{T}}}(undef, length(t))
-    )
+#     data = Data(
+#         t,
+#         Vector{Vector{T}}(undef, length(t)),
+#         Vector{Vector{T}}(undef, length(t)),
+#         Vector{Vector{T}}(undef, length(t)),
+#         Vector{T}(undef, length(t)),
+#         Vector{T}(undef, length(t)),
+#         Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
+#         Vector{State{T}}(undef, length(t)),
+#         Vector{Vector{State{T}}}(undef, length(t))
+#     )
 
-    data.q[1] = q₀
-    data.dq[1] = dq₀
-    data.ddq[1] = zeros(T, 7)
-    data.error[1] = norm(goal.x - nodes₀[9][1].x)
-    data.dis_to_obs[1] = 0.0
-    data.nodes[1] = nodes₀
-    data.goal[1] = goal
-    data.obs[1] = obs
-    #println(length(obs))
+#     data.q[1] = q₀
+#     data.dq[1] = dq₀
+#     data.ddq[1] = zeros(T, 7)
+#     data.error[1] = norm(goal.x - nodes₀[9][1].x)
+#     data.dis_to_obs[1] = 0.0
+#     data.nodes[1] = nodes₀
+#     data.goal[1] = goal
+#     data.obs[1] = obs
+#     #println(length(obs))
 
-    # ぐるぐる回す
-    for i in 1:length(data.t)-1
-        #println("i = ", i)
-        data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
-        data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
+#     # ぐるぐる回す
+#     for i in 1:length(data.t)-1
+#         #println("i = ", i)
+#         data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
+#         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
 
-        k1 = 
+#         k1 = 
 
-        data.ddq[i+1], data.dis_to_obs[i+1] = calc_ddq(data.nodes[i], data.goal[i], data.obs[i])
-        data.q[i+1] = data.q[i] .+ data.dq[i]*Δt
-        data.dq[i+1] = data.dq[i] .+ data.ddq[i]*Δt
-        data.goal[i+1] = goal
-        data.obs[i+1] = obs
-    end
+#         data.ddq[i+1], data.dis_to_obs[i+1] = calc_ddq(data.nodes[i], data.goal[i], data.obs[i])
+#         data.q[i+1] = data.q[i] .+ data.dq[i]*Δt
+#         data.dq[i+1] = data.dq[i] .+ data.ddq[i]*Δt
+#         data.goal[i+1] = goal
+#         data.obs[i+1] = obs
+#     end
 
-    data
-end
+#     data
+# end
 
 
 
@@ -336,6 +338,7 @@ function runner(name)
     rmp_param = params["rmp_param"]
     env_param = params["env_param"]
     obs = set_obs(env_param["obstacle"])
+    #print(obs)
     data, fig = run_simulation(
         sim_param["TIME_SPAN"], sim_param["TIME_INTERVAL"], obs
     )

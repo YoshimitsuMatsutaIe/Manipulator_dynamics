@@ -9,8 +9,6 @@ using ForwardDiff  # 自動微分パッケージ?
 
 """pullback演算"""
 function pullbacked_rmp(f, M, J, dJ=nothing, dx=nothing)
-    #pulled_f = zero(f)
-    #pulled_M = zero(M)
     if isnothing(dJ) && isnothing(dx)
         pulled_f = J' * f
     else
@@ -168,7 +166,10 @@ struct OriginalJointLimitAvoidance{T}
 end
 
 """ジョイント制限回避加速度 from OriginalRMP"""
-function ddz(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
+function ddz(
+    p::OriginalJointLimitAvoidance{T},
+    q::Vector{T}, dq::Vector{T}, q_max::Vector{T}, q_min::Vector{T}
+) where T
     z = p.γ_p .* (-q) .- p.γ_d .* dq
     a = inv(D_sigma(q, q_min, q_max)) * z
     return a
@@ -181,17 +182,13 @@ end
 
 """canonical form []"""
 function get_canonical(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
-    a = ddz(p, q, dq, q_max, q_min)
-    M = inertia_matrix(p, q, dq)
-    return a, M
+    return ddz(p, q, dq, q_max, q_min), inertia_matrix(p, q, dq)
 end
 
 
 """natural form ()"""
 function get_natural(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
     a, M = get_canonical(p, q, dq, q_max, q_min)
-    # println(a)
-    # println(M)
     f = M * a
     return f, M
 end
@@ -239,51 +236,41 @@ function inertia_matrix(x, p::RMPfromGDSAttractor{T}, x₀) where T
 end
 
 """力用"""
-function xMx(x, p::RMPfromGDSAttractor{T}, ẋ, x₀) where T
-    ẋ' * inertia_matrix(x, p, x₀) * ẋ
+function xMx(x, p::RMPfromGDSAttractor{T}, dx, x₀) where T
+    dx' * inertia_matrix(x, p, x₀) * dx
 end
 
 """曲率項"""
-function ξ(p::RMPfromGDSAttractor{T}, x, ẋ, x₀) where T
+function ξ(p::RMPfromGDSAttractor{T}, x, dx, x₀) where T
     # 第一項を計算
     A = Matrix{T}(undef, 3, 3)
     for i in 1:3
         _M(x) = inertia_matrix(x, p, x₀)[:, i]
         _jacobian_M = ForwardDiff.jacobian(_M, x)
         #println(_jacobian_M)
-        A[:, i] = _jacobian_M * ẋ
+        A[:, i] = _jacobian_M * dx
     end
-    A *= ẋ
+    A *= dx
 
     # 第二項を計算
-    _xMx(x) = xMx(x, p, ẋ, x₀)
+    _xMx(x) = xMx(x, p, dx, x₀)
     B = 1/2 .* ForwardDiff.gradient(_xMx, x)  # 便利
     
     return A .- B
 end
 
 """fromGDSのアトラクター力"""
-function f(p::RMPfromGDSAttractor{T}, x, ẋ, x₀, M) where T
+function f(p::RMPfromGDSAttractor{T}, x, dx, x₀, M) where T
     z = x .- x₀
     damp = p.gain / p.max_speed
-    return M * (-p.gain .* soft_normal(z, p.f_α) .- damp .* ẋ) .- ξ(p, x, ẋ, x₀)
+    return M * (-p.gain .* soft_normal(z, p.f_α) .- damp .* dx) .- ξ(p, x, dx, x₀)
 end
 
 """"""
-function get_natural(p::RMPfromGDSAttractor{T}, x, ẋ, x₀) where T
+function get_natural(p::RMPfromGDSAttractor{T}, x, dx, x₀) where T
     M = inertia_matrix(x, p, x₀)
-    return f(p, x, ẋ, x₀, M), M
+    return f(p, x, dx, x₀, M), M
 end
-
-
-# # テスト
-# p = RMPfromGDSAttractor(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0)
-# x = [1.0, 2.0, 3.0]
-# dx = [1.0, 2.0, 3.0]
-# x0 = [0.0, 0.0, 0.0]
-
-# M = inertia_matrix(x, p, x0)
-# temp = ξ(p, x, dx, x0, M)
 
 
 struct RMPfromGDSCollisionAvoidance{T}
@@ -300,63 +287,80 @@ w(s) = s^(-4)
 """重み関数の微分"""
 dwds(s) = -4 * s^(-5)
 
-function u(ṡ, σ)
-    if ṡ < 0.0
-        return 1 - exp(-ṡ^2 / (2*σ^2))
+function w2(s, rw=1.0)
+    if rw - s > 0.0
+        return (rw - s)^2 / s
     else
         return 0.0
     end
 end
 
-function dudṡ(ṡ, σ)
-    if ṡ < 0.0
-        return -exp(-ṡ^2 / (2*σ^2)) * (-ṡ / σ^2)
+function dw2(s, rw)
+    if rw - s > 0.0
+        return (-2*(rw - s) * s + (rw - s)) / s^2
     else
         return 0.0
     end
 end
 
-δ(s, ṡ, σ) = u(ṡ, σ) + 1/2 * ṡ * dudṡ(ṡ, σ)
+
+function u(ds, σ)
+    if ds < 0.0
+        return 1 - exp(-ds^2 / (2*σ^2))
+    else
+        return 0.0
+    end
+end
+
+function du(ds, σ)
+    if ds < 0.0
+        return -exp(-ds^2 / (2*σ^2)) * (-ds / σ^2)
+    else
+        return 0.0
+    end
+end
+
+δ(s, ds, σ) = u(ds, σ) + 1/2 * ds * du(ds, σ)
 
 """曲率項"""
-ξ(s, ṡ, σ) = 1/2 * u(ṡ, σ) * dwds(s) * ṡ^2
+ξ(s, ds, σ, rw) = 1/2 * u(ds, σ) * dw2(s, rw) * ds^2
 
 """障害物回避ポテンシャル"""
-Φ₁(s, α) = -1/2 * α * s^(-2)
+Φ1(s, α, rw) = 1/2 * α * w2(s, rw)^2
 
 """障害物回避ポテンシャルの勾配"""
-∇Φ₁(s, α) = α * s^(-3)
+∇Φ1(s, α, rw) = α * w2(s, rw) * dw2(s, rw)
 
 
 """fromGDSの障害物回避力"""
-function f(p::RMPfromGDSCollisionAvoidance{T}, s, ṡ) where T
-    return -w(s) * ∇Φ₁(s, p.α) - ξ(s, ṡ, p.σ)
+function f(p::RMPfromGDSCollisionAvoidance{T}, s, ds) where T
+    return -w2(s, p.rw) * ∇Φ1(s, p.α, p.rw) - ξ(s, ds, p.σ, p.rw)
 end
 
 """fromGDSの障害物回避慣性行列"""
-function inertia_matrix(p::RMPfromGDSCollisionAvoidance{T}, s, ṡ) where T
-    return w(s) * δ(s, ṡ, p.σ)
+function inertia_matrix(p::RMPfromGDSCollisionAvoidance{T}, s, ds) where T
+    return w2(s, p.rw) * δ(s, ds, p.σ)
 end
 
-function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, ẋ, x₀, ẋ₀=zeros(Float64, 3)) where T
+function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zeros(Float64, 3)) where T
     s_vec = x₀ .- x
-    ṡ_vec = ẋ₀ .- ẋ
+    ds_vec = dx₀ .- dx
     s = norm(s_vec)
-    ṡ = (1/s .* dot(s_vec, ṡ_vec))[1]
+    ds = (1/s .* dot(s_vec, ds_vec))[1]
 
 
-    m = inertia_matrix(p, s, ṡ)
-    _f = f(p, s, ṡ)
+    m = inertia_matrix(p, s, ds)
+    _f = f(p, s, ds)
 
-    J = -(x .- ẋ)' ./ s
-    J̇ = -s^(-2) .* (ṡ_vec' .- s_vec' .* ṡ)
+    J = -(x .- dx)' ./ s
+    J̇ = -s^(-2) .* (ds_vec' .- s_vec' .* ds)
 
-    _f, M = pullbacked_rmp(_f, m, J, J̇, ẋ)
+    _f, M = pullbacked_rmp(_f, m, J, J̇, dx)
 
     # println("x = ", x)
-    # println("dx = ", ẋ)
+    # println("dx = ", dx)
     # println("s = ", s)
-    # println("s_dot_vec = ", ṡ_vec)
+    # println("s_dot_vec = ", ds_vec)
     # println(_f)
     # println(M)
     # println()
