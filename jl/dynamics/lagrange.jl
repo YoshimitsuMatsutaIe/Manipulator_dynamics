@@ -6,6 +6,8 @@
 
 """
 ロボットの動力学
+
+運動学とDHパラメータの取り方が異なることに注意  
 """
 module Dynamics
 
@@ -312,11 +314,28 @@ function G(q::Vector{TU}) where TU
     z
 end
 
-"""inputを計算"""
+
+"""トルクを計算
+
+計算トルク法です  
+q:（所望の）関節角度ベクトル  
+dq:（所望の）関節角速度ベクトル  
+ddq:（所望の）関節角速度ベクトル  
+"""
 function calc_torque(q::Vector{TU}, dq::Vector{TU}, ddq::Vector{TU}) where TU
     M(q)*ddq .+ C(q, dq) .+ G(q)
 end
 
+
+"""現実世界での加速度"""
+function real_ddq(u::Vector{TU}, F::Vector{TU}) where TU
+
+
+end
+
+
+
+"""テスト用"""
 function _test()
     q = [
         0.0
@@ -327,11 +346,8 @@ function _test()
         72.0
         0.0
     ] * pi / 180
-
     dq = q
-
     ddq = q
-
 
     calc_torque(q, dq, ddq)
 end

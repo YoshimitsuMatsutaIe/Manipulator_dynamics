@@ -1,10 +1,13 @@
 """RMP制御器"""
 
 
-#using Parameters
+"""
+RMPいろいろ
+"""
+#module RMP
 
 using LinearAlgebra
-using ForwardDiff  # 自動微分パッケージ?
+using ForwardDiff  # 自動微分パッケージ
 
 
 """pullback演算"""
@@ -369,3 +372,4 @@ function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zero
     return _f, M
 end
 
+#end

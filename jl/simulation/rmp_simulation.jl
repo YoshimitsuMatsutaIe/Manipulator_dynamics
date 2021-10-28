@@ -35,7 +35,7 @@ end
 mutable struct Node{T}
     x::Vector{T}  # 位置
     dx::Vector{T}
-    # Jax::Matrix{T}
+    # Jax::Matrix{T}  # 角度を制御する場合必要
     # Jay::Matrix{T}
     # Jaz::Matrix{T}
     Jo::Matrix{T}
@@ -351,7 +351,7 @@ end
 @time data, fig = runner("./config/use_RMPfromGDS_test.yaml")
 println("hoge!")
 #fig
-#@time make_animation(data)
+@time make_animation(data)
 
 
 # @time t, q, dq, ddq, error, fig, fig2= run_simulation(5.0, 0.01)
