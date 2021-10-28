@@ -3,7 +3,6 @@ using LinearAlgebra
 #using Parameters
 
 using YAML
-using Profile
 
 include("../utils.jl")
 
@@ -346,8 +345,10 @@ function runner(name)
 end
 
 
+# using profview
+# @profview data, fig = runner("./config/use_RMPfromGDS_test.yaml")
 
-@profview data, fig = runner("./config/use_RMPfromGDS_test.yaml")
+@time data, fig = runner("./config/use_RMPfromGDS_test.yaml")
 println("hoge!")
 #fig
 #@time make_animation(data)
