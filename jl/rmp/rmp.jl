@@ -4,7 +4,7 @@
 """
 RMPいろいろ
 """
-#module RMP
+module RMP
 
 using LinearAlgebra
 using ForwardDiff  # 自動微分パッケージ
@@ -372,4 +372,4 @@ function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zero
     return _f, M
 end
 
-#end
+end

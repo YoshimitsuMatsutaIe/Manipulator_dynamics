@@ -327,10 +327,16 @@ function calc_torque(q::Vector{TU}, dq::Vector{TU}, ddq::Vector{TU}) where TU
 end
 
 
-"""現実世界での加速度"""
-function real_ddq(u::Vector{TU}, F::Vector{TU}) where TU
+"""現実世界での加速度
 
 
+u : 入力トルク  
+F : 外力  
+q:（現在の）関節角度ベクトル  
+dq:（現在の）関節角速度ベクトル  
+"""
+function real_ddq(u::Array{TU}, F::Array{TU}, q::Vector{TU}, dq::Vector{TU}) where TU
+    inv(M(q)) * (u .+ F .- (C(q, dq) .+ G(q)))
 end
 
 
@@ -349,10 +355,15 @@ function _test()
     dq = q
     ddq = q
 
-    calc_torque(q, dq, ddq)
+    u = calc_torque(q, dq, ddq)
+    #println(u)
+    F = zeros(Float64, 7, 1)
+    r_ddq = real_ddq(u, F, q, dq)
+    #println(r_ddq)
+    #println(typeof(r_ddq))
 end
 
 end
 
 
-#@time for i in 1:10; Dynamics._test(); end
+#@time for i in 1:100; Dynamics._test(); end
