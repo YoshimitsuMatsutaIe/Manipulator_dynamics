@@ -2,15 +2,25 @@
 
 
 
-"""
-動かない障害物
-"""
-module StaticEnvironment
+# """
+# 動かない障害物
+# """
+# module StaticEnvironment
 
+include("../rmp/rmp_tree.jl")
+
+#using .RMPTree: State
+
+# export ObsParam_point
+# export ObsParam_cylinder
+# export set_obs
+\
 
 using Random
 
 include("../utils.jl")
+#using .Utilis
+
 
 struct ObsParam_point{T}
     x::T
@@ -121,7 +131,7 @@ function _set_obs(p::ObsParam_field{T, U}) where {T, U}
 end
 
 
-
+"""yamelを読んで質量無限大の障害物設置"""
 function set_obs(obs_param)
     if isnothing(obs_param)
         return nothing
@@ -146,7 +156,7 @@ end
 
 
 
-end
+#end
 
 
 # using YAML

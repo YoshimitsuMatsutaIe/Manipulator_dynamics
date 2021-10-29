@@ -1,22 +1,22 @@
 
-"""
-運動学
-"""
-module Kinematics
+# """
+# 運動学
+# """
+# module Kinematics
 
 
 using LinearAlgebra
 
-export q_neutral
-export q_max
-export q_min
-export calc_all
-
+# export q_neutral
+# export q_max
+# export q_min
+# export calc_all
+# export cpoints_local
 
 
 
 include("../utils.jl")
-
+#using .Utilis
 
 """DHパラメータ（修正？）"""
 mutable struct DHparam{T}
@@ -367,4 +367,4 @@ function calc_all(q, dq,)
 end
 
 
-end
+#end

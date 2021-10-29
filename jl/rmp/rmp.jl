@@ -1,23 +1,23 @@
 """RMP制御器"""
 
 
-"""
-RMPいろいろ
-"""
-module RMP
+# """
+# RMPいろいろ
+# """
+# module RMP
 
 using LinearAlgebra
 using ForwardDiff  # 自動微分パッケージ
 
 
-export pullbacked_rmp
-export  get_natural
+# export pullbacked_rmp
+# export  get_natural
 
-export OriginalRMPAttractor
-export OriginalRMPCollisionAvoidance
-export OriginalJointLimitAvoidance
-export RMPfromGDSAttractor
-export RMPfromGDSCollisionAvoidance
+# export OriginalRMPAttractor
+# export OriginalRMPCollisionAvoidance
+# export OriginalJointLimitAvoidance
+# export RMPfromGDSAttractor
+# export RMPfromGDSCollisionAvoidance
 
 
 """pullback演算"""
@@ -374,4 +374,4 @@ function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zero
     return _f, M
 end
 
-end
+#end

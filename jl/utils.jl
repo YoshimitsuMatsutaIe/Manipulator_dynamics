@@ -1,5 +1,17 @@
 """色々つかうやつ"""
 
+# """
+# 様々な便利関数&struct
+# """
+# module Utilis
+
+# export split_vec_of_arrays
+# export rotate_3d
+# export State
+# export get_x_from_State
+# export Node
+
+
 using StaticArrays
 using ArraysOfArrays
 
@@ -33,3 +45,35 @@ function rotate_3d(a::T, b::T, c::T) where T
 end
 
 
+
+"""点の位置と速度"""
+mutable struct State{T}
+    x::Vector{T}
+    dx::Vector{T}
+end
+
+
+"""
+Stateからxだけ取る無駄関数
+"""
+function get_x_from_State(obs)
+    x = Vector{Vector{typeof(obs[1].x[1])}}(undef, length(obs))
+    for i in 1:length(obs)
+        x[i] = obs[i].x
+    end
+    return x
+end
+
+
+"""ノード（今回は制御点+ジョイント位置点）"""
+mutable struct Node{T}
+    x::Vector{T}  # 位置
+    dx::Vector{T}
+    # Jax::Matrix{T}  # 角度を制御する場合必要
+    # Jay::Matrix{T}
+    # Jaz::Matrix{T}
+    Jo::Matrix{T}
+end
+
+
+#end

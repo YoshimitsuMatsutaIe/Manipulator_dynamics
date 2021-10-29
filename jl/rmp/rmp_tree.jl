@@ -1,8 +1,16 @@
-using CPUTime
+
+
+# """
+# rmp-treeで所望の加速度を計算
+# """
+# module RMPTree
+
+
+# export update_nodes
+# export calc_desired_ddq
 
 
 
-module RMPTree
 using LinearAlgebra
 
 
@@ -13,53 +21,21 @@ include("./rmp.jl")
 include("../kinematics/kinematics.jl")
 
 
-using .Kinematics
-using .RMP
-
-
-"""点の位置と速度"""
-mutable struct State{T}
-    x::Vector{T}
-    dx::Vector{T}
-end
-
-
-
-function get_x_from_State(obs)
-    x = Vector{Vector{typeof(obs[1].x[1])}}(undef, length(obs))
-    for i in 1:length(obs)
-        x[i] = obs[i].x
-    end
-    return x
-end
-
-
-"""ノード（今回は制御点+ジョイント位置点）"""
-mutable struct Node{T}
-    x::Vector{T}  # 位置
-    dx::Vector{T}
-    # Jax::Matrix{T}  # 角度を制御する場合必要
-    # Jay::Matrix{T}
-    # Jaz::Matrix{T}
-    Jo::Matrix{T}
-end
+# using .Kinematics
+# using .RMP
+# using .Utilis
 
 
 
 #attractor = OriginalRMPAttractor(2.0, 10.0, 0.15, 1.0, 1.0, 5.0)
 #const obs_avoidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
-const joint_limit_avoidance = OriginalJointLimitAvoidance(0.05, 0.1, 0.7)
-
-const attractor = RMPfromGDSAttractor(10.0, 20.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5)
-const obs_avoidance = RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1)
 
 
 
-
-"""加速度指令を計算（resolve演算結果を返す）"""
-function calc_ddq(
+"""所望の加速度を計算（resolve演算結果を返す）"""
+function calc_desired_ddq(
     nodes::Vector{Vector{Node{T}}},
-    rmp_param::NamedTuple{Union{OriginalRMPAttractor{T}, RMPfromGDSAttractor{T}}, Union{OriginalRMPCollisionAvoidance{T}, RMPfromGDSCollisionAvoidance{T}, Vector{OriginalJointLimitAvoidance{T}}},},
+    rmp_param,#::NamedTuple{Union{OriginalRMPAttractor{T}, RMPfromGDSAttractor{T}}, Union{OriginalRMPCollisionAvoidance{T}, RMPfromGDSCollisionAvoidance{T}}, Vector{OriginalJointLimitAvoidance{T}}},
     goal::State{T},
     obs::Vector{State{T}}
 ) where T
@@ -184,4 +160,4 @@ end
 
 
 
-end
+#end

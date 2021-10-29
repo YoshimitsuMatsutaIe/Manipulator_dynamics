@@ -1,10 +1,22 @@
 using CPUTime
 using YAML
+using LinearAlgebra
 
-
-
-include("environment.jl")
+include("../utils.jl")
+include("../rmp/rmp.jl")
+include("../rmp/rmp_tree.jl")
+include("static_environment.jl")
 include("plot_using_Plots.jl")
+include("../kinematics/kinematics.jl")
+
+
+# using .RMP
+# using .RMPTree
+# using .StaticEnvironment
+# using .Kinematics: q_neutral
+# using .Utilis
+
+
 
 """シミュレーションのデータ"""
 mutable struct Data{T}
@@ -21,11 +33,28 @@ end
 
 
 
-
 """
-オイラー法でシミュレーション
+オイラー法で（質量考えずに）シミュレーション
 """
 function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs) where T
+
+
+    rmp_param = (
+        joint_limit_avoidance=OriginalJointLimitAvoidance(0.05, 0.1, 0.7),
+        attractor=RMPfromGDSAttractor(10.0, 20.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5),
+        obs_avoidance=(
+            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+        )
+    )
+
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
     #goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
@@ -63,7 +92,7 @@ function euler_method(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, o
         #println("OK3")
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
 
-        data.ddq[i+1], data.dis_to_obs[i+1] = calc_ddq(data.nodes[i], data.goal[i], data.obs[i])
+        data.ddq[i+1], data.dis_to_obs[i+1] = calc_desired_ddq(data.nodes[i], rmp_param, data.goal[i], data.obs[i])
         #ddq[i+1] = zeros(T,7)
         #println("q = ", q[i])
         #println("dq = ", dq[i])
