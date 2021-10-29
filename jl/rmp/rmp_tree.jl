@@ -55,10 +55,11 @@ const obs_avoidance = RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1)
 
 
 
+
 """加速度指令を計算（resolve演算結果を返す）"""
 function calc_ddq(
     nodes::Vector{Vector{Node{T}}},
-    rmp_param,
+    rmp_param::NamedTuple{Union{OriginalRMPAttractor{T}, RMPfromGDSAttractor{T}}, Union{OriginalRMPCollisionAvoidance{T}, RMPfromGDSCollisionAvoidance{T}, Vector{OriginalJointLimitAvoidance{T}}},},
     goal::State{T},
     obs::Vector{State{T}}
 ) where T
@@ -73,13 +74,13 @@ function calc_ddq(
     for i in 1:9
         if i == 1
             _f, _M = get_natural(
-                joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx, q_max, q_min
+                rmp_param.joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx, q_max, q_min
             )
             root_f += _f
             root_M += _M
         elseif i == 9
             _f, _M = get_natural(
-                attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
+                rmp_param.attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
             )
             _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][1].Jo,)
             @. root_f += _pulled_f
@@ -92,7 +93,7 @@ function calc_ddq(
                 for k in 1:length(obs)
                     _temp_dis_to_obs[k] = norm(obs[k].x .- nodes[i][j].x)
                     _f, _M = get_natural(
-                        obs_avoidance, nodes[i][j].x, nodes[i][j].dx, obs[k].x
+                        rmp_param.obs_avoidance[i], nodes[i][j].x, nodes[i][j].dx, obs[k].x
                     )
                     _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].Jo,)
                     @. root_f += _pulled_f
