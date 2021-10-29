@@ -1,3 +1,10 @@
+
+"""
+運動学
+"""
+module Kinematics
+
+
 using LinearAlgebra
 
 
@@ -342,10 +349,6 @@ function calc_all(q=q_neutral, dq=zeros(Float64, 7),)
     joints_x_global, joints_dx_global = calc_joints_x_and_dx_global(
         HTMs_global, Jos_joint_all, dq
     )
-    # for i in 1:8
-    #     println("i = ", i)
-    #     println(Jos_joint_all[i])
-    # end
 
     return (
         HTMs_local, HTMs_global,
@@ -357,47 +360,4 @@ function calc_all(q=q_neutral, dq=zeros(Float64, 7),)
 end
 
 
-
-
-#@time for i in 1:1; calc_all() end
-
-
-
-# function draw_arm(nodes, goal=nothing, obs=nothing)
-#     fig = plot(size=(500,500))
-
-#     x, y, z = split_vec_of_arrays(joints_x_global)
-#     plot!(
-#         fig,
-#         x, y, z,
-#         aspect_ratio = 1,
-#         marker=:circle,
-#         markerα = 0.5,
-#         label = "joints",
-#     )
-
-#     cname = ("1", "2", "3", "4", "5", "6", "7", "GL")
-#     for (i, cs) in enumerate(cpoints_x_global)
-#         x, y, z = split_vec_of_arrays(cs)
-#         scatter!(
-#             fig,
-#             x, y, z,
-#             label = cname[i]
-#         )
-#     end
-
-#     if !isnothing(goal)
-#         scatter!([goal[1]], [goal[2]], [goal[3]], markershape=:star6)
-#     end
-
-#     if !isnothing(obs)
-#         x, y, z = split_vec_of_arrays(obs)
-#         scatter!(x, y, z, markershape=:diamond)
-#     end
-
-#     return fig
-# end
-
-
-# #@time fig = draw_arm()
-
+end
