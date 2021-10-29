@@ -1,12 +1,16 @@
 """環境いろいろ"""
 
+
+
+"""
+動かない障害物
+"""
+module StaticEnvironment
+
+
 using Random
 
 include("../utils.jl")
-#include("rmp_simulation.jl")
-
-
-
 
 struct ObsParam_point{T}
     x::T
@@ -137,6 +141,11 @@ function set_obs(obs_param)
         end
     end
     return obs
+end
+
+
+
+
 end
 
 

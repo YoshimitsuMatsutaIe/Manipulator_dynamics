@@ -200,10 +200,10 @@ end
 """慣性モーメント"""
 function J(i::Int64)
     [
-        (-Ixx[i]+Iyy[i]+Izz[i])/2 Ixy[i] Ixz[i] m[i]*x_bar[i]
-        Ixy[i] (Ixx[i]-Iyy[i]+Izz[i])/2 Iyz[i] m[i]*y_bar[i]
-        Ixz[i] Iyz[i] (Ixx[i]+Iyy[i]-Izz[i])/2 m[i]*z_bar[i]
-        m[i]*x_bar[i] m[i]*y_bar[i] m[i]*z_bar[i] m[i]
+        (-Ixx[i]+Iyy[i]+Izz[i])/2 Ixy[i]                   Ixz[i]                   m[i]*x_bar[i]
+        Ixy[i]                    (Ixx[i]-Iyy[i]+Izz[i])/2 Iyz[i]                   m[i]*y_bar[i]
+        Ixz[i]                    Iyz[i]                   (Ixx[i]+Iyy[i]-Izz[i])/2 m[i]*z_bar[i]
+        m[i]*x_bar[i]             m[i]*y_bar[i]            m[i]*z_bar[i]            m[i]
     ]
 end
 
@@ -335,11 +335,11 @@ F : 外力
 q:（現在の）関節角度ベクトル  
 dq:（現在の）関節角速度ベクトル  
 """
-function real_ddq(u::Array{TU}, F::Array{TU}, q::Vector{TU}, dq::Vector{TU}) where TU
+function calc_real_ddq(u::Array{TU}, F::Array{TU}, q::Vector{TU}, dq::Vector{TU}) where TU
     inv(M(q)) * (u .+ F .- (C(q, dq) .+ G(q)))
 end
 
-
+#export calc_real_ddq
 
 """テスト用"""
 function _test()
@@ -358,7 +358,7 @@ function _test()
     u = calc_torque(q, dq, ddq)
     #println(u)
     F = zeros(Float64, 7, 1)
-    r_ddq = real_ddq(u, F, q, dq)
+    r_ddq = calc_real_ddq(u, F, q, dq)
     #println(r_ddq)
     #println(typeof(r_ddq))
 end
@@ -366,4 +366,4 @@ end
 end
 
 
-#@time for i in 1:100; Dynamics._test(); end
+@time for i in 1:100; Dynamics._test(); end
