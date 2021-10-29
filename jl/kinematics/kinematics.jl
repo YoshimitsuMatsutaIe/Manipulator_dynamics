@@ -7,6 +7,13 @@ module Kinematics
 
 using LinearAlgebra
 
+export q_neutral
+export q_max
+export q_min
+export calc_all
+
+
+
 
 include("../utils.jl")
 
@@ -338,7 +345,7 @@ end
 
 
 """全部計算"""
-function calc_all(q=q_neutral, dq=zeros(Float64, 7),)
+function calc_all(q, dq,)
     DHparams = update_DHparams(q)
     HTMs_local, HTMs_global = calc_HTMs_local_and_global(DHparams)
     Jax_all, Jay_all, Jaz_all, Jo_all = calc_dHTMs(HTMs_local, HTMs_global)

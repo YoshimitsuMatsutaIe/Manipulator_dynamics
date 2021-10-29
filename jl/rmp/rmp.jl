@@ -10,28 +10,30 @@ using LinearAlgebra
 using ForwardDiff  # 自動微分パッケージ
 
 
+export pullbacked_rmp
+export  get_natural
+
+export OriginalRMPAttractor
+export OriginalRMPCollisionAvoidance
+export OriginalJointLimitAvoidance
+export RMPfromGDSAttractor
+export RMPfromGDSCollisionAvoidance
+
+
 """pullback演算"""
-function pullbacked_rmp(f, M, J, dJ=nothing, dx=nothing)
-    if isnothing(dJ) && isnothing(dx)
-        pulled_f = J' * f
-    else
-        pulled_f = J' * (f .- M * dJ * dx)
-    end
+function pullbacked_rmp(f, M, J, dJ, dx)
+    pulled_f = J' * (f .- M * dJ * dx)
     pulled_M = J' * M * J
-    
     return pulled_f, pulled_M
 end
 
+"""pullback演算"""
+function pullbacked_rmp(f, M, J)
+    pulled_f = J' * f
+    pulled_M = J' * M * J
+    return pulled_f, pulled_M
+end
 
-# mutable struct NaturalFormRMP{T}
-#     f::Vector{T}
-#     M::Matrix{T}
-# end
-
-# mutable struct CanonicalFormRMP{T}
-#     a::Vector{T}
-#     M::Matrix{T}
-# end
 
 
 
