@@ -45,8 +45,7 @@ end
 
 """ソフト正規化関数"""
 function soft_normal(v, alpha)
-    v_norm = norm(v)
-    return v ./ soft_max(v_norm, alpha)
+    return v ./ soft_max(norm(v), alpha)
 end
 
 """空間を一方向に伸ばす計量"""

@@ -35,7 +35,7 @@ include("../kinematics/kinematics.jl")
 """所望の加速度を計算（resolve演算結果を返す）"""
 function calc_desired_ddq(
     nodes::Vector{Vector{Node{T}}},
-    rmp_param,#::NamedTuple{Union{OriginalRMPAttractor{T}, RMPfromGDSAttractor{T}}, Union{OriginalRMPCollisionAvoidance{T}, RMPfromGDSCollisionAvoidance{T}}, Vector{OriginalJointLimitAvoidance{T}}},
+    rmp_param::NamedTuple,#{Union{OriginalRMPAttractor{T}, RMPfromGDSAttractor{T}}, Union{OriginalRMPCollisionAvoidance{T}, RMPfromGDSCollisionAvoidance{T}}, Vector{OriginalJointLimitAvoidance{T}}},
     goal::State{T},
     obs::Vector{State{T}}
 ) where T

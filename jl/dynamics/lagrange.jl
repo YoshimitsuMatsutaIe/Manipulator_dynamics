@@ -9,7 +9,7 @@
 
 運動学とDHパラメータの取り方が異なることに注意  
 """
-module Dynamics
+#module Dynamics
 
 
 using LinearAlgebra
@@ -363,7 +363,7 @@ function _test()
     #println(typeof(r_ddq))
 end
 
-end
+#end
 
-
-@time for i in 1:100; Dynamics._test(); end
+@time for i in 1:100; _test(); end
+#@time for i in 1:100; Dynamics._test(); end

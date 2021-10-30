@@ -27,23 +27,143 @@ mutable struct DHparam{T}
 end
 
 
+# # パラメータ
+# isdefined(Main, :L) || (const L = 278e-3)
+# isdefined(Main, :h) || (const h = 64e-3)
+# isdefined(Main, :H) || (const H = 1104e-3)
+# isdefined(Main, :L0) || (const L0 = 270.35e-3)
+# isdefined(Main, :L1) || (const L1 = 69e-3)
+# isdefined(Main, :L2) || (const L2 = 364.35e-3)
+# isdefined(Main, :L3) || (const L3 = 69e-3)
+# isdefined(Main, :L4) || (const L4 = 374.29e-3)
+# isdefined(Main, :L5) || (const L5 = 10e-3)
+# isdefined(Main, :L6) || (const L6 = 368.3e-3)
+
+# const q_neutral = [0.0, -31.0, 0.0, 43.0, 0.0, 72.0, 0.0] * pi/180  # ニュートラルの姿勢
+# const q_max = [51.0, 60.0, 173.0, 150.0, 175.0, 120.0, 175.0] * pi/180
+# const q_min = [-141.0, -123.0, -173.0, -3.0, -175.0, -90.0, -175.0] * pi/180
+
+# const DHparams_neutral = [
+#     DHparam(0.0, 0.0, 0.0, q_neutral[1])
+#     DHparam(-pi/2, L1, 0.0, q_neutral[2]+pi/2)
+#     DHparam(pi/2, 0.0, L2, q_neutral[3])
+#     DHparam(-pi/2, L3, 0.0, q_neutral[4])
+#     DHparam(pi/2, 0.0, L4, q_neutral[5])
+#     DHparam(-pi/2, L5, 0.0, q_neutral[6])
+#     DHparam(pi/2, 0.0, 0.0, q_neutral[7])
+# ]
+
+# # 制御点
+# const cpoints_local = (
+#     (
+#         [0.0; L1/2; -L0/2; 1.0],
+#         # [0.0; -L1/2; -L0/2; 1.0],
+#         # [L1/2; 0.0; -L0/2; 1.0],
+#         # [-L1/2; 0.0; -L0/2; 1.0],
+#     ),  # 1
+#     (
+#         # [0.0; 0.0; L3/2; 1.0],
+#         [0.0; 0.0; -L3/2; 1.0],
+#     ),  # 2
+#     (
+#         [0.0; L3/2; -L2*2/3; 1.0],
+#         [0.0; -L3/2; -L2*2/3; 1.0],
+#         [L3/2; 0.0; -L2*2/3; 1.0],
+#         [-L3/2; 0.0; -L2*2/3; 1.0],
+#         [0.0; L3/2; -L2*1/3; 1.0],
+#         [0.0; -L3/2; -L2*1/3; 1.0],
+#         [L3/2; 0.0; -L2*1/3; 1.0],
+#         [-L3/2; 0.0; -L2*1/3; 1.0],
+#     ),  # 3
+#     (
+#         [0.0; 0.0; L3/2; 1.0],
+#         [0.0; 0.0; -L3/2; 1.0],
+#     ),  # 4
+#     (
+#         [0.0; L3/2; -L4/2; 1.0],
+#         [0.0; -L3/2; -L4/2; 1.0],
+#         [L3/2; 0.0; -L4/2; 1.0],
+#         [-L3/2; 0.0; -L4/2; 1.0],
+#     ),  # 5
+#     (
+#         [0.0; 0.0; L3/2; 1.0],
+#         [0.0; 0.0; -L3/2; 1.0]
+#     ),  # 6
+#     (
+#         [0.0; L3/2; L6*1/3; 1.0],
+#         [0.0; -L3/2; L6*1/3; 1.0],
+#         [L3/2; 0.0; L6*1/3; 1.0],
+#         [-L3/2; 0.0; L6*1/3; 1.0],
+#         [0.0; L3/2; L6*2/3; 1.0],
+#         [0.0; -L3/2; L6*2/3; 1.0],
+#         [L3/2; 0.0; L6*2/3; 1.0],
+#         [-L3/2; 0.0; L6*2/3; 1.0],
+#     ),  # 7
+#     (
+#         [0.0; 0.0; L6/3; 1.0],
+#     ),  # 8
+# )
+
+
+# # 右手
+# const HTM_BR_Wo = [
+#     -sqrt(2)/2 sqrt(2)/2 0.0 -L
+#     -sqrt(2)/2 -sqrt(2)/2 0.0 -h
+#     0.0 0.0 1.0 H
+#     0.0 0.0 0.0 1.0
+# ]
+
+# const HTM_0_BR = [
+#     1.0 0.0 0.0 0.0
+#     0.0 1.0 0.0 0.0
+#     0.0 0.0 1.0 L0
+#     0.0 0.0 0.0 1.0
+# ]
+
+# # 左手
+# const HTM_BL_Wo = [
+#     sqrt(2)/2 sqrt(2)/2 0.0 L
+#     -sqrt(2)/2 sqrt(2)/2 0.0 -h
+#     0.0 0.0 1.0 H
+#     0.0 0.0 0.0 1.0
+# ]
+
+# const HTM_0_BL = HTM_0_BR
+
+
+# const HTM_GR_7 = [
+#     1.0 0.0 0.0 0.0
+#     0.0 1.0 0.0 0.0
+#     0.0 0.0 1.0 L6
+#     0.0 0.0 0.0 1.0
+# ]
+
+# const HTM_A = [
+#     0.0 -1.0 0.0 0.0
+#     1.0 0.0 0.0 0.0
+#     0.0 0.0 0.0 0.0
+#     0.0 0.0 0.0 0.0
+# ]  # 偏微分演算行列
+
+
+
 # パラメータ
-const L = 278e-3
-const h = 64e-3
-const H = 1104e-3
-const L0 = 270.35e-3
-const L1 = 69e-3
-const L2 = 364.35e-3
-const L3 = 69e-3
-const L4 = 374.29e-3
-const L5 = 10e-3
-const L6 = 368.3e-3
+(@isdefined L) || (const L = 278e-3)
+isdefined(Main, :h) || (const h = 64e-3)
+isdefined(Main, :H) || (const H = 1104e-3)
+isdefined(Main, :L0) || (const L0 = 270.35e-3)
+isdefined(Main, :L1) || (const L1 = 69e-3)
+isdefined(Main, :L2) || (const L2 = 364.35e-3)
+isdefined(Main, :L3) || (const L3 = 69e-3)
+isdefined(Main, :L4) || (const L4 = 374.29e-3)
+isdefined(Main, :L5) || (const L5 = 10e-3)
+isdefined(Main, :L6) || (const L6 = 368.3e-3)
 
-const q_neutral = [0.0, -31.0, 0.0, 43.0, 0.0, 72.0, 0.0] * pi/180  # ニュートラルの姿勢
-const q_max = [51.0, 60.0, 173.0, 150.0, 175.0, 120.0, 175.0] * pi/180
-const q_min = [-141.0, -123.0, -173.0, -3.0, -175.0, -90.0, -175.0] * pi/180
+(@isdefined q_neutral) || (const q_neutral = [0.0, -31.0, 0.0, 43.0, 0.0, 72.0, 0.0] * pi/180)  # ニュートラルの姿勢
+(@isdefined q_max) || (const q_max = [51.0, 60.0, 173.0, 150.0, 175.0, 120.0, 175.0] * pi/180)
+(@isdefined q_min) || (const q_min = [-141.0, -123.0, -173.0, -3.0, -175.0, -90.0, -175.0] * pi/180)
 
-const DHparams_neutral = [
+(@isdefined DHparams_neutral) || (const DHparams_neutral = [
     DHparam(0.0, 0.0, 0.0, q_neutral[1])
     DHparam(-pi/2, L1, 0.0, q_neutral[2]+pi/2)
     DHparam(pi/2, 0.0, L2, q_neutral[3])
@@ -51,10 +171,10 @@ const DHparams_neutral = [
     DHparam(pi/2, 0.0, L4, q_neutral[5])
     DHparam(-pi/2, L5, 0.0, q_neutral[6])
     DHparam(pi/2, 0.0, 0.0, q_neutral[7])
-]
+])
 
 # 制御点
-const cpoints_local = (
+(@isdefined cpoints_local) || (const cpoints_local = (
     (
         [0.0; L1/2; -L0/2; 1.0],
         # [0.0; -L1/2; -L0/2; 1.0],
@@ -102,48 +222,52 @@ const cpoints_local = (
     (
         [0.0; 0.0; L6/3; 1.0],
     ),  # 8
-)
+))
 
 
 # 右手
-const HTM_BR_Wo = [
+(@isdefined HTM_BR_Wo) || (const HTM_BR_Wo = [
     -sqrt(2)/2 sqrt(2)/2 0.0 -L
     -sqrt(2)/2 -sqrt(2)/2 0.0 -h
     0.0 0.0 1.0 H
     0.0 0.0 0.0 1.0
-]
+])
 
-const HTM_0_BR = [
+(@isdefined HTM_0_BR) || (const HTM_0_BR = [
     1.0 0.0 0.0 0.0
     0.0 1.0 0.0 0.0
     0.0 0.0 1.0 L0
     0.0 0.0 0.0 1.0
-]
+])
 
 # 左手
-const HTM_BL_Wo = [
+(@isdefined HTM_BL_Wo) || (const HTM_BL_Wo = [
     sqrt(2)/2 sqrt(2)/2 0.0 L
     -sqrt(2)/2 sqrt(2)/2 0.0 -h
     0.0 0.0 1.0 H
     0.0 0.0 0.0 1.0
-]
+])
 
-const HTM_0_BL = HTM_0_BR
+(@isdefined HTM_0_BL) || (const HTM_0_BL = HTM_0_BR)
 
 
-const HTM_GR_7 = [
+(@isdefined HTM_GR_7) || (const HTM_GR_7 = [
     1.0 0.0 0.0 0.0
     0.0 1.0 0.0 0.0
     0.0 0.0 1.0 L6
     0.0 0.0 0.0 1.0
-]
+])
 
-const HTM_A = [
+(@isdefined HTM_A) || (const HTM_A = [
     0.0 -1.0 0.0 0.0
     1.0 0.0 0.0 0.0
     0.0 0.0 0.0 0.0
     0.0 0.0 0.0 0.0
-]  # 偏微分演算行列
+])  # 偏微分演算行列
+
+
+
+
 
 
 

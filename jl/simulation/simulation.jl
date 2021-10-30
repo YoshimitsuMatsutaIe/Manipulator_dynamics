@@ -147,7 +147,7 @@ end
 @time data, fig = runner("./config/use_RMPfromGDS_test.yaml")
 println("hoge!")
 #fig
-@time make_animation(data)
+#@time make_animation(data)
 
 
 # @time t, q, dq, ddq, error, fig, fig2= run_simulation(5.0, 0.01)
