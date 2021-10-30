@@ -9,10 +9,16 @@
 
 運動学とDHパラメータの取り方が異なることに注意  
 """
-#module Dynamics
+module Dynamics
 
 
 using LinearAlgebra
+
+
+export calc_torque
+export calc_real_ddq
+
+
 const n = 7
 
 const Ixx = (
@@ -323,7 +329,7 @@ dq:（所望の）関節角速度ベクトル
 ddq:（所望の）関節角速度ベクトル  
 """
 function calc_torque(q::Vector{TU}, dq::Vector{TU}, ddq::Vector{TU}) where TU
-    M(q)*ddq .+ C(q, dq) .+ G(q)
+    M(q)*ddq .+ C(q, dq) .+ G(q) |> vec
 end
 
 
@@ -336,7 +342,7 @@ q:（現在の）関節角度ベクトル
 dq:（現在の）関節角速度ベクトル  
 """
 function calc_real_ddq(u::Array{TU}, F::Array{TU}, q::Vector{TU}, dq::Vector{TU}) where TU
-    inv(M(q)) * (u .+ F .- (C(q, dq) .+ G(q)))
+    inv(M(q)) * (u .+ F .- (C(q, dq) .+ G(q))) |> vec
 end
 
 #export calc_real_ddq
@@ -356,14 +362,15 @@ function _test()
     ddq = q
 
     u = calc_torque(q, dq, ddq)
-    #println(u)
+    println(typeof(u))
     F = zeros(Float64, 7, 1)
     r_ddq = calc_real_ddq(u, F, q, dq)
     #println(r_ddq)
     #println(typeof(r_ddq))
 end
 
-#end
+end
 
-@time for i in 1:100; _test(); end
-#@time for i in 1:100; Dynamics._test(); end
+#@time for i in 1:100; _test(); end
+#@time for i in 1:10; Dynamics._test(); end
+
