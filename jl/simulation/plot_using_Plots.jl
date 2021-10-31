@@ -8,55 +8,64 @@ using Plots
 """基本的なものだけplot"""
 function plot_simulation_data(data)
     q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.q)
-    fig_q = plot(data.t, q1, ylabel="q", label="q1", legend=:outerright)
-    plot!(fig_q, data.t, q2, label="q2")
-    plot!(fig_q, data.t, q3, label="q3")
-    plot!(fig_q, data.t, q4, label="q4")
-    plot!(fig_q, data.t, q5, label="q5")
-    plot!(fig_q, data.t, q6, label="q6")
-    plot!(fig_q, data.t, q7, label="q7")
+    fig_q = plot(data.t, q1, ylabel="q", label="_q1", legend=:outerright)
+    plot!(fig_q, data.t, q2, label="_q2")
+    plot!(fig_q, data.t, q3, label="_q3")
+    plot!(fig_q, data.t, q4, label="_q4")
+    plot!(fig_q, data.t, q5, label="_q5")
+    plot!(fig_q, data.t, q6, label="_q6")
+    plot!(fig_q, data.t, q7, label="_q7")
 
     q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.dq)
-    fig_dq = plot(data.t, q1, ylabel="dq", label="w1", legend=:outerright)
-    plot!(fig_dq, data.t, q2, label="w2")
-    plot!(fig_dq, data.t, q3, label="w3")
-    plot!(fig_dq, data.t, q4, label="w4")
-    plot!(fig_dq, data.t, q5, label="w5")
-    plot!(fig_dq, data.t, q6, label="w6")
-    plot!(fig_dq, data.t, q7, label="w7")
+    fig_dq = plot(data.t, q1, ylabel="dq", label="_w1", legend=:outerright)
+    plot!(fig_dq, data.t, q2, label="_w2")
+    plot!(fig_dq, data.t, q3, label="_w3")
+    plot!(fig_dq, data.t, q4, label="_w4")
+    plot!(fig_dq, data.t, q5, label="_w5")
+    plot!(fig_dq, data.t, q6, label="_w6")
+    plot!(fig_dq, data.t, q7, label="_w7")
 
     q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.ddq)
-    fig_ddq = plot(data.t, q1, ylabel="ddq", label="a1", legend=:outerright)
-    plot!(fig_ddq, data.t, q2, label="a2")
-    plot!(fig_ddq, data.t, q3, label="a3")
-    plot!(fig_ddq, data.t, q4, label="a4")
-    plot!(fig_ddq, data.t, q5, label="a5")
-    plot!(fig_ddq, data.t, q6, label="a6")
-    plot!(fig_ddq, data.t, q7, label="a7")
+    fig_ddq = plot(data.t, q1, ylabel="ddq", label="_a1", legend=:outerright)
+    plot!(fig_ddq, data.t, q2, label="_a2")
+    plot!(fig_ddq, data.t, q3, label="_a3")
+    plot!(fig_ddq, data.t, q4, label="_a4")
+    plot!(fig_ddq, data.t, q5, label="_a5")
+    plot!(fig_ddq, data.t, q6, label="_a6")
+    plot!(fig_ddq, data.t, q7, label="_a7")
+
+    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.desired_ddq)
+    fig_desired_ddq = plot(data.t, q1, ylabel="desired ddq", label="a*1", legend=:outerright)
+    plot!(fig_desired_ddq, data.t, q2, label="a*2")
+    plot!(fig_desired_ddq, data.t, q3, label="a*3")
+    plot!(fig_desired_ddq, data.t, q4, label="a*4")
+    plot!(fig_desired_ddq, data.t, q5, label="a*5")
+    plot!(fig_desired_ddq, data.t, q6, label="a*6")
+    plot!(fig_desired_ddq, data.t, q7, label="a*7")
 
     q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.u)
-    fig_u = plot(data.t, q1, ylabel="u", label="u1", legend=:outerright)
-    plot!(fig_u, data.t, q2, label="u2")
-    plot!(fig_u, data.t, q3, label="u3")
-    plot!(fig_u, data.t, q4, label="u4")
-    plot!(fig_u, data.t, q5, label="u5")
-    plot!(fig_u, data.t, q6, label="u6")
-    plot!(fig_u, data.t, q7, label="u7")
+    fig_u = plot(data.t, q1, ylabel="u", label="u*1", legend=:outerright)
+    plot!(fig_u, data.t, q2, label="u*2")
+    plot!(fig_u, data.t, q3, label="u*3")
+    plot!(fig_u, data.t, q4, label="u*4")
+    plot!(fig_u, data.t, q5, label="u*5")
+    plot!(fig_u, data.t, q6, label="u*6")
+    plot!(fig_u, data.t, q7, label="u*7")
 
 
 
     fig_error = plot(
         data.t, data.error,
-        label="er", ylabel="error [m]", ylims=(0.0,), legend=:outerright
+        label="err", ylabel="error [m]", ylims=(0.0,), legend=:outerright
     )
     fig_dis_to_obs = plot(
         data.t, data.dis_to_obs,
-        label="ob", ylabel="min distance to obs [m]", ylims=(0.0,), legend=:outerright
+        label="obs", ylabel="min distance to obs [m]", ylims=(0.0,), legend=:outerright
     )
 
     fig = plot(
-        fig_q, fig_dq, fig_ddq, fig_u, fig_error, fig_dis_to_obs,
-        layout=(6,1),
+        fig_q, fig_dq, fig_ddq, fig_desired_ddq, fig_u, fig_error, fig_dis_to_obs,
+        layout=(7,1),
         size=(500,1400)
     )
 

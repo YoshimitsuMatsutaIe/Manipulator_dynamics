@@ -1,4 +1,3 @@
-using CPUTime
 using YAML
 using LinearAlgebra
 
@@ -179,6 +178,7 @@ function with_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs)
     data.q[1] = q₀
     data.dq[1] = dq₀
     data.ddq[1] = zeros(T, 7)
+    data.desired_ddq[1] = zeros(T, 7)
     data.u[1] = zeros(T, 7)
     data.error[1] = norm(goal.x - nodes₀[9][1].x)
     data.dis_to_obs[1] = 0.0
@@ -199,8 +199,8 @@ function with_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs)
         
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
 
-        data.ddq[i+1], data.dis_to_obs[i+1] = calc_desired_ddq(data.nodes[i], rmp_param, data.goal[i], data.obs[i])
-        data.u[i+1] = calc_torque(data.q[i], data.dq[i], data.ddq[i+1])
+        data.desired_ddq[i+1], data.dis_to_obs[i+1] = calc_desired_ddq(data.nodes[i], rmp_param, data.goal[i], data.obs[i])
+        data.u[i+1] = calc_torque(data.q[i], data.dq[i], data.desired_ddq[i+1])
 
         k1 = dx(data.q[i], data.dq[i], data.u[i+1], F)
         k2 = dx(data.q[i] .+ k1.dq .* Δt/2, data.dq[i] .+ k1.ddq .* Δt/2, data.u[i+1], F)
@@ -209,7 +209,7 @@ function with_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs)
 
         data.q[i+1] = data.q[i] .+ (k1.dq .+ 2 .* k2.dq .+ 2 .* k3.dq .+ k4.dq) .* Δt/6
         data.dq[i+1] = data.dq[i] .+ (k1.ddq .+ 2 .* k2.ddq .+ 2 .* k3.ddq .+ k4.ddq) .* Δt/6
-
+        data.ddq[i+1] = k1.ddq .+ 2 .* k2.ddq .+ 2 .* k3.ddq .+ k4.ddq
         #ddq[i+1] = zeros(T,7)
         #println("q = ", q[i])
         #println("dq = ", dq[i])
