@@ -116,9 +116,16 @@ end
 
 
 
-"""ルンゲクッタ用"""
-function dx(q::Vector{T}, dq::Vector{T}, u::Vector{T}) where T
-    ddq = calc_real_ddq(u, zeros(T,7), q, dq)
+"""
+ルンゲクッタ用
+
+q : 関節角度ベクトル  
+dq : 関節角速度ベクトル  
+u : 入力トルクベクトル  
+F : 外力ベクトル  
+"""
+function dx(q::Vector{T}, dq::Vector{T}, u::Vector{T}, F::Vector{T}) where T
+    ddq = calc_real_ddq(u, F, q, dq)
     return (dq = dq , ddq = ddq)
 end
 
@@ -180,6 +187,9 @@ function with_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs)
     data.obs[1] = obs
     #println(length(obs))
 
+
+    F = zeros(T, 7)
+
     # ぐるぐる回す
     for i in 1:length(data.t)-1
         #println("i = ", i)
@@ -192,10 +202,10 @@ function with_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs)
         data.ddq[i+1], data.dis_to_obs[i+1] = calc_desired_ddq(data.nodes[i], rmp_param, data.goal[i], data.obs[i])
         data.u[i+1] = calc_torque(data.q[i], data.dq[i], data.ddq[i+1])
 
-        k1 = dx(data.q[i], data.dq[i], data.u[i+1])
-        k2 = dx(data.q[i] .+ k1.dq .* Δt/2, data.dq[i] .+ k1.ddq .* Δt/2, data.u[i+1])
-        k3 = dx(data.q[i] .+ k2.dq .* Δt/2, data.dq[i] .+ k2.ddq .* Δt/2, data.u[i+1])
-        k4 = dx(data.q[i] .+ k3.dq .* Δt, data.dq[i] .+ k3.ddq .* Δt, data.u[i+1])
+        k1 = dx(data.q[i], data.dq[i], data.u[i+1], F)
+        k2 = dx(data.q[i] .+ k1.dq .* Δt/2, data.dq[i] .+ k1.ddq .* Δt/2, data.u[i+1], F)
+        k3 = dx(data.q[i] .+ k2.dq .* Δt/2, data.dq[i] .+ k2.ddq .* Δt/2, data.u[i+1], F)
+        k4 = dx(data.q[i] .+ k3.dq .* Δt, data.dq[i] .+ k3.ddq .* Δt, data.u[i+1], F)
 
         data.q[i+1] = data.q[i] .+ (k1.dq .+ 2 .* k2.dq .+ 2 .* k3.dq .+ k4.dq) .* Δt/6
         data.dq[i+1] = data.dq[i] .+ (k1.ddq .+ 2 .* k2.ddq .+ 2 .* k3.ddq .+ k4.ddq) .* Δt/6

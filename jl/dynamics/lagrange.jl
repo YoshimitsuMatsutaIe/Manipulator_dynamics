@@ -1,9 +1,6 @@
 """ラグランジュ法による入力計算（テスト）
 """
 
-#using CPUTime
-
-
 """
 ロボットの動力学
 
@@ -324,9 +321,9 @@ end
 """トルクを計算
 
 計算トルク法です  
-q:（所望の）関節角度ベクトル  
-dq:（所望の）関節角速度ベクトル  
-ddq:（所望の）関節角速度ベクトル  
+q : 関節角度ベクトル  
+dq : 関節角速度ベクトル  
+ddq : （所望の）関節角速度ベクトル  
 """
 function calc_torque(q::Vector{TU}, dq::Vector{TU}, ddq::Vector{TU}) where TU
     M(q)*ddq .+ C(q, dq) .+ G(q) |> vec
@@ -335,13 +332,12 @@ end
 
 """現実世界での加速度
 
-
-u : 入力トルク  
-F : 外力  
-q:（現在の）関節角度ベクトル  
-dq:（現在の）関節角速度ベクトル  
+u : トルクベクトル R(7)  
+F : 外力ベクトル R(7)  
+q : （現在の）関節角度ベクトル  
+dq : （現在の）関節角速度ベクトル  
 """
-function calc_real_ddq(u::Array{TU}, F::Array{TU}, q::Vector{TU}, dq::Vector{TU}) where TU
+function calc_real_ddq(u::Vector{TU}, F::Vector{TU}, q::Vector{TU}, dq::Vector{TU}) where TU
     inv(M(q)) * (u .+ F .- (C(q, dq) .+ G(q))) |> vec
 end
 
@@ -362,8 +358,8 @@ function _test()
     ddq = q
 
     u = calc_torque(q, dq, ddq)
-    println(typeof(u))
-    F = zeros(Float64, 7, 1)
+    #println(typeof(u))
+    F = zeros(Float64, 7)
     r_ddq = calc_real_ddq(u, F, q, dq)
     #println(r_ddq)
     #println(typeof(r_ddq))
@@ -374,3 +370,6 @@ end
 #@time for i in 1:100; _test(); end
 #@time for i in 1:10; Dynamics._test(); end
 
+
+# using Profile
+# @profile for i in 1:10; Dynamics._test(); end
