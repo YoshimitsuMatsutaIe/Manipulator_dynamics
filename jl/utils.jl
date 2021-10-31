@@ -46,7 +46,11 @@ end
 
 
 
-"""点の位置と速度"""
+"""点の位置と速度
+
+x : 位置ベクトル  
+dx : 速度ベクトル  
+"""
 mutable struct State{T}
     x::Vector{T}
     dx::Vector{T}
@@ -65,13 +69,21 @@ function get_x_from_State(obs)
 end
 
 
-"""ノード（今回は制御点+ジョイント位置点）"""
+"""ノード
+
+x : 位置ベクトル  
+dx : 速度ベクトル  
+Jax : x軸回りの回転軸ベクトルの関節角度ベクトルによるヤコビ行列  
+Jay : y軸回りの回転軸ベクトルの関節角度ベクトルによるヤコビ行列  
+Jaz : z軸回りの回転軸ベクトルの関節角度ベクトルによるヤコビ行列  
+Jo : 位置ベクトルの関節角度ベクトルによるヤコビ行列  
+"""
 mutable struct Node{T}
     x::Vector{T}  # 位置
     dx::Vector{T}
-    # Jax::Matrix{T}  # 角度を制御する場合必要
-    # Jay::Matrix{T}
-    # Jaz::Matrix{T}
+    Jax::Matrix{T}  # 角度を制御する場合必要
+    Jay::Matrix{T}
+    Jaz::Matrix{T}
     Jo::Matrix{T}
 end
 

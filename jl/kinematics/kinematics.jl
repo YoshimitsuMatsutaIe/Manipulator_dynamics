@@ -371,6 +371,15 @@ function calc_dHTMs(
 end
 
 
+
+
+"""Joのヤコビ行列"""
+function _calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar)
+    z_bar = Jax .* r_bar[1,1] .+ Jay .* r_bar[2,1] .+ Jaz .* r_bar[3,1] .+ Jo
+    return z_bar[1:3, :]
+end
+
+
 """各制御点のヤコビ行列を計算"""
 function calc_jacobians(
     Jax_all::Vector{Matrix{T}},
@@ -378,14 +387,8 @@ function calc_jacobians(
     Jaz_all::Vector{Matrix{T}},
     Jo_all::Vector{Matrix{T}},
 ) where T
-
-    """Joのヤコビ行列"""
-    function _calc_Jo_global(Jax, Jay, Jaz, Jo, r_bar)
-        z_bar = Jax .* r_bar[1,1] .+ Jay .* r_bar[2,1] .+ Jaz .* r_bar[3,1] .+ Jo
-        return z_bar[1:3, :]
-    end
     
-    # ジョイント基底のヤコビ行列を計算
+    # ジョイント基底位置ベクトルのヤコビ行列を計算
     Jos_joint_all = Vector{Matrix{T}}(undef, 8)
     for i in 1:8
         Jos_joint_all[i] = _calc_Jo_global(
