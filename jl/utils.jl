@@ -81,9 +81,9 @@ Jo : 位置ベクトルの関節角度ベクトルによるヤコビ行列
 mutable struct Node{T}
     x::Vector{T}  # 位置
     dx::Vector{T}
-    Jax::Matrix{T}  # 角度を制御する場合必要
-    Jay::Matrix{T}
-    Jaz::Matrix{T}
+    #Jax::Matrix{T}  # 角度を制御する場合必要
+    #Jay::Matrix{T}
+    #Jaz::Matrix{T}
     Jo::Matrix{T}
 end
 
