@@ -14,7 +14,7 @@ include("../rmp/rmp_tree.jl")
 # export ObsParam_point
 # export ObsParam_cylinder
 # export set_obs
-\
+
 
 using Random
 
@@ -22,33 +22,8 @@ include("../utils.jl")
 #using .Utilis
 
 
-struct ObsParam_point{T}
-    x::T
-    y::T
-    z::T
-end
 
 
-struct ObsParam_sphere{T, U}
-    x::T
-    y::T
-    z::T
-    r::T
-    n::U
-end
-
-
-struct ObsParam_cylinder{T, U}
-    x::T
-    y::T
-    z::T
-    r::T
-    L::T
-    alpha::T
-    beta::T
-    gamma::T
-    n::U
-end
 
 
 struct ObsParam_field{T, U}
@@ -64,7 +39,17 @@ struct ObsParam_field{T, U}
 end
 
 
+"""
+障害物（点）のパラメータ
+"""
+struct ObsParam_point{T}
+    x::T
+    y::T
+    z::T
+end
 
+
+"""障害物（点）を設置"""
 function _set_obs(p::ObsParam_point{T}) where T
     obs = Vector{State{T}}(undef, 1)
     obs[1] = State(
@@ -74,7 +59,22 @@ function _set_obs(p::ObsParam_point{T}) where T
 end
 
 
+"""
+障害物（球）のパラメータ
 
+r : 半径  
+n : 障害物店の数  
+"""
+struct ObsParam_sphere{T, U}
+    x::T
+    y::T
+    z::T
+    r::T
+    n::U
+end
+
+
+"""障害物（球）を設置"""
 function _set_obs(p::ObsParam_sphere{T, U}) where {T, U}
     obs = Vector{State{T}}(undef, p.n)
     for i in 1:p.n
@@ -90,6 +90,24 @@ function _set_obs(p::ObsParam_sphere{T, U}) where {T, U}
         )
     end
     return obs
+end
+
+
+"""
+障害物（円筒）のパラメータ
+
+r : 
+"""
+struct ObsParam_cylinder{T, U}
+    x::T
+    y::T
+    z::T
+    r::T
+    L::T
+    alpha::T
+    beta::T
+    gamma::T
+    n::U
 end
 
 function _set_obs(p::ObsParam_cylinder{T}) where {T}
