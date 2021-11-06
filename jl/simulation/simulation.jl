@@ -271,6 +271,7 @@ pass = "./config/sice.yaml"
 println("hoge...")
 @time data, fig = runner(pass)
 println("hoge!")
+#fig
 fig
 #@time make_animation(data)
 
