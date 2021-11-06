@@ -1,0 +1,91 @@
+sim_param : 
+  isLeft : True
+  TIME_SPAN : 10.0
+  TIME_INTERVAL : 0.01
+rmp_param : 
+  -  # 1
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.01
+  -  # 2
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.01
+  -  # 3
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.01
+  -  # 4
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.01
+  -  # 5
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.01
+  -  # 6
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.01
+  -  # 7
+    goal_attractor : # None
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.01
+  -  # 8
+    goal_attractor :
+      name : 'Original'
+      attract_max_speed : 2
+      attract_gain : 10
+      attract_a_damp_r : 0.15
+      attract_sigma_W : 1
+      attract_sigma_H : 1
+      attract_A_damp_r : 5
+    collision_avoidance :
+      name : 'fromGDS'
+      rw : 0.5
+      sigma : 1
+      alpha : 0.5
+  -  # ジョイント制限
+    joint_limit_avoidance :
+      name : 'Original'
+      jl_gamma_p : 0.05
+      jl_gamma_d : 0.1
+      jl_lambda : 0.7
+env_param :
+  goal :
+    name : 'static'
+    center : [[0.3, -0.75, 1]]
+  obstacle :
+    -
+      name : 'point'
+      data :
+        x : 0.25e+0
+        y : -0.4e+0
+        z : 1.0e+0
+    -
+      name : 'point'
+      data :
+        x : 0.25e+0
+        y : -0.4e+0
+        z : 2.0e+0

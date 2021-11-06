@@ -265,8 +265,11 @@ end
 # using profview
 # @profview data, fig = runner("./config/use_RMPfromGDS_test.yaml")
 
+#pass = 
+pass = "./config/sice.yaml"
+
 println("hoge...")
-@time data, fig = runner("./config/use_RMPfromGDS_test.yaml")
+@time data, fig = runner(pass)
 println("hoge!")
 fig
 #@time make_animation(data)
