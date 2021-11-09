@@ -219,7 +219,7 @@ struct RMPfromGDSAttractor{T}
 end
 
 """目標吸引ポテンシャル2"""
-potential_2 = soft_normal
+potential_2 = soft_max
 
 """ポテンシャルの勾配"""
 function ∇potential_2(x, η)
@@ -373,5 +373,111 @@ function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zero
     # println()
     return _f, M
 end
+
+
+
+"""インピーダンス制御RMP（自作）
+
+M_d : 所望のインピーダンス慣性行列  
+D_d : 所望のインピーダンス減衰行列  
+P_d : 所望のインピーダンス剛性行列  
+D_e : 環境減衰行列  
+P_e : 環境剛性行列  
+eta_d : 一般化位置に関するスケール係数  
+eta_e : 外力の平衡位置に関するスケール係数  
+"""
+struct RMPfromImpiedanceAttractor{T}
+    M_d::Matrix{T}
+    D_d::Matrix{T}
+    P_d::Matrix{T}
+    D_e::Matrix{T}
+    P_e::Matrix{T}
+    eta_d::T
+    eta_e::T
+    max_speed::T
+    gain::T
+    f_α::T
+    σ_α::T
+    σ_γ::T
+    wᵤ::T
+    wₗ::T
+    α::T
+    ϵ::T
+end
+
+
+"""インピーダンスポテンシャル"""
+pot(e_d, eta_d, e_e, eta_e) = (soft_normal(e_d, eta_d) + soft_normal(e_e, eta_e)) / 2
+
+"""インピーダンスポテンシャルの勾配"""
+function ∇pot(e_d, eta_d, e_e, eta_e)
+    (∇potential_2(e_d, eta_d) .+ ∇potential_2(e_e, eta_e)) ./ 2
+end
+
+"""?"""
+α_or_γ(x, σ) = exp(-(norm(x))^2 / (2*σ^2))
+
+"""重み行列（fromGDSのアトラクターで使用）"""
+w(x, σ_γ, wᵤ, wₗ) = (wᵤ-wₗ) * α_or_γ(x, σ_γ) + wₗ
+
+"""fromGDSのアトラクター慣性行列"""
+function inertia_matrix(x, p::RMPfromGDSAttractor{T}, x₀) where T
+    z = x .- x₀
+    ∇pot = ∇potential_2(z, p.α)
+    α = α_or_γ(z, p.σ_α)
+    return w(z, p.σ_γ, p.wᵤ, p.wₗ) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.ϵ).*Matrix{T}(I, 3, 3))
+end
+
+"""力用"""
+function xMx(x, p::RMPfromGDSAttractor{T}, dx, x₀) where T
+    dx' * inertia_matrix(x, p, x₀) * dx
+end
+
+"""曲率項"""
+function ξ(p::RMPfromGDSAttractor{T}, x, dx, x₀) where T
+    # 第一項を計算
+    A = Matrix{T}(undef, 3, 3)
+    for i in 1:3
+        _M(x) = inertia_matrix(x, p, x₀)[:, i]
+        _jacobian_M = ForwardDiff.jacobian(_M, x)
+        #println(_jacobian_M)
+        A[:, i] = _jacobian_M * dx
+    end
+    A *= dx
+
+    # 第二項を計算
+    _xMx(x) = xMx(x, p, dx, x₀)
+    B = 1/2 .* ForwardDiff.gradient(_xMx, x)  # 便利
+    
+    return A .- B
+end
+
+"""fromGDSのアトラクター力"""
+function f(p::RMPfromGDSAttractor{T}, x, dx, x₀, M) where T
+    z = x .- x₀
+    damp = p.gain / p.max_speed
+    #return M * (-p.gain .* soft_normal(z, p.f_α) .- damp .* dx) .- ξ(p, x, dx, x₀)
+    return (-p.gain .* ∇potential_2(z, p.α) .- damp .* dx) .- ξ(p, x, dx, x₀)
+end
+
+""""""
+function get_natural(p::RMPfromGDSAttractor{T}, x, dx, x₀) where T
+    M = inertia_matrix(x, p, x₀)
+    return f(p, x, dx, x₀, M), M
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #end
