@@ -386,14 +386,14 @@ P_e : 環境剛性行列
 eta_d : 一般化位置に関するスケール係数  
 eta_e : 外力の平衡位置に関するスケール係数  
 """
-struct RMPfromImpiedanceAttractor{T}
+struct RMPfromGDSImpedance{T}
     M_d::Matrix{T}
     D_d::Matrix{T}
     P_d::Matrix{T}
     D_e::Matrix{T}
     P_e::Matrix{T}
-    eta_d::T
-    eta_e::T
+    # eta_d::T
+    # eta_e::T
     max_speed::T
     gain::T
     f_α::T
@@ -414,46 +414,43 @@ function ∇pot(e_d, eta_d, e_e, eta_e)
     (∇potential_2(e_d, eta_d) .+ ∇potential_2(e_e, eta_e)) ./ 2
 end
 
-"""?"""
-α_or_γ(x, σ) = exp(-(norm(x))^2 / (2*σ^2))
 
-"""重み行列（fromGDSのアトラクターで使用）"""
-w(x, σ_γ, wᵤ, wₗ) = (wᵤ-wₗ) * α_or_γ(x, σ_γ) + wₗ
 
-"""fromGDSのアトラクター慣性行列"""
-function inertia_matrix(x, p::RMPfromGDSAttractor{T}, x₀) where T
-    z = x .- x₀
-    ∇pot = ∇potential_2(z, p.α)
-    α = α_or_γ(z, p.σ_α)
-    return w(z, p.σ_γ, p.wᵤ, p.wₗ) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.ϵ).*Matrix{T}(I, 3, 3))
+"""インピーダンスRMPの慣性行列"""
+function inertia_matrix(y, p::RMPfromGDSImpedance{T}, y_d, y_e) where T
+    e_d = y .- y_d  # y_d ~ y_eと考えy_dを優先させる
+    e_e = y .- y_e
+    ∇pot = ∇pot(e_d, p.α, e_e, p.α)
+    α = α_or_γ(e_d, p.σ_α)
+    return w(e_d, p.σ_γ, p.wᵤ, p.wₗ) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.ϵ).*Matrix{T}(I, 3, 3))
 end
 
 """力用"""
-function xMx(x, p::RMPfromGDSAttractor{T}, dx, x₀) where T
-    dx' * inertia_matrix(x, p, x₀) * dx
+function xMx(y, p::RMPfromGDSImpedance{T}, dy, y_d, y_e) where T
+    dx' * inertia_matrix(y, p, y_d, y_e) * dx
 end
 
 """曲率項"""
-function ξ(p::RMPfromGDSAttractor{T}, x, dx, x₀) where T
+function ξ(p::RMPfromGDSImpedance{T}, y, dy, y_d, y_e) where T
     # 第一項を計算
     A = Matrix{T}(undef, 3, 3)
     for i in 1:3
-        _M(x) = inertia_matrix(x, p, x₀)[:, i]
-        _jacobian_M = ForwardDiff.jacobian(_M, x)
+        _M(y) = inertia_matrix(y, p, y_d, y_E)[:, i]
+        _jacobian_M = ForwardDiff.jacobian(_M, y)
         #println(_jacobian_M)
-        A[:, i] = _jacobian_M * dx
+        A[:, i] = _jacobian_M * dy
     end
-    A *= dx
+    A *= dy
 
     # 第二項を計算
-    _xMx(x) = xMx(x, p, dx, x₀)
-    B = 1/2 .* ForwardDiff.gradient(_xMx, x)  # 便利
+    _xMx(y) = xMx(y, p, dy, y_d, y_e)
+    B = 1/2 .* ForwardDiff.gradient(_xMx, y)  # 便利
     
     return A .- B
 end
 
 """fromGDSのアトラクター力"""
-function f(p::RMPfromGDSAttractor{T}, x, dx, x₀, M) where T
+function f(p::RMPfromGDSImpedance{T}, y, dy, y_d, y_e, M) where T
     z = x .- x₀
     damp = p.gain / p.max_speed
     #return M * (-p.gain .* soft_normal(z, p.f_α) .- damp .* dx) .- ξ(p, x, dx, x₀)
@@ -461,7 +458,7 @@ function f(p::RMPfromGDSAttractor{T}, x, dx, x₀, M) where T
 end
 
 """"""
-function get_natural(p::RMPfromGDSAttractor{T}, x, dx, x₀) where T
+function get_natural(p::RMPfromGDSImpedance{T}, x, dx, x₀) where T
     M = inertia_matrix(x, p, x₀)
     return f(p, x, dx, x₀, M), M
 end
