@@ -58,12 +58,51 @@ function _set_obs(p::ObsParam_point{T}) where T
     return obs
 end
 
+"""
+障害物（面）のパラメータ
+"""
+struct ObsParam_plane{T, U}
+    x::T
+    y::T
+    z::T
+    lx::T
+    ly::T
+    alpha::T
+    beta::T
+    gamma::T
+    n::U
+end
+
+
+"""
+障害物（面）を設置
+"""
+function _set_obs(p::ObsParam_plane{T, U}) where {T, U}
+    obs = Vector{State{T}}(undef, p.n)
+    R = rotate_3d(p.alpha, p.beta, p.gamma)
+    t = [p.x, p.y, p.z]
+
+    for i in 1:p.n
+        X = [
+            (rand(T) - 0.5) * p.lx
+            (rand(T) - 0.5) * p.ly
+            0.0
+        ]
+
+        obs[i] = State(
+            R * X + t,
+            zeros(T, 3)
+        )
+    end
+    return obs
+end
+
 
 """
 障害物（球）のパラメータ
 
 r : 半径  
-n : 障害物店の数  
+n : 障害物点の数  
 """
 struct ObsParam_sphere{T, U}
     x::T
@@ -74,7 +113,9 @@ struct ObsParam_sphere{T, U}
 end
 
 
-"""障害物（球）を設置"""
+"""
+障害物（球）を設置
+"""
 function _set_obs(p::ObsParam_sphere{T, U}) where {T, U}
     obs = Vector{State{T}}(undef, p.n)
     for i in 1:p.n
@@ -110,6 +151,8 @@ struct ObsParam_cylinder{T, U}
     n::U
 end
 
+
+"""障害物（円筒）を設置"""
 function _set_obs(p::ObsParam_cylinder{T}) where {T}
     obs = Vector{State{T}}(undef, p.n)
     R = rotate_3d(p.alpha, p.beta, p.gamma)
@@ -130,23 +173,6 @@ function _set_obs(p::ObsParam_cylinder{T}) where {T}
 end
 
 
-function _set_obs(p::ObsParam_field{T, U}) where {T, U}
-    obs = Vector{State{T}}(undef, p.n)
-    R = rotate_3d(p.alpha, p.beta, p.gamma)
-    t = [p.x, p.y, p.z]
-    for i in 1:p.n
-        X = [
-            p.lx * (rand(T) - 1/2)
-            p.ly * (rand(T) - 1/2)
-            0.0
-        ]
-        obs[i] = State(
-            R * X + t,
-            zeros(T, 3)
-        )
-    end
-    return obs
-end
 
 
 """yamelを読んで質量無限大の障害物設置"""
@@ -162,6 +188,10 @@ function set_obs(obs_param)
             elseif param["name"] == "cylinder"
                 arg = ObsParam_cylinder(
                     p["x"], p["y"], p["z"], p["r"], p["L"], p["alpha"], p["beta"], p["gamma"], p["n"]
+                )
+            elseif param["name"] == "plane"
+                arg = ObsParam_plane(
+                    p["x"], p["y"], p["z"], p["lx"], p["ly"], p["alpha"], p["beta"], p["gamma"], p["n"]
                 )
             end
             #println(arg)

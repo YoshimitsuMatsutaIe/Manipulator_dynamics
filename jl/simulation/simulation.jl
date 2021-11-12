@@ -156,7 +156,7 @@ function with_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs)
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
     #goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
-    goal = State([0.5, -0.5, 1.3], [0.0, 0.0, 0.0])
+    goal = State([0.5, -0.5, 1.1], [0.0, 0.0, 0.0])
 
     # 初期値
     nodes₀ = update_nodes(nothing, q₀, dq₀)
@@ -273,7 +273,7 @@ println("hoge...")
 println("hoge!")
 #fig
 fig
-#@time make_animation(data)
+@time make_animation(data)
 
 
 # @time t, q, dq, ddq, error, fig, fig2= run_simulation(5.0, 0.01)

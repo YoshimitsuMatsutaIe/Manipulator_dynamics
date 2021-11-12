@@ -1,6 +1,6 @@
 sim_param : 
   isLeft : True
-  TIME_SPAN : 10.0
+  TIME_SPAN : 60.0
   TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1
@@ -77,15 +77,21 @@ env_param :
     name : 'static'
     center : [[0.3, -0.75, 1]]
   obstacle :
+    # -
+    #   name : 'point'
+    #   data :
+    #     x : 0.25e+0
+    #     y : -0.4e+0
+    #     z : 1.0e+0
     -
-      name : 'point'
+      name : 'plane'
       data :
-        x : 0.25e+0
-        y : -0.4e+0
-        z : 1.0e+0
-    -
-      name : 'point'
-      data :
-        x : 0.25e+0
-        y : -0.4e+0
-        z : 2.0e+0
+        x : 0.25
+        y : -0.5
+        z : 1.0
+        lx : 1.0
+        ly : 0.5
+        alpha : 0.0
+        beta : 0.0
+        gamma : 0.0
+        n : 100
