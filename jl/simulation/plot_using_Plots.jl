@@ -71,7 +71,7 @@ function plot_simulation_data(data, path)
     )
 
 
-    fname = path * ".svg"
+    fname = path * ".png"
     savefig(fig, fname)
 
 end

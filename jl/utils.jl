@@ -88,7 +88,7 @@ mutable struct Node{T}
 end
 
 
-"""辞書のキーを文字列からシンボルに変換"""
-keytosymbol(x) = Dict(Symbol(k) => v for (k, v) in pairs(x))
+#"""辞書のキーを文字列からシンボルに変換"""
+#keytosymbol(x) = Dict(Symbol(k) => v for (k, v) in pairs(x))
 
 #end
