@@ -5,8 +5,9 @@
 using Plots
 #using LaTeXStrings
 
+
 """基本的なものだけplot"""
-function plot_simulation_data(data)
+function plot_simulation_data(data, t)
     q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.q)
     fig_q = plot(data.t, q1, ylabel="q", label="_q1", legend=:outerright)
     plot!(fig_q, data.t, q2, label="_q2")
@@ -69,7 +70,10 @@ function plot_simulation_data(data)
         size=(500,1400)
     )
 
-    return fig
+    linpath = "result/"
+    fname = linpath * t * ".svg"
+    savefig(fig, fname)
+
 end
 
 
@@ -156,7 +160,7 @@ end
 
 
 """アニメ制作"""
-function make_animation(data)
+function make_animation(data, t)
     # 枚数決める
     epoch_max = 100
     epoch = length(data.t)
@@ -175,6 +179,11 @@ function make_animation(data)
         )
         frame(anim, _fig)
     end
-    gif(anim, "test5.gif", fps = 60)
+
+
+    linpath = "result/"
+    fname = linpath * t * ".gif"
+
+    gif(anim, fname, fps = 60)
     #return anim
 end 

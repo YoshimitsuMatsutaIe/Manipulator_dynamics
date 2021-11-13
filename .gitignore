@@ -3,3 +3,5 @@
 *.vscide
 
 __pycache__/
+
+result/

@@ -1,5 +1,6 @@
 using YAML
 using LinearAlgebra
+using Dates
 
 include("../utils.jl")
 include("../rmp/rmp.jl")
@@ -232,15 +233,15 @@ end
 
 
 """ひとまずシミュレーションやってみｓる"""
-function run_simulation(TIME_SPAN::T, Δt::T, obs) where T
+function run_simulation(TIME_SPAN::T, Δt::T, obs, t) where T
 
     q₀ = q_neutral
     dq₀ = zeros(T, 7)
 
-    #data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
-    data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
+    data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
+    #data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
     
-    fig = plot_simulation_data(data)
+    fig = plot_simulation_data(data, t)
     return data, fig
 end
 
@@ -248,17 +249,17 @@ end
 
 
 
-function runner(name)
+function runner(name, t)
     params = YAML.load_file(name)
     sim_param = params["sim_param"]
     rmp_param = params["rmp_param"]
     env_param = params["env_param"]
     obs = set_obs(env_param["obstacle"])
     #print(obs)
-    data, fig = run_simulation(
-        sim_param["TIME_SPAN"], sim_param["TIME_INTERVAL"], obs
+    data= run_simulation(
+        sim_param["TIME_SPAN"], sim_param["TIME_INTERVAL"], obs, t
     )
-    data, fig
+    data
 end
 
 
@@ -268,12 +269,25 @@ end
 #pass = 
 pass = "./config/sice.yaml"
 
+function get_time_string()
+    _nd = now()  # 時刻取得
+    _Y = _nd |> Dates.year |> string
+    _M = _nd |> Dates.month |> string
+    _D = _nd |> Dates.day |> string
+    _h = _nd |> Dates.hour |> string
+    _m = _nd |> Dates.minute |> string
+    _s = _nd |> Dates.second |> string
+    t = _Y * _M * _D * "-" * _h * _m * _s
+    return t
+end
+
+t = get_time_string()
 println("hoge...")
-@time data, fig = runner(pass)
+@time data, fig = runner(pass, t)
 println("hoge!")
 #fig
 fig
-@time make_animation(data)
+@time make_animation(data, t)
 
 
 # @time t, q, dq, ddq, error, fig, fig2= run_simulation(5.0, 0.01)

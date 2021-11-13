@@ -1,6 +1,6 @@
 sim_param : 
   isLeft : True
-  TIME_SPAN : 60.0
+  TIME_SPAN : 6.0
   TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1
