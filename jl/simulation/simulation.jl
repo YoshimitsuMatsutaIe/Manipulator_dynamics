@@ -131,9 +131,9 @@ end
 
 
 """
-トルク考えてシミュレーション実行
+質量を考えてシミュレーション実行
 
-ルンゲクッタを私用
+ルンゲクッタを使用  
 """
 function with_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs) where T
 
@@ -233,13 +233,16 @@ end
 
 
 """ひとまずシミュレーションやってみｓる"""
-function run_simulation(TIME_SPAN::T, Δt::T, obs, t) where T
+function run_simulation(isWithMas::Bool, TIME_SPAN::T, Δt::T, obs, t) where T
 
     q₀ = q_neutral
     dq₀ = zeros(T, 7)
 
-    data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
-    #data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
+    if isWithMas
+        data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
+    else
+        data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
+    end
     
     plot_simulation_data(data, t)
     return data
@@ -249,24 +252,25 @@ end
 
 
 
-function runner(name, t)
+function runner(name, path)
     params = YAML.load_file(name)
     sim_param = params["sim_param"]
     rmp_param = params["rmp_param"]
     env_param = params["env_param"]
     obs = set_obs(env_param["obstacle"])
-    #print(obs)
+    
     data= run_simulation(
-        sim_param["TIME_SPAN"], sim_param["TIME_INTERVAL"], obs, t
+        sim_param["isWithMass"],
+        sim_param["TIME_SPAN"],
+        sim_param["TIME_INTERVAL"],
+        obs,
+        path
     )
     return data
 end
 
 
-# using profview
-# @profview data, fig = runner("./config/use_RMPfromGDS_test.yaml")
 
-#pass = 
 pass = "./config/sice.yaml"
 
 
