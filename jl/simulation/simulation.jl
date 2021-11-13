@@ -251,9 +251,12 @@ end
 
 
 
+"""ランナー
 
-function runner(name, path)
-    params = YAML.load_file(name)
+設定を読み込みシミュレーションを実行  
+"""
+function runner(config, path)
+    params = YAML.load_file(config)
     sim_param = params["sim_param"]
     rmp_param = params["rmp_param"]
     env_param = params["env_param"]
@@ -270,8 +273,6 @@ function runner(name, path)
 end
 
 
-
-pass = "./config/sice.yaml"
 
 
 """データ放送のパス
@@ -297,10 +298,14 @@ function get_time_string()
     return path
 end
 
-path = get_time_string()
+
+
+config = "./config/sice.yaml"  # シミュレーション設定のパス
+path = get_time_string()  # 実行時のデータ保存パス
+
 println("hoge...")
-@time data = runner(pass, path)
+@time data = runner(config, path)
 println("hoge!")
 
-@time make_animation(data, path)
+#@time make_animation(data, path)
 

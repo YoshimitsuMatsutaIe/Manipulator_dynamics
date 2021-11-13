@@ -466,9 +466,21 @@ end
 
 
 
+# ### 以下はrmpとは関係なし ###
+
+# """yamlを読んでrmp制御器をセット"""
+# function set_rmp(rmp_param)
+#     for p in ramp_param
+#         if !isnothing(p["attractor"])
+#             if p["attractor"]
+    
+    
+#     end
 
 
 
+
+# end
 
 
 
