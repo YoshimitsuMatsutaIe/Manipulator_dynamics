@@ -7,7 +7,7 @@ using Plots
 
 
 """基本的なものだけplot"""
-function plot_simulation_data(data, t)
+function plot_simulation_data(data, path)
     q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.q)
     fig_q = plot(data.t, q1, ylabel="q", label="_q1", legend=:outerright)
     plot!(fig_q, data.t, q2, label="_q2")
@@ -70,8 +70,8 @@ function plot_simulation_data(data, t)
         size=(500,1400)
     )
 
-    linpath = "result/"
-    fname = linpath * t * ".svg"
+
+    fname = path * ".svg"
     savefig(fig, fname)
 
 end
@@ -160,8 +160,9 @@ end
 
 
 """アニメ制作"""
-function make_animation(data, t)
+function make_animation(data, path)
     # 枚数決める
+    println(data.t)
     epoch_max = 100
     epoch = length(data.t)
     if epoch < epoch_max
@@ -181,8 +182,7 @@ function make_animation(data, t)
     end
 
 
-    linpath = "result/"
-    fname = linpath * t * ".gif"
+    fname = path *  ".gif"
 
     gif(anim, fname, fps = 60)
     #return anim

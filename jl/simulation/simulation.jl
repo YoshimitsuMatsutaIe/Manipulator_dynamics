@@ -241,8 +241,8 @@ function run_simulation(TIME_SPAN::T, Δt::T, obs, t) where T
     data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
     #data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
     
-    fig = plot_simulation_data(data, t)
-    return data, fig
+    plot_simulation_data(data, t)
+    return data
 end
 
 
@@ -259,7 +259,7 @@ function runner(name, t)
     data= run_simulation(
         sim_param["TIME_SPAN"], sim_param["TIME_INTERVAL"], obs, t
     )
-    data
+    return data
 end
 
 
@@ -269,6 +269,12 @@ end
 #pass = 
 pass = "./config/sice.yaml"
 
+
+"""データ放送のパス
+
+シミュレーション結果を保存するディレクトリのパスを返す  
+ないなら新規作成  
+"""
 function get_time_string()
     _nd = now()  # 時刻取得
     _Y = _nd |> Dates.year |> string
@@ -278,17 +284,19 @@ function get_time_string()
     _m = _nd |> Dates.minute |> string
     _s = _nd |> Dates.second |> string
     t = _Y * _M * _D * "-" * _h * _m * _s
-    return t
+
+    linpath = "../result_of_manipulator_dynamics/" * _Y * _M * _D * "/"
+    if !ispath(linpath)
+        mkdir(linpath)
+    end
+    path = linpath * t
+    return path
 end
 
-t = get_time_string()
+path = get_time_string()
 println("hoge...")
-@time data, fig = runner(pass, t)
+@time data = runner(pass, path)
 println("hoge!")
-#fig
-fig
-@time make_animation(data, t)
 
+@time make_animation(data, path)
 
-# @time t, q, dq, ddq, error, fig, fig2= run_simulation(5.0, 0.01)
-# make_animation(q, dq)
