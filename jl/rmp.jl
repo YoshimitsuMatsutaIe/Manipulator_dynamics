@@ -22,7 +22,7 @@ using Parameters
 # export RMPfromGDSAttractor
 # export RMPfromGDSCollisionAvoidance
 
-include("../utils.jl")
+include("utils.jl")
 
 
 

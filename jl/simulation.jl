@@ -2,16 +2,19 @@ using YAML
 using LinearAlgebra
 using Dates
 
-include("../utils.jl")
-include("../rmp/rmp.jl")
-include("../rmp/rmp_tree.jl")
+#push!(LOAD_PATH, ".")  # includeの代わり．includeダメ絶対
+
+
+include("utils.jl")
+include("rmp.jl")
+include("rmp_tree.jl")
 include("static_environment.jl")
 include("plot_using_Plots.jl")
-#include("../kinematics/kinematics.jl")
-#include("../dynamics/lagrange.jl")
+include("kinematics.jl")
+include("lagrange.jl")
 
 
-push!(LOAD_PATH, ".")  # includeの代わり．includeダメ絶対
+
 
 # using .RMP
 # using .RMPTree

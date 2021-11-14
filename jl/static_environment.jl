@@ -2,7 +2,7 @@
 
 
 
-include("../rmp/rmp_tree.jl")
+include("rmp_tree.jl")
 
 #using .RMPTree: State
 
@@ -13,7 +13,7 @@ export set_obs
 
 using Random
 
-include("../utils.jl")
+include("utils.jl")
 
 
 

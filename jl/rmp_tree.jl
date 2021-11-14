@@ -9,16 +9,16 @@
 # export update_nodes
 # export calc_desired_ddq
 
-
+#push!(LOAD_PATH, ".")
 
 using LinearAlgebra
 
 
 
-include("../utils.jl")
+include("utils.jl")
 
-include("./rmp.jl")
-#include("../kinematics/kinematics.jl")
+include("rmp.jl")
+include("kinematics.jl")
 
 
 using .Kinematics: calc_all, q_max, q_min, cpoints_local
