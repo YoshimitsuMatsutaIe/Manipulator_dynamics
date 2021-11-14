@@ -1,9 +1,6 @@
 """色々つかうやつ"""
 
-"""
-様々な便利関数&struct
-"""
-module Utilis
+
 
 export split_vec_of_arrays
 export rotate_3d
@@ -25,7 +22,7 @@ function split_vec_of_arrays(u)
 end
 
 """3次元回転行列"""
-function rotate_3d(a::T, b::T, c::T) where T
+function rotate(a::T, b::T, c::T) where T
     a = deg2rad(a)
     b = deg2rad(b)
     c = deg2rad(c)
@@ -91,4 +88,3 @@ end
 """辞書のキーを文字列からシンボルに変換"""
 keytosymbol(x) = Dict(Symbol(k) => v for (k, v) in pairs(x))
 
-end

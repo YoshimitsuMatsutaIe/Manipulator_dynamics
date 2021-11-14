@@ -2,11 +2,6 @@
 
 
 
-"""
-動かない障害物
-"""
-module StaticEnvironment
-
 include("../rmp/rmp_tree.jl")
 
 #using .RMPTree: State
@@ -19,7 +14,7 @@ export set_obs
 using Random
 
 include("../utils.jl")
-using .Utilis
+
 
 
 
@@ -52,7 +47,7 @@ end
 """障害物（点）を設置"""
 function _set_obs(p::ObsParam_point{T}) where T
     obs = Vector{State{T}}(undef, 1)
-    obs[1] = Utilis.State(
+    obs[1] = State(
         [p.x, p.y, p.z], zeros(T, 3)
     ) 
     return obs
@@ -79,7 +74,7 @@ end
 """
 function _set_obs(p::ObsParam_plane{T, U}) where {T, U}
     obs = Vector{State{T}}(undef, p.n)
-    R = Utilis.rotate_3d(p.alpha, p.beta, p.gamma)
+    R = rotate(p.alpha, p.beta, p.gamma)
     t = [p.x, p.y, p.z]
 
     for i in 1:p.n
@@ -89,7 +84,7 @@ function _set_obs(p::ObsParam_plane{T, U}) where {T, U}
             0.0
         ]
 
-        obs[i] = Utilis.State(
+        obs[i] = State(
             R * X + t,
             zeros(T, 3)
         )
@@ -126,7 +121,7 @@ function _set_obs(p::ObsParam_sphere{T, U}) where {T, U}
             p.r * sin(theta) * sin(phi) + p.y
             p.r * cos(theta) + p.z
         ]
-        obs[i] = Utilis.State(
+        obs[i] = State(
             X, zeros(T, 3)
         )
     end
@@ -155,7 +150,7 @@ end
 """障害物（円筒）を設置"""
 function _set_obs(p::ObsParam_cylinder{T}) where {T}
     obs = Vector{State{T}}(undef, p.n)
-    R = Utilis.rotate_3d(p.alpha, p.beta, p.gamma)
+    R = rotate(p.alpha, p.beta, p.gamma)
     t = [p.x, p.y, p.z]
     for i in 1:p.n
         theta = 2π * rand(T)
@@ -164,7 +159,7 @@ function _set_obs(p::ObsParam_cylinder{T}) where {T}
             p.r * sin(theta)
             (p.L)*(rand(T) - 1/2)
         ]
-        obs[i] = Utilis.State(
+        obs[i] = State(
             R * X + t,
             zeros(T, 3)
         )
@@ -203,10 +198,6 @@ end
 
 
 
-
-end
-
-
 # using YAML
 # data = YAML.load_file("./config./use_RMPfromGDS_test.yaml")
 # obs_param = data["env_param"]["obstacle"]
@@ -216,6 +207,3 @@ end
 # x, y, z = split_vec_of_arrays(X)
 # using Plots
 # fig = scatter(x, y, z)
-
-using .StaticEnvironment
-println(StaticEnvironment.Utilis.rotate_3d(0,0,0))
