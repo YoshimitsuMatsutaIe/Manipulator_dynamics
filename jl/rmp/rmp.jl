@@ -6,9 +6,12 @@
 # """
 # module RMP
 
+
+
 using LinearAlgebra
 using ForwardDiff  # 自動微分パッケージ
 
+using Parameters
 
 # export pullbacked_rmp
 # export  get_natural
@@ -18,6 +21,9 @@ using ForwardDiff  # 自動微分パッケージ
 # export OriginalJointLimitAvoidance
 # export RMPfromGDSAttractor
 # export RMPfromGDSCollisionAvoidance
+
+include("../utils.jl")
+
 
 
 """pullback演算"""
@@ -71,7 +77,7 @@ end
 
 
 """OriginalRMPの目標到達制御器のパラメータ"""
-struct OriginalRMPAttractor{T}
+@with_kw struct OriginalRMPAttractor{T}
     max_speed::T
     gain::T
     ddq_damp_r::T
@@ -115,7 +121,7 @@ function get_natural(p::OriginalRMPAttractor{T}, z, dz, z0) where T
 end
 
 
-struct OriginalRMPCollisionAvoidance{T}
+@with_kw struct OriginalRMPCollisionAvoidance{T}
     scale_rep::T
     scale_damp::T
     ratio::T
@@ -165,7 +171,7 @@ function get_natural(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
 end
 
 
-struct OriginalJointLimitAvoidance{T}
+@with_kw struct OriginalJointLimitAvoidance{T}
     γ_p::T
     γ_d::T
     λ::T
@@ -206,7 +212,7 @@ end
 
 
 """fromGDSのアトラクター　パラメータ"""
-struct RMPfromGDSAttractor{T}
+@with_kw struct RMPfromGDSAttractor{T}
     max_speed::T
     gain::T
     f_α::T
@@ -280,7 +286,7 @@ function get_natural(p::RMPfromGDSAttractor{T}, x, dx, x₀) where T
 end
 
 
-struct RMPfromGDSCollisionAvoidance{T}
+@with_kw struct RMPfromGDSCollisionAvoidance{T}
     rw::T
     σ::T
     α::T
@@ -386,7 +392,7 @@ P_e : 環境剛性行列
 eta_d : 一般化位置に関するスケール係数  
 eta_e : 外力の平衡位置に関するスケール係数  
 """
-struct RMPfromGDSImpedance{T}
+@with_kw struct RMPfromGDSImpedance{T}
     M_d::Matrix{T}
     D_d::Matrix{T}
     P_d::Matrix{T}

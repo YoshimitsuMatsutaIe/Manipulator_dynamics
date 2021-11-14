@@ -12,9 +12,9 @@ include("../dynamics/lagrange.jl")
 
 # using .RMP
 # using .RMPTree
-# using .StaticEnvironment
+using .StaticEnvironment
 # using .Kinematics: q_neutral
-# using .Utilis
+using .Utilis
 using .Dynamics
 
 
@@ -260,7 +260,7 @@ function runner(config, path)
     sim_param = params["sim_param"]
     rmp_param = params["rmp_param"]
     env_param = params["env_param"]
-    obs = set_obs(env_param["obstacle"])
+    obs = StaticEnvironment.set_obs(env_param["obstacle"])
     
     data= run_simulation(
         sim_param["isWithMass"],

@@ -1,15 +1,15 @@
 """色々つかうやつ"""
 
-# """
-# 様々な便利関数&struct
-# """
-# module Utilis
+"""
+様々な便利関数&struct
+"""
+module Utilis
 
-# export split_vec_of_arrays
-# export rotate_3d
-# export State
-# export get_x_from_State
-# export Node
+export split_vec_of_arrays
+export rotate_3d
+export State
+export get_x_from_State
+export Node
 
 
 using StaticArrays
@@ -88,7 +88,7 @@ mutable struct Node{T}
 end
 
 
-#"""辞書のキーを文字列からシンボルに変換"""
-#keytosymbol(x) = Dict(Symbol(k) => v for (k, v) in pairs(x))
+"""辞書のキーを文字列からシンボルに変換"""
+keytosymbol(x) = Dict(Symbol(k) => v for (k, v) in pairs(x))
 
-#end
+end
