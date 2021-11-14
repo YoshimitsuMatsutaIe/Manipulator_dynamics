@@ -2,20 +2,18 @@
 """
 運動学
 """
-# module Kinematics
+module Kinematics
 
 
 using LinearAlgebra
 
-# export q_neutral
-# export q_max
-# export q_min
-# export calc_all
-# export cpoints_local
+export q_neutral
+export q_max
+export q_min
+export calc_all
+export cpoints_local
 
 
-
-include("../utils.jl")
 
 
 """DHパラメータ（修正？）"""
@@ -370,4 +368,4 @@ function calc_all(q, dq,)
 end
 
 
-#end
+end

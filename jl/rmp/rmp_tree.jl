@@ -18,17 +18,15 @@ using LinearAlgebra
 include("../utils.jl")
 
 include("./rmp.jl")
-include("../kinematics/kinematics.jl")
+#include("../kinematics/kinematics.jl")
 
 
-# using .Kinematics
+using .Kinematics: calc_all, q_max, q_min, cpoints_local
 # using .RMP
 #using .Utilis
 
 
 
-#attractor = OriginalRMPAttractor(2.0, 10.0, 0.15, 1.0, 1.0, 5.0)
-#const obs_avoidance = OriginalRMPCollisionAvoidance(0.2, 1.0, 0.5, 0.5, 1.0)
 
 
 

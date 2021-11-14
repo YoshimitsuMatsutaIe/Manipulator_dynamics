@@ -7,13 +7,16 @@ include("../rmp/rmp.jl")
 include("../rmp/rmp_tree.jl")
 include("static_environment.jl")
 include("plot_using_Plots.jl")
-include("../kinematics/kinematics.jl")
-include("../dynamics/lagrange.jl")
+#include("../kinematics/kinematics.jl")
+#include("../dynamics/lagrange.jl")
+
+
+push!(LOAD_PATH, ".")  # includeの代わり．includeダメ絶対
 
 # using .RMP
 # using .RMPTree
 #using .StaticEnvironment
-# using .Kinematics: q_neutral
+using .Kinematics: q_neutral
 #using .Utilis
 using .Dynamics
 
