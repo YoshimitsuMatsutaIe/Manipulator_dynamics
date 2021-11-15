@@ -53,24 +53,55 @@ end
 
 """rmp制御器をセット"""
 function set_rmp(rmp_param)
-    for p in ramp_param
+    goal = []
+    if rmp_param[1]["collision_avoidance"]["name"] == "Original"
+        obs = OriginalRMPCollisionAvoidance{Float64}[]
+    elseif rmp_param[1]["collision_avoidance"]["name"] == "fromGDS"
+        obs = RMPfromGDSCollisionAvoidance{Float64}[]
+    end
+    jl = []
+
+    for p in rmp_param
+        #println(p)
+
+        if haskey(p, "goal_attractor") && !isnothing(p["goal_attractor"])
+            pa = p["goal_attractor"]
+            _p = pa["data"] |> keytosymbol
+            if pa["name"] == "Original"
+                push!(goal, OriginalRMPAttractor(;_p...))
+            elseif pa["name"] == "fromGDS"
+                push!(goal, RMPfromGDSAttractor(;_p...))
+            end
+        end
         
-        if !isnothing(p["attractor"])
-            if p["attractor"]
-    
-    
+        
+        if haskey(p, "collision_avoidance") &&!isnothing(p["collision_avoidance"])
+            po = p["collision_avoidance"]
+            _p = po["data"] |> keytosymbol
+            if po["name"] == "Original"
+                push!(obs, OriginalRMPCollisionAvoidance(;_p...))
+            elseif po["name"] == "fromGDS"
+                push!(obs, RMPfromGDSCollisionAvoidance(;_p...))
+            end
+        end
+
+        if haskey(p, "joint_limit_avoidance")
+            pjl = p["joint_limit_avoidance"]
+            _p = pjl["data"] |> keytosymbol
+            if pjl["name"] == "Original"
+                push!(jl, OriginalJointLimitAvoidance(;_p...))
+            elseif pjl["name"] == "fromGDS"
+                jl = nothing
+            end
+        end
     end
 
-
-
-
+    (
+        joint_limit_avoidance=jl[1],
+        attractor=goal[1],
+        obs_avoidance=obs,
+    )
 end
-
-
-
-
-
-
 
 
 
@@ -95,25 +126,7 @@ end
 """
 オイラー法で（質量考えずに）シミュレーション
 """
-function whithout_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs) where T
-
-
-    rmp_param = (
-        joint_limit_avoidance=OriginalJointLimitAvoidance(0.05, 0.1, 0.7),
-        attractor=RMPfromGDSAttractor(10.0, 20.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5),
-        obs_avoidance=(
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-        )
-    )
-
+function whithout_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, rmp_param) where T
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
     #goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
@@ -192,26 +205,27 @@ end
 
 ルンゲクッタを使用  
 """
-function with_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs) where T
+function with_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, rmp_param) where T
 
 
-    rmp_param = (
-        joint_limit_avoidance=OriginalJointLimitAvoidance(0.05, 0.1, 0.7),
-        attractor=RMPfromGDSAttractor(10.0, 20.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5),
-        obs_avoidance=(
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-            RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-        )
-    )
+    # rmp_param = (
+    #     joint_limit_avoidance=OriginalJointLimitAvoidance(0.05, 0.1, 0.7),
+    #     attractor=RMPfromGDSAttractor(10.0, 20.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5),
+    #     obs_avoidance=(
+    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
+    #     )
+    # )
 
-
+    println(rmp_param)
+    println(typeof(rmp_param))
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
     #goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
     goal = State([0.5, -0.5, 1.1], [0.0, 0.0, 0.0])
@@ -290,15 +304,15 @@ end
 
 
 """ひとまずシミュレーションやってみｓる"""
-function run_simulation(isWithMas::Bool, TIME_SPAN::T, Δt::T, obs, t) where T
+function run_simulation(isWithMas::Bool, TIME_SPAN::T, Δt::T, rmps, obs, t) where T
 
     q₀ = q_neutral
     dq₀ = zeros(T, 7)
 
     if isWithMas
-        data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
+        data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs, rmps)
     else
-        data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs)
+        data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs, rmps)
     end
     
     plot_simulation_data(data, t)
@@ -318,11 +332,13 @@ function runner(config, path)
     rmp_param = params["rmp_param"]
     env_param = params["env_param"]
     obs = set_obs(env_param["obstacle"])
+    rmps = set_rmp(rmp_param)
     
     data= run_simulation(
         sim_param["isWithMass"],
         sim_param["TIME_SPAN"],
         sim_param["TIME_INTERVAL"],
+        rmps,
         obs,
         path
     )

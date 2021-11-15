@@ -1,78 +1,91 @@
 sim_param : 
   isLeft : True
   isWithMass : True
-  TIME_SPAN : 1.0
+  TIME_SPAN : 6.0
   TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1
     goal_attractor : # None
     collision_avoidance :
       name : 'fromGDS'
-      rw : 0.5
-      sigma : 1
-      alpha : 0.01
+      data : 
+        rw : 0.5
+        sigma : 1.0
+        alpha : 0.1
   -  # 2
     goal_attractor : # None
     collision_avoidance :
       name : 'fromGDS'
-      rw : 0.5
-      sigma : 1
-      alpha : 0.01
+      data :
+        rw : 0.5
+        sigma : 1.0
+        alpha : 0.1
   -  # 3
     goal_attractor : # None
     collision_avoidance :
       name : 'fromGDS'
-      rw : 0.5
-      sigma : 1
-      alpha : 0.01
+      data : 
+        rw : 0.5
+        sigma : 1.0
+        alpha : 0.1
   -  # 4
     goal_attractor : # None
     collision_avoidance :
       name : 'fromGDS'
-      rw : 0.5
-      sigma : 1
-      alpha : 0.01
+      data : 
+        rw : 0.5
+        sigma : 1.0
+        alpha : 0.1
   -  # 5
     goal_attractor : # None
     collision_avoidance :
       name : 'fromGDS'
-      rw : 0.5
-      sigma : 1
-      alpha : 0.01
+      data : 
+        rw : 0.5
+        sigma : 1.0
+        alpha : 0.1
   -  # 6
     goal_attractor : # None
     collision_avoidance :
       name : 'fromGDS'
-      rw : 0.5
-      sigma : 1
-      alpha : 0.01
+      data : 
+        rw : 0.5
+        sigma : 1.0
+        alpha : 0.1
   -  # 7
     goal_attractor : # None
     collision_avoidance :
       name : 'fromGDS'
-      rw : 0.5
-      sigma : 1
-      alpha : 0.01
+      data : 
+        rw : 0.5
+        sigma : 1.0
+        alpha : 0.1
   -  # 8
     goal_attractor :
-      name : 'Original'
-      attract_max_speed : 2
-      attract_gain : 10
-      attract_a_damp_r : 0.15
-      attract_sigma_W : 1
-      attract_sigma_H : 1
-      attract_A_damp_r : 5
+      name : 'fromGDS'
+      data : 
+        max_speed : 10.0
+        gain : 20.0
+        f_alpha : 0.15
+        sigma_alpha : 2.0
+        sigma_gamma : 2.0
+        wu : 1.0
+        wl : 0.01
+        alpha : 0.15
+        epsilon : 1.0e-5
     collision_avoidance :
       name : 'fromGDS'
-      rw : 0.5
-      sigma : 1
-      alpha : 0.5
+      data : 
+        rw : 0.5
+        sigma : 1.0
+        alpha : 0.1
   -  # ジョイント制限
     joint_limit_avoidance :
       name : 'Original'
-      jl_gamma_p : 0.05
-      jl_gamma_d : 0.1
-      jl_lambda : 0.7
+      data : 
+        gamma_p : 0.05
+        gamma_d : 0.1
+        lambda : 0.7
 env_param :
   goal :
     name : 'static'

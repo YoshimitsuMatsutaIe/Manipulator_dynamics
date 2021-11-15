@@ -170,9 +170,9 @@ end
 
 
 @with_kw struct OriginalJointLimitAvoidance{T}
-    γ_p::T
-    γ_d::T
-    λ::T
+    gamma_p::T
+    gamma_d::T
+    lambda::T
 end
 
 """ジョイント制限回避加速度 from OriginalRMP"""
@@ -180,14 +180,14 @@ function ddz(
     p::OriginalJointLimitAvoidance{T},
     q::Vector{T}, dq::Vector{T}, q_max::Vector{T}, q_min::Vector{T}
 ) where T
-    z = p.γ_p .* (-q) .- p.γ_d .* dq
+    z = p.gamma_p .* (-q) .- p.gamma_d .* dq
     a = inv(D_sigma(q, q_min, q_max)) * z
     return a
 end
 
 """ジョイント制限回避計量 from OriginalRMP"""
 function inertia_matrix(p::OriginalJointLimitAvoidance{T}, q, dq) where T
-    return p.λ .* Matrix{T}(I, 7, 7)
+    return p.lambda .* Matrix{T}(I, 7, 7)
 end
 
 """canonical form []"""
@@ -213,13 +213,13 @@ end
 @with_kw struct RMPfromGDSAttractor{T}
     max_speed::T
     gain::T
-    f_α::T
-    σ_α::T
-    σ_γ::T
-    wᵤ::T
-    wₗ::T
-    α::T
-    ϵ::T
+    f_alpha::T
+    sigma_alpha::T
+    sigma_gamma::T
+    wu::T
+    wl::T
+    alpha::T
+    epsilon::T
 end
 
 """目標吸引ポテンシャル2"""
@@ -235,14 +235,14 @@ end
 α_or_γ(x, σ) = exp(-(norm(x))^2 / (2*σ^2))
 
 """重み行列（fromGDSのアトラクターで使用）"""
-w(x, σ_γ, wᵤ, wₗ) = (wᵤ-wₗ) * α_or_γ(x, σ_γ) + wₗ
+w(x, sigma_gamma, wu, wl) = (wu-wl) * α_or_γ(x, sigma_gamma) + wl
 
 """fromGDSのアトラクター慣性行列"""
 function inertia_matrix(x, p::RMPfromGDSAttractor{T}, x₀) where T
     z = x .- x₀
-    ∇pot = ∇potential_2(z, p.α)
-    α = α_or_γ(z, p.σ_α)
-    return w(z, p.σ_γ, p.wᵤ, p.wₗ) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.ϵ).*Matrix{T}(I, 3, 3))
+    ∇pot = ∇potential_2(z, p.alpha)
+    α = α_or_γ(z, p.sigma_alpha)
+    return w(z, p.sigma_gamma, p.wu, p.wl) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.epsilon).*Matrix{T}(I, 3, 3))
 end
 
 """力用"""
@@ -273,8 +273,8 @@ end
 function f(p::RMPfromGDSAttractor{T}, x, dx, x₀, M) where T
     z = x .- x₀
     damp = p.gain / p.max_speed
-    #return M * (-p.gain .* soft_normal(z, p.f_α) .- damp .* dx) .- ξ(p, x, dx, x₀)
-    return (-p.gain .* ∇potential_2(z, p.α) .- damp .* dx) .- ξ(p, x, dx, x₀)
+    #return M * (-p.gain .* soft_normal(z, p.f_alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
+    return (-p.gain .* ∇potential_2(z, p.alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
 end
 
 """"""
@@ -286,8 +286,8 @@ end
 
 @with_kw struct RMPfromGDSCollisionAvoidance{T}
     rw::T
-    σ::T
-    α::T
+    sigma::T
+    alpha::T
 end
 
 """重み関数"""
@@ -345,12 +345,12 @@ end
 
 """fromGDSの障害物回避力"""
 function f(p::RMPfromGDSCollisionAvoidance{T}, s, ds) where T
-    return -w2(s, p.rw) * ∇Φ1(s, p.α, p.rw) - ξ(s, ds, p.σ, p.rw)
+    return -w2(s, p.rw) * ∇Φ1(s, p.alpha, p.rw) - ξ(s, ds, p.sigma, p.rw)
 end
 
 """fromGDSの障害物回避慣性行列"""
 function inertia_matrix(p::RMPfromGDSCollisionAvoidance{T}, s, ds) where T
-    return w2(s, p.rw) * δ(s, ds, p.σ)
+    return w2(s, p.rw) * δ(s, ds, p.sigma)
 end
 
 function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zeros(Float64, 3)) where T
@@ -400,13 +400,13 @@ eta_e : 外力の平衡位置に関するスケール係数
     # eta_e::T
     max_speed::T
     gain::T
-    f_α::T
-    σ_α::T
-    σ_γ::T
-    wᵤ::T
-    wₗ::T
-    α::T
-    ϵ::T
+    f_alpha::T
+    sigma_alpha::T
+    sigma_gamma::T
+    wu::T
+    wl::T
+    alpha::T
+    epsilon::T
 end
 
 
@@ -424,9 +424,9 @@ end
 function inertia_matrix(y, p::RMPfromGDSImpedance{T}, y_d, y_e) where T
     e_d = y .- y_d  # y_d ~ y_eと考えy_dを優先させる
     e_e = y .- y_e
-    ∇pot = ∇pot(e_d, p.α, e_e, p.α)
-    α = α_or_γ(e_d, p.σ_α)
-    return w(e_d, p.σ_γ, p.wᵤ, p.wₗ) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.ϵ).*Matrix{T}(I, 3, 3))
+    ∇pot = ∇pot(e_d, p.alpha, e_e, p.alpha)
+    α = α_or_γ(e_d, p.sigma_alpha)
+    return w(e_d, p.sigma_gamma, p.wu, p.wl) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.epsilon).*Matrix{T}(I, 3, 3))
 end
 
 """力用"""
@@ -457,8 +457,8 @@ end
 function f(p::RMPfromGDSImpedance{T}, y, dy, y_d, y_e, M) where T
     z = x .- x₀
     damp = p.gain / p.max_speed
-    #return M * (-p.gain .* soft_normal(z, p.f_α) .- damp .* dx) .- ξ(p, x, dx, x₀)
-    return (-p.gain .* ∇potential_2(z, p.α) .- damp .* dx) .- ξ(p, x, dx, x₀)
+    #return M * (-p.gain .* soft_normal(z, p.f_alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
+    return (-p.gain .* ∇potential_2(z, p.alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
 end
 
 """"""
