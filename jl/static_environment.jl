@@ -12,16 +12,13 @@ export set_obs
 
 
 using Random
+using Parameters
 
 include("utils.jl")
 
 
 
-
-
-
-
-struct ObsParam_field{T, U}
+@with_kw struct ObsParam_field{T, U}
     x::T
     y::T
     z::T
@@ -37,7 +34,7 @@ end
 """
 障害物（点）のパラメータ
 """
-struct ObsParam_point{T}
+@with_kw struct ObsParam_point{T}
     x::T
     y::T
     z::T
@@ -56,7 +53,7 @@ end
 """
 障害物（面）のパラメータ
 """
-struct ObsParam_plane{T, U}
+@with_kw struct ObsParam_plane{T, U}
     x::T
     y::T
     z::T
@@ -99,7 +96,7 @@ end
 r : 半径  
 n : 障害物点の数  
 """
-struct ObsParam_sphere{T, U}
+@with_kw struct ObsParam_sphere{T, U}
     x::T
     y::T
     z::T
@@ -134,7 +131,7 @@ end
 
 r : 
 """
-struct ObsParam_cylinder{T, U}
+@with_kw struct ObsParam_cylinder{T, U}
     x::T
     y::T
     z::T
@@ -168,42 +165,3 @@ function _set_obs(p::ObsParam_cylinder{T}) where {T}
 end
 
 
-
-
-"""yamelを読んで質量無限大の障害物設置"""
-function set_obs(obs_param)
-    if isnothing(obs_param)
-        return nothing
-    else
-        obs = Vector{State}()
-        for param in obs_param
-            p = param["data"]
-            if param["name"] == "point"
-                arg = ObsParam_point(p["x"], p["y"], p["z"])
-            elseif param["name"] == "cylinder"
-                arg = ObsParam_cylinder(
-                    p["x"], p["y"], p["z"], p["r"], p["L"], p["alpha"], p["beta"], p["gamma"], p["n"]
-                )
-            elseif param["name"] == "plane"
-                arg = ObsParam_plane(
-                    p["x"], p["y"], p["z"], p["lx"], p["ly"], p["alpha"], p["beta"], p["gamma"], p["n"]
-                )
-            end
-            #println(arg)
-            append!(obs, _set_obs(arg))
-        end
-    end
-    return obs
-end
-
-
-
-# using YAML
-# data = YAML.load_file("./config./use_RMPfromGDS_test.yaml")
-# obs_param = data["env_param"]["obstacle"]
-# println(obs_param)
-# o = set_obs(obs_param)
-# X = get_x_from_State(o)
-# x, y, z = split_vec_of_arrays(X)
-# using Plots
-# fig = scatter(x, y, z)

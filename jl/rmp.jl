@@ -22,8 +22,6 @@ using Parameters
 # export RMPfromGDSAttractor
 # export RMPfromGDSCollisionAvoidance
 
-include("utils.jl")
-
 
 
 """pullback演算"""
@@ -468,27 +466,6 @@ function get_natural(p::RMPfromGDSImpedance{T}, x, dx, x₀) where T
     M = inertia_matrix(x, p, x₀)
     return f(p, x, dx, x₀, M), M
 end
-
-
-
-
-# ### 以下はrmpとは関係なし ###
-
-# """yamlを読んでrmp制御器をセット"""
-# function set_rmp(rmp_param)
-#     for p in ramp_param
-#         if !isnothing(p["attractor"])
-#             if p["attractor"]
-    
-    
-#     end
-
-
-
-
-# end
-
-
 
 
 

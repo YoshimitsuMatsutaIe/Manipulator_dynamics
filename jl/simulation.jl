@@ -24,6 +24,57 @@ using .Kinematics: q_neutral
 using .Dynamics
 
 
+### yaml関係 ###
+
+"""質量無限大の障害物設置
+
+obs_param : yamlを読んで作ったObsParam_の入ったリスト  
+"""
+function set_obs(obs_param)
+    if isnothing(obs_param)
+        return nothing
+    else
+        obs = Vector{State}()
+        for param in obs_param
+            p = param["data"] |> keytosymbol
+            if param["name"] == "point"
+                arg = ObsParam_point(;p...)
+            elseif param["name"] == "cylinder"
+                arg = ObsParam_cylinder(;p...)
+            elseif param["name"] == "plane"
+                arg = ObsParam_plane(;p...)
+            end
+            append!(obs, _set_obs(arg))
+        end
+    end
+    return obs
+end
+
+
+"""rmp制御器をセット"""
+function set_rmp(rmp_param)
+    for p in ramp_param
+        
+        if !isnothing(p["attractor"])
+            if p["attractor"]
+    
+    
+    end
+
+
+
+
+end
+
+
+
+
+
+
+
+
+
+
 """シミュレーションのデータ"""
 struct Data{T}
     t::StepRangeLen{T}  # 時刻
