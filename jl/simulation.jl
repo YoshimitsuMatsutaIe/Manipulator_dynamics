@@ -26,7 +26,7 @@ using .Dynamics
 
 ### yaml関係 ###
 
-"""質量無限大の障害物設置
+"""動かない障害物をセット
 
 obs_param : yamlを読んで作ったObsParam_の入ったリスト  
 """
@@ -48,6 +48,16 @@ function set_obs(obs_param)
         end
     end
     return obs
+end
+
+
+"""静止目標をセット"""
+function set_goal(goal_param)
+    p = goal_param["data"] |> keytosymbol
+    if goal_param["name"] == "static"
+        arg = GoalParam_point(;p...)
+    end
+    _set_goal(arg)
 end
 
 
@@ -106,6 +116,8 @@ end
 
 
 
+
+
 """シミュレーションのデータ"""
 struct Data{T}
     t::StepRangeLen{T}  # 時刻
@@ -126,11 +138,13 @@ end
 """
 オイラー法で（質量考えずに）シミュレーション
 """
-function whithout_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, rmp_param) where T
+function whithout_mass(
+    q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, goal, rmp_param
+) where T
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
     #goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
-    goal = State([0.5, -0.5, 1.3], [0.0, 0.0, 0.0])
+    #goal = State([0.5, -0.5, 1.3], [0.0, 0.0, 0.0])
 
     # 初期値
     nodes₀ = update_nodes(nothing, q₀, dq₀)
@@ -205,30 +219,13 @@ end
 
 ルンゲクッタを使用  
 """
-function with_mass(q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, rmp_param) where T
+function with_mass(
+    q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, goal, rmp_param
+) where T
 
-
-    # rmp_param = (
-    #     joint_limit_avoidance=OriginalJointLimitAvoidance(0.05, 0.1, 0.7),
-    #     attractor=RMPfromGDSAttractor(10.0, 20.0, 0.15, 2.0, 2.0, 1.0, 0.01, 0.15, 1e-5),
-    #     obs_avoidance=(
-    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-    #         RMPfromGDSCollisionAvoidance(0.5, 1.0, 0.1),
-    #     )
-    # )
-
-    println(rmp_param)
-    println(typeof(rmp_param))
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
     #goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
-    goal = State([0.5, -0.5, 1.1], [0.0, 0.0, 0.0])
+    #goal = State([0.5, -0.5, 1.1], [0.0, 0.0, 0.0])
 
     # 初期値
     nodes₀ = update_nodes(nothing, q₀, dq₀)
@@ -304,15 +301,18 @@ end
 
 
 """ひとまずシミュレーションやってみｓる"""
-function run_simulation(isWithMas::Bool, TIME_SPAN::T, Δt::T, rmps, obs, t) where T
+function run_simulation(
+    isWithMas::Bool, TIME_SPAN::T, Δt::T,
+    rmps, obs, goal, t
+) where T
 
     q₀ = q_neutral
     dq₀ = zeros(T, 7)
 
     if isWithMas
-        data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs, rmps)
+        data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
     else
-        data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs, rmps)
+        data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
     end
     
     plot_simulation_data(data, t)
@@ -332,6 +332,7 @@ function runner(config, path)
     rmp_param = params["rmp_param"]
     env_param = params["env_param"]
     obs = set_obs(env_param["obstacle"])
+    goal = set_goal(env_param["goal"])
     rmps = set_rmp(rmp_param)
     
     data= run_simulation(
@@ -340,6 +341,7 @@ function runner(config, path)
         sim_param["TIME_INTERVAL"],
         rmps,
         obs,
+        goal,
         path
     )
     return data

@@ -89,7 +89,10 @@ rmp_param :
 env_param :
   goal :
     name : 'static'
-    center : [[0.3, -0.75, 1]]
+    data :
+      x : 0.5
+      y : -0.5
+      z : 1.1
   obstacle :
     # -
     #   name : 'point'

@@ -18,6 +18,25 @@ include("utils.jl")
 
 
 
+### 目標位置 ###
+
+"""点目標"""
+@with_kw struct GoalParam_point{T}
+    x::T
+    y::T
+    z::T
+end
+
+
+function _set_goal(p::GoalParam_point{T}) where T
+    State(
+        [p.x, p.y, p.z], zeros(T, 3)
+    )
+end
+
+
+
+### 障害物 ###
 @with_kw struct ObsParam_field{T, U}
     x::T
     y::T
@@ -163,5 +182,6 @@ function _set_obs(p::ObsParam_cylinder{T}) where {T}
     end
     return obs
 end
+
 
 
