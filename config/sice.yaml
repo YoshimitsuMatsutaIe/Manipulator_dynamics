@@ -1,7 +1,7 @@
 sim_param : 
   isLeft : True
   isWithMass : True
-  TIME_SPAN : 6.0
+  TIME_SPAN : 10.0
   TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1
@@ -85,13 +85,13 @@ rmp_param :
       data : 
         gamma_p : 0.05
         gamma_d : 0.1
-        lambda : 0.7
+        lambda : 0.1
 env_param :
   goal :
     name : 'static'
     data :
       x : 0.5
-      y : -0.5
+      y : -0.9
       z : 1.1
   obstacle :
     # -

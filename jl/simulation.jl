@@ -382,5 +382,5 @@ println("hoge...")
 @time data = runner(config, path)
 println("hoge!")
 
-#@time make_animation(data, path)
+@time make_animation(data, path)
 
