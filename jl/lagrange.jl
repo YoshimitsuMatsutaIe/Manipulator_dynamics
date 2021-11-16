@@ -210,19 +210,10 @@ function J(i::Int64)
     ]
 end
 
-# """慣性モーメント"""
-# function J(i::Int64)
-#     [
-#         (-Ixx[i]+Iyy[i]+Izz[i])/2 Ixy[i] Ixz[i] m[i]*r_bars[1, i]
-#         Ixy[i] (Ixx[i]-Iyy[i]+Izz[i])/2 Iyz[i] m[i]*r_bars[2, i]
-#         Ixz[i] Iyz[i] (Ixx[i]+Iyy[i]-Izz[i])/2 m[i]*r_bars[3, i]
-#         m[i]*r_bars[1,i] m[i]*r_bars[2,i] m[i]*r_bars[3,i] m[i]
-#     ]
-# end
-
 
 function U(i::Int64, j::Int64, q::Vector{TU}) where TU
     if j <= i
+        println(T(1, j-1, q))
         return T(1, j-1, q) * Q * T(j, i, q)
     else
         return zeros(TU, 4, 4)
@@ -247,6 +238,8 @@ function M(i::Int64, k::Int64, q::Vector{TU}) where TU
     j_start = max(i, k)
     z = 0.0
     for j in j_start:n
+        println(j)
+        #println(U(j, k, q))
         z += tr(U(j, k, q) * J(j) * U(j, i, q)')
     end
     z
@@ -356,11 +349,21 @@ function _test()
     ] * pi / 180
     dq = q
     ddq = q
-
-    u = calc_torque(q, dq, ddq)
-    #println(typeof(u))
-    F = zeros(Float64, 7)
-    r_ddq = calc_real_ddq(u, F, q, dq)
+    
+    #i = 2
+    #j = 6
+    #println(T(i, j, q))
+    
+    
+    i = 3
+    j = 5
+    println(M(i, j, q))
+    
+    #println(M(q))
+    #u = calc_torque(q, dq, ddq)
+    #println(u)
+    #F = zeros(Float64, 7)
+    #r_ddq = calc_real_ddq(u, F, q, dq)
     #println(r_ddq)
     #println(typeof(r_ddq))
 end
@@ -371,5 +374,6 @@ end
 #@time for i in 1:10; Dynamics._test(); end
 
 
-# using Profile
-# @profile for i in 1:10; Dynamics._test(); end
+using .Dynamics
+
+println(Dynamics._test())

@@ -2,7 +2,10 @@
 import numpy as np
 from math import pi, sin, cos, tan
 
+
 class BaxterDynamics:
+    """バクスターロボットの動力学"""
+    
     n = 7
 
     Ixx = (
@@ -127,12 +130,12 @@ class BaxterDynamics:
     )
 
     alpha = (
-        -np.pi/2,
-        np.pi/2,
-        -np.pi/2,
-        np.pi/2,
-        -np.pi/2,
-        np.pi/2,
+        pi/2,
+        pi/2,
+        -pi/2,
+        pi/2,
+        -pi/2,
+        pi/2,
         0.0,
     )
 
@@ -143,201 +146,198 @@ class BaxterDynamics:
         [0, 0, 0, 0,],
     ])  # 偏微分演算行列
 
-    g = np.array([[0, 0, -9.81, 0]]).T  # 重力加速度ベクトル（横ベクトル）
+    g = np.array([[0, 0, -9.81, 0]])  # 重力加速度ベクトル（横ベクトル）
 
     def r_bar(self, i):
-        return np.array([[
-            self.x_bar[i],
-            self.y_bar[i],
-            self.z_bar[i],
-            1,
-        ]])
-
-    """
-    (i-1)T(i)
-
-    thetaはq[i]です  
-    """
-    def T(self, i, theta):
+        i -= 1
         return np.array([
-            [cos(theta), -cos(alpha[i])*sin(theta), sin(alpha[i])*sin(theta), a[i]*cos(theta)],
-            [sin(theta), cos(alpha[i])*cos(theta), -sin(alpha[i])*cos(theta), a[i]*sin(theta)],
-            [0, sin(alpha[i]), cos(alpha[i]), d[i]],
+            [self.x_bar[i]],
+            [self.y_bar[i]],
+            [self.z_bar[i]],
+            [1],
+        ])
+
+
+    def Ti(self, i, q):
+        """
+        同時変換行列 (i-1)T(i)
+        
+        thetaはq[i]です
+        """
+        i -= 1
+        theta = q[i, 0]
+        return np.array([
+            [cos(theta), -cos(self.alpha[i])*sin(theta), sin(self.alpha[i])*sin(theta), self.a[i]*cos(theta)],
+            [sin(theta), cos(self.alpha[i])*cos(theta), -sin(self.alpha[i])*cos(theta), self.a[i]*sin(theta)],
+            [0, sin(self.alpha[i]), cos(self.alpha[i]), self.d[i]],
             [0, 0, 0, 1],
         ])
 
 
-    def T(self, i, j,)
-        z = T(i, q[i])
-        _z = similar(z)
-        for k in i+1:j
-            #z *= T(k, q[k])
-            mul!(_z, T(k, q[k]), z)
-            copy!(z, _z)
-        end
-        z
-    end
+    def Tij(self, i, j, q):
+        """同時変換行列"""
+        z = self.Ti(i, q)
+        for k in range(i+1, j+1):
+            z = z @ self.Ti(k, q)
+        return z
 
 
-    """慣性モーメント"""
-    def J(self, i)
-        [
-            (-Ixx[i]+Iyy[i]+Izz[i])/2 Ixy[i]                   Ixz[i]                   m[i]*x_bar[i]
-            Ixy[i]                    (Ixx[i]-Iyy[i]+Izz[i])/2 Iyz[i]                   m[i]*y_bar[i]
-            Ixz[i]                    Iyz[i]                   (Ixx[i]+Iyy[i]-Izz[i])/2 m[i]*z_bar[i]
-            m[i]*x_bar[i]             m[i]*y_bar[i]            m[i]*z_bar[i]            m[i]
-        ]
+    def J(self, i):
+        """慣性モーメント"""
+        i -= 1
+        return np.array([
+            [(-self.Ixx[i]+self.Iyy[i]+self.Izz[i])/2, self.Ixy[i], self.Ixz[i], self.m[i]*self.x_bar[i],],
+            [self.Ixy[i], (self.Ixx[i]-self.Iyy[i]+self.Izz[i])/2, self.Iyz[i], self.m[i]*self.y_bar[i],],
+            [self.Ixz[i], self.Iyz[i], (self.Ixx[i]+self.Iyy[i]-self.Izz[i])/2, self.m[i]*self.z_bar[i],],
+            [self.m[i]*self.x_bar[i], self.m[i]*self.y_bar[i], self.m[i]*self.z_bar[i], self.m[i],],
+        ])
 
 
-    def U(self, i, j::Int64, q::Vector{TU}) where TU
-        if j <= i
-            return T(1, j-1, q) * Q * T(j, i, q)
-        else
-            return zeros(TU, 4, 4)
+    def Uij(self, i, j, q):
+        if j <= i:
+            print(self.Tij(1, j-1, q))
+            return self.Tij(1, j-1, q) @ self.Q @ self.Tij(j, i, q)
+        else:
+            return np.zeros((4, 4))
+
+
+    def Uijk(self, i, j, k, q):
+        if i >= k and k >= j:
+            return self.Tij(1, j-1, q) @ self.Q @ self.Tij(j, k-1, q) @ self.Q @ self.Tij(k, i, q)
+        elif i >= j and j >= k:
+            return self.Tij(1, k-1, q) @ self.Q @ self.Tij(k, j-1, q) @ self.Q @ self.Tij(j, i, q)
+        else:
+            return np.zeros((4, 4))
+
+
+
+    ### 慣性，コリオリ，重力 ###
+    def Mik(self, i, k, q):
+        """慣性行列の要素"""
+        j_start = max(i, k)
+        z = 0
+        for j in range(j_start, self.n+1):
+            print(j)
+            #print(self.Uij(j, k, q))
+            z += np.trace(self.Uij(j, k, q) @ self.J(j) @ self.Uij(j, i, q).T)
         
+        return z
+
+
+    def h(self, i, k, m, q):
+        """?"""
+        j_start = max(i, k, m)
+        z = 0
+        for j in range(j_start, self.n+1):
+            z += np.trace(self.Uijk(j, k, m, q) @ self.J(i-1) @ self.Uij(j, i, q).T)
+        
+        return z
+
+
+    def Ci(self, i, q, dq):
+        """コリオリ行列の要素"""
+        z = 0
+        for k in range(1, self.n+1):
+            for m in range(1, self.n+1):
+                z += self.h(i, k, m, q) * dq[k-1, 0] * dq[m-1, 0]
+        return z
+
+
+    def Gi(self, i, q):
+        """重力行列の要素"""
+        z = 0
+        for j in range(i, self.n+1):
+            z += -self.m[j-1] * self.g @ self.Uij(j, i, q) @ self.r_bar(j)
+        return z
+
+
+    ### 目的の行列作成 ###
+    def M(self, q):
+        """慣性行列"""
+        z = np.zeros((7, 7))
+        for i in range(1, 7+1):
+            for j in range(1, 7+1):
+                z[i-1, j-1] = self.Mik(i, j, q)
+        return z
+    
+    
+    def C(self, q, dq):
+        """コリオリ行列"""
+        z = np.zeros((7, 1))
+        for i in range(1, 7+1):
+            z[i-1] = self.Ci(i, q, dq)
+        
+        return z
+    
+    
+    def G(self, q):
+        """重力行列"""
+        z = np.zeros((7, 1))
+        for i in range(1, 7+1):
+            z[i-1] = self.Gi(i, q)
+        
+        return z
+
+
+    def calc_torque(self, q, dq, ddq):
+        """トルクを計算
+        
+        計算トルク法です  
+        q : 関節角度ベクトル  
+        dq : 関節角速度ベクトル  
+        ddq : （所望の）関節角速度ベクトル  
+        """
+        return self.M(q) @ ddq + self.C(q, dq) + self.G(q)
 
 
 
-    def (i::Int64, j::Int64, k::Int64, q::Vector{TU}) where TU
-        if i >= k >= j
-            return T(1, j-1, q) * Q * T(j, k-1, q) * Q * T(k, i, q)
-        elseif i >= j >= k
-            return T(1, k-1, q) * Q * T(k, j-1, q) * Q * T(j, i, q)
-        else
-            return zeros(TU, 4, 4)
-        end
-    end
+    def calc_real_ddq(self, u, F, q, dq):
+        """現実世界での加速度
 
-
-### 慣性，コリオリ，重力 ###
-"""慣性行列の要素"""
-function M(i::Int64, k::Int64, q::Vector{TU}) where TU
-    j_start = max(i, k)
-    z = 0.0
-    for j in j_start:n
-        z += tr(U(j, k, q) * J(j) * U(j, i, q)')
-    end
-    z
-end
-
-
-function h(i::Int64, k::Int64, m::Int64, q::Vector{TU}) where TU
-    j_start = max(i, k, m)
-    z = 0.0
-    for j in j_start:n
-        z += tr(U(j, k, m, q) * J(i) * U(j, i, q)')
-    end
-    z
-end
-
-
-"""コリオリ行列の要素"""
-function C(i::Int64, q::Vector{TU}, dq::Vector{TU}) where TU
-    z = 0.0
-    for k in 1:n
-        for m = 1:n
-            z += h(i, k, m, q) * dq[k] * dq[m]
-        end
-    end
-    z
-end
-
-
-"""重力行列の要素"""
-function G(i::Int64, q::Vector{TU}) where TU
-    z = 0.0
-    for j in i:n
-        z += -m[j] * g * U(j, i, q) * r_bar(j)
-    end
-    z
-end
+        u : トルクベクトル R(7)  
+        F : 外力ベクトル R(7)  
+        q : （現在の）関節角度ベクトル  
+        dq : （現在の）関節角速度ベクトル  
+        """
+        return np.linalg.inv(self.M(q)) @ (u + F - (self.C(q, dq) + self.G(q)))
 
 
 
-### 目的の行列作成 ###
-
-"""慣性行列"""
-function M(q::Vector{TU}) where TU
-    z = zeros(TU, 7, 7)
-    for i in 1:7
-        for j in 1:7
-            z[i, j] = M(i, j, q)
-        end
-    end
-    z
-end
-
-"""コリオリ行列"""
-function C(q::Vector{TU}, dq::Vector{TU}) where TU
-    z = zeros(TU, 7, 1)
-    for i in 1:7
-        z[i] = C(i, q, dq)
-    end
-    z
-end
-
-"""重力行列"""
-function G(q::Vector{TU}) where TU
-    z = zeros(TU, 7, 1)
-    for i in 1:7
-        z[i] = G(i, q)
-    end
-    z
-end
-
-
-"""トルクを計算
-
-計算トルク法です  
-q : 関節角度ベクトル  
-dq : 関節角速度ベクトル  
-ddq : （所望の）関節角速度ベクトル  
-"""
-function calc_torque(q::Vector{TU}, dq::Vector{TU}, ddq::Vector{TU}) where TU
-    M(q)*ddq .+ C(q, dq) .+ G(q) |> vec
-end
-
-
-"""現実世界での加速度
-
-u : トルクベクトル R(7)  
-F : 外力ベクトル R(7)  
-q : （現在の）関節角度ベクトル  
-dq : （現在の）関節角速度ベクトル  
-"""
-function calc_real_ddq(u::Vector{TU}, F::Vector{TU}, q::Vector{TU}, dq::Vector{TU}) where TU
-    inv(M(q)) * (u .+ F .- (C(q, dq) .+ G(q))) |> vec
-end
-
-#export calc_real_ddq
 
 """テスト用"""
-function _test()
-    q = [
-        0.0
-        -31
-        0.0
-        43.0
-        0.0
-        72.0
-        0.0
-    ] * np.pi / 180
+def _test():
+    q = np.array([[0, -31, 0, 43, 0, 72, 0,]]).T * pi / 180
     dq = q
     ddq = q
 
-    u = calc_torque(q, dq, ddq)
-    #println(typeof(u))
-    F = zeros(Float64, 7)
-    r_ddq = calc_real_ddq(u, F, q, dq)
+
+    d = BaxterDynamics()
+    
+    #i = 2
+    #j = 6
+    #print(d.Tij(i, j, q))
+    
+    i = 3
+    j = 5
+    print(d.Mik(i, j, q))
+    
+    #print(d.M(q))
+    
+    #u = d.calc_torque(q, dq, ddq)
+    #print(u)
+    #F = np.zeros((7, 1))
+    #r_ddq = d.calc_real_ddq(u, F, q, dq)
     #println(r_ddq)
     #println(typeof(r_ddq))
-end
-
-end
-
-#@time for i in 1:100; _test(); end
-#@time for i in 1:10; Dynamics._test(); end
 
 
-# using Profile
-# @profile for i in 1:10; Dynamics._test();
+if __name__ == "__main__":
+
+    _test()
+
+    #@time for i in 1:100; _test(); 
+    #@time for i in 1:10; Dynamics._test(); 
+
+
+    # using Profile
+    # @profile for i in 1:10; Dynamics._test();
