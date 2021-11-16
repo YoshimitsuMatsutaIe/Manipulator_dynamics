@@ -2,7 +2,7 @@
 import numpy as np
 from math import pi, sin, cos, tan
 
-
+####バグあり．修正必要
 class BaxterDynamics:
     """バクスターロボットの動力学"""
     
