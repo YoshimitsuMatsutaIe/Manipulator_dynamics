@@ -193,7 +193,7 @@ function T(i::Int64, j::Int64, q::Vector{TU}) where TU
     _z = similar(z)
     for k in i+1:j
         #z *= T(k, q[k])
-        mul!(_z, T(k, q[k]), z)
+        mul!(_z, z, T(k, q[k]))
         copy!(z, _z)
     end
     z
@@ -213,7 +213,7 @@ end
 
 function U(i::Int64, j::Int64, q::Vector{TU}) where TU
     if j <= i
-        println(T(1, j-1, q))
+        #println(T(1, j-1, q))
         return T(1, j-1, q) * Q * T(j, i, q)
     else
         return zeros(TU, 4, 4)
@@ -238,7 +238,7 @@ function M(i::Int64, k::Int64, q::Vector{TU}) where TU
     j_start = max(i, k)
     z = 0.0
     for j in j_start:n
-        println(j)
+        #println(j)
         #println(U(j, k, q))
         z += tr(U(j, k, q) * J(j) * U(j, i, q)')
     end
@@ -357,10 +357,10 @@ function _test()
     
     i = 3
     j = 5
-    println(M(i, j, q))
+    println(M(q))
     
     #println(M(q))
-    #u = calc_torque(q, dq, ddq)
+    u = calc_torque(q, dq, ddq)
     #println(u)
     #F = zeros(Float64, 7)
     #r_ddq = calc_real_ddq(u, F, q, dq)

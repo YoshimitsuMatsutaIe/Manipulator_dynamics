@@ -195,7 +195,7 @@ class BaxterDynamics:
 
     def Uij(self, i, j, q):
         if j <= i:
-            print(self.Tij(1, j-1, q))
+            #print(self.Tij(1, j-1, q))
             return self.Tij(1, j-1, q) @ self.Q @ self.Tij(j, i, q)
         else:
             return np.zeros((4, 4))
@@ -217,7 +217,7 @@ class BaxterDynamics:
         j_start = max(i, k)
         z = 0
         for j in range(j_start, self.n+1):
-            print(j)
+            #print(j)
             #print(self.Uij(j, k, q))
             z += np.trace(self.Uij(j, k, q) @ self.J(j) @ self.Uij(j, i, q).T)
         
@@ -319,11 +319,11 @@ def _test():
     
     i = 3
     j = 5
-    print(d.Mik(i, j, q))
+    print(d.M(q))
     
     #print(d.M(q))
     
-    #u = d.calc_torque(q, dq, ddq)
+    u = d.calc_torque(q, dq, ddq)
     #print(u)
     #F = np.zeros((7, 1))
     #r_ddq = d.calc_real_ddq(u, F, q, dq)
