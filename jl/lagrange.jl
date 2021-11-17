@@ -192,9 +192,9 @@ function T(i::Int64, j::Int64, q::Vector{TU}) where TU
     z = T(i, q[i])
     _z = similar(z)
     for k in i+1:j
-        #z *= T(k, q[k])
-        mul!(_z, z, T(k, q[k]))
-        copy!(z, _z)
+        z *= T(k, q[k])
+        #mul!(_z, T(k, q[k]), z)
+        #copy!(z, _z)
     end
     z
 end
@@ -374,6 +374,6 @@ end
 #@time for i in 1:10; Dynamics._test(); end
 
 
-using .Dynamics
+#using .Dynamics
 
-println(Dynamics._test())
+#println(Dynamics._test())
