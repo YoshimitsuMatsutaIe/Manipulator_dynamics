@@ -21,7 +21,7 @@ include("rmp.jl")
 include("kinematics.jl")
 
 
-using .Kinematics: calc_all, q_max, q_min, cpoints_local
+using .Kinematics: calc_all, q_max, q_min, q_neutral, cpoints_local
 # using .RMP
 #using .Utilis
 
@@ -48,7 +48,8 @@ function calc_desired_ddq(
     for i in 1:9
         if i == 1
             _f, _M = get_natural(
-                rmp_param.joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx, q_max, q_min
+                rmp_param.joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx,
+                q_max, q_min, q_neutral
             )
             root_f += _f
             root_M += _M

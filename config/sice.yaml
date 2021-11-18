@@ -81,11 +81,17 @@ rmp_param :
         alpha : 0.1
   -  # ジョイント制限
     joint_limit_avoidance :
-      name : 'Original'
+      # name : 'Original'
+      # data : 
+      #   gamma_p : 0.05
+      #   gamma_d : 0.1
+      #   lambda : 0.1
+      name : "fromGDS"
       data : 
         gamma_p : 0.05
-        gamma_d : 0.1
-        lambda : 0.1
+        gamma_d : 0.01
+        lambda : 1.0
+        sigma : 0.1
 env_param :
   goal :
     name : 'static'
@@ -111,4 +117,4 @@ env_param :
         alpha : 0.0
         beta : 0.0
         gamma : 0.0
-        n : 100
+        n : 1

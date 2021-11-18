@@ -101,7 +101,7 @@ function set_rmp(rmp_param)
             if pjl["name"] == "Original"
                 push!(jl, OriginalJointLimitAvoidance(;_p...))
             elseif pjl["name"] == "fromGDS"
-                jl = nothing
+                push!(jl, RMPfromGDSJointLimitAvoidance(;_p...))
             end
         end
     end

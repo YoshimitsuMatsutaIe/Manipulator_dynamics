@@ -197,7 +197,7 @@ end
 
 
 """natural form ()"""
-function get_natural(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
+function get_natural(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min, q_neutral) where T
     a, M = get_canonical(p, q, dq, q_max, q_min)
     f = M * a
     return f, M
@@ -368,13 +368,6 @@ function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zero
 
     _f, M = pullbacked_rmp(_f, m, J, J̇, dx)
 
-    # println("x = ", x)
-    # println("dx = ", dx)
-    # println("s = ", s)
-    # println("s_dot_vec = ", ds_vec)
-    # println(_f)
-    # println(M)
-    # println()
     return _f, M
 end
 
@@ -394,49 +387,48 @@ function α_lower(dq::T, sigma::T) where T
     1.0 - exp(-min(dq, 0) ^2 / (2 * sigma^2))
 end
 
-function s(q::T, q_u::T, q_l::T) where T
+function _s(q::T, q_u::T, q_l::T) where T
     (q - q_l) / (q_u - q_l)
 end
 
-function dsdq(q::T, q_u::T, q_l::T) where T
+function _dsdq(q::T, q_u::T, q_l::T) where T
     1 / (q_u - q_l)
 end
 
-function d(s::T) where T
+function _d(s::T) where T
     4 * s * (1-s)
 end
 
-function dddq(s::T, dsdq::T) where T
+function _dddq(s::T, dsdq::T) where T
     (4.0 - 8 * s) * dsdq
 end
 
-function b(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
-    s = s(q, q_u, q_l)
-    d = d(s)
+function _b(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
+    s = _s(q, q_u, q_l)
+    d = _d(s)
     α_u = α_upper(dq, sigma)
     α_l = α_lower(dq, sigma)
     return s*(α_u * d + (1-α_u)) + (1-s)*(α_l * d + (1-α_l))
 end
 
-function dbdq(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
-    s = s(q, q_u, q_l)
-    d = d(s)
+function _dbdq(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
+    s = _s(q, q_u, q_l)
+    d = _d(s)
     α_u = α_upper(dq, sigma)
     α_l = α_lower(dq, sigma)
-    dsdq = dsdq(q, q_u, q_l)
-    dddq = dddq(s, dsdq)
+    dsdq = _dsdq(q, q_u, q_l)
+    dddq = _dddq(s, dsdq)
     return (dsdq*(α_u * d + (1-α_u)) + s * dddq) + -dsdq*(α_l * d + (1-α_l)) + (1-s) * dddq
 end
 
 """慣性行列の対角要素"""
-function a(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
-    b = b(q, dq, q_u, q_l, sigma)
+function _a(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
+    b = _b(q, dq, q_u, q_l, sigma)
     return b^(-2)
 end
 
-function dadq(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
-    b = b(q, dq, q_u, q_l, sigma)
-    return -2 * b^(-3) * dbdq(q, dq, q_u, q_l, sigma)
+function _dadq(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
+    -2 * (_b(q, dq, q_u, q_l, sigma))^(-3) * _dbdq(q, dq, q_u, q_l, sigma)
 end
 
 
@@ -445,12 +437,12 @@ function inertia_matrix(
     p::RMPfromGDSJointLimitAvoidance{T}, q::Vector{T}, dq::Vector{T},
     q_max::Vector{T}, q_min::Vector{T}
     ) where T
-    A = Matrix{T}(0.0, 7, 7)
+    A = zeros(T, 7, 7)
 
     for i in 1:7
-        A[i, i] = a(q[i], dq[i], q_max[i], q_min[i], p.sigma)
+        A[i, i] = _a(q[i], dq[i], q_max[i], q_min[i], p.sigma)
     end
-
+    #println(A)
     return p.lambda * A
 end
 
@@ -458,7 +450,7 @@ end
 function ξ(q::Vector{T}, dq::Vector{T}, q_max::Vector{T}, q_min::Vector{T}, sigma::T) where T
     z = Vector{T}(undef, 7)
     for i in 1:7
-        z[i] = 1/2 * dadq(q[i], dq[i], q_max[i], q_min[i], sigma) * dq[i]^2
+        z[i] = 1/2 * _dadq(q[i], dq[i], q_max[i], q_min[i], sigma) * dq[i]^2
     end
     return z
 end
@@ -470,10 +462,25 @@ function f(
     q_neutral::Vector{T}, A::Matrix{T},
     ) where T
     ξ_A = ξ(q, dq, q_max, q_min, p.sigma)
+    #ξ_A = zeros(T, 7)
     return A * (p.gamma_p * (q_neutral .- q) - p.gamma_d * dq) - ξ_A
 end
 
 
+"""fromGDSのジョイント制限回避RMP"""
+function get_natural(
+    p::RMPfromGDSJointLimitAvoidance{T}, q::Vector{T}, dq::Vector{T},
+    q_max::Vector{T}, q_min::Vector{T}, q_neutral::Vector{T}
+    ) where T
+    A = inertia_matrix(p, q, dq, q_max, q_min)
+    _f = f(p, q, dq, q_neutral, A)
+    return _f, A
+end
+
+
+
+
+#### sice2021 ####
 """インピーダンス制御RMP（自作）
 
 M_d : 所望のインピーダンス慣性行列  
