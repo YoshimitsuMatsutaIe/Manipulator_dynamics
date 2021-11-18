@@ -454,6 +454,14 @@ function inertia_matrix(
     return p.lambda * A
 end
 
+"""ジョイント制限回避の曲率項"""
+function ξ(q::Vector{T}, dq::Vector{T}, q_max::Vector{T}, q_min::Vector{T}, sigma::T) where T
+    z = Vector{T}(undef, 7)
+    for i in 1:7
+        z[i] = 1/2 * dadq(q[i], dq[i], q_max[i], q_min[i], sigma) * dq[i]^2
+    end
+    return z
+end
 
 
 """fromGDSのジョイント制限回避慣性力"""
@@ -461,8 +469,8 @@ function f(
     p::RMPfromGDSJointLimitAvoidance{T}, q::Vector{T}, dq::Vector{T},
     q_neutral::Vector{T}, A::Matrix{T},
     ) where T
-    xi_A = 0
-    return A * (p.gamma_p * (q_neutral .- q) - p.gamma_d * dq) - xi_A
+    ξ_A = ξ(q, dq, q_max, q_min, p.sigma)
+    return A * (p.gamma_p * (q_neutral .- q) - p.gamma_d * dq) - ξ_A
 end
 
 
