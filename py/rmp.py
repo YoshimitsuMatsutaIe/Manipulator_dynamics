@@ -65,29 +65,29 @@ class OriginalRMPAttractor:
 
     def __init__(self, **kwargs):
         # アトラクター加速度
-        self.attract_max_speed = kwargs.pop('attract_max_speed')
-        self.attract_gain = kwargs.pop('attract_gain')
-        self.attrat_a_damp_r = kwargs.pop('attract_a_damp_r')
+        self.max_speed = kwargs.pop('max_speed')
+        self.gain = kwargs.pop('gain')
+        self.a_damp_r = kwargs.pop('a_damp_r')
         # アトラクター計量
-        self.attract_sigma_W = kwargs.pop('attract_sigma_W')
-        self.attract_sigma_H = kwargs.pop('attract_sigma_H')
-        self.attract_A_damp_r = kwargs.pop('attract_A_damp_r')
+        self.sigma_W = kwargs.pop('sigma_W')
+        self.sigma_H = kwargs.pop('sigma_H')
+        self.A_damp_r = kwargs.pop('A_damp_r')
 
     def _a(self, z, dz, z0):
         """アトラクタ加速度"""
         
-        damp = self.attract_gain / self.attract_max_speed
-        a = self.attract_gain * soft_normal(z0 - z, self.attrat_a_damp_r) - damp * dz
+        damp = self.gain / self.max_speed
+        a = self.gain * soft_normal(z0 - z, self.a_damp_r) - damp * dz
         return a
     
     def _metric(self, z, dz, z0, a):
         """アトラクタ計量"""
         
         dis = np.linalg.norm(z0 - z)
-        weight = np.exp(-dis / self.attract_sigma_W)
-        beta_attract = 1 - np.exp(-1 / 2 * (dis / self.attract_sigma_H) ** 2)
+        weight = np.exp(-dis / self.sigma_W)
+        beta_attract = 1 - np.exp(-1 / 2 * (dis / self.sigma_H) ** 2)
         
-        return weight * basic_metric_H(a, self.attract_A_damp_r, beta_attract) # 論文
+        return weight * basic_metric_H(a, self.A_damp_r, beta_attract) # 論文
 
     def get_canonical(self, z, dz, z0):
         """form []"""
@@ -110,17 +110,17 @@ class OriginalRMPCollisionAvoidance:
 
     def __init__(self, **kwargs):
         # 障害物加速度
-        self.obs_scale_rep = kwargs.pop('obs_scale_rep')  # 感知半径？
-        self.obs_scale_damp = kwargs.pop('obs_scale_damp')
-        self.obs_ratio = kwargs.pop('obs_ratio')
-        self.obs_rep_gain = kwargs.pop('obs_rep_gain')
+        self.scale_rep = kwargs.pop('scale_rep')  # 感知半径？
+        self.scale_damp = kwargs.pop('scale_damp')
+        self.ratio = kwargs.pop('ratio')
+        self.rep_gain = kwargs.pop('rep_gain')
         # 障害物計量
         self.obs_r = kwargs.pop('obs_r')
 
     def _a(self, z, dz, z0):
         """障害物加速度"""
         
-        damp_gain = self.obs_rep_gain * self.obs_ratio
+        damp_gain = self.rep_gain * self.ratio
         
         #x = z0 - z  # 反対かも？
         x = z - z0
@@ -130,12 +130,12 @@ class OriginalRMPCollisionAvoidance:
         dis_grad = x / dis  # 距離関数の勾配
         
         # 斥力項．障害物に対する位置ベースの反発力？
-        alpha_rep = self.obs_rep_gain * np.exp(-dis / self.obs_scale_rep)  # 斥力の活性化関数
+        alpha_rep = self.rep_gain * np.exp(-dis / self.scale_rep)  # 斥力の活性化関数
         a_rep = alpha_rep * dis_grad  # 斥力項
         
         # ダンピング項．障害物に向かう速度にペナルティを課す？
         P_obs = max(0, -(dz).T @ dis_grad) * dis_grad @ dis_grad.T @ dz  # 零空間射影演算子
-        alpha_damp = damp_gain / (dis / self.obs_scale_damp + 1e-7)  # ダンピングの活性化関数
+        alpha_damp = damp_gain / (dis / self.scale_damp + 1e-7)  # ダンピングの活性化関数
         a_damp = alpha_damp * P_obs  # ダンピング項
         #print("a_obs = ", a_rep + a_damp)
         return a_rep + a_damp
@@ -172,15 +172,15 @@ class OriginalRMPJointLimitAvoidance:
 
     def __init__(self, **kwargs):
         # ジョイント制限処理加速度
-        self.jl_gamma_p = kwargs.pop('jl_gamma_p')
-        self.jl_gamma_d = kwargs.pop('jl_gamma_d')
+        self.gamma_p = kwargs.pop('gamma_p')
+        self.gamma_d = kwargs.pop('gamma_d')
         # ジョイント制限処理計量
-        self.jl_lambda = kwargs.pop('jl_lambda')
+        self.lambda = kwargs.pop('lambda')
 
     def _a(self, q, dq, q_max, q_min):
         """ジョイント制限処理加速度"""
         
-        z = self.jl_gamma_p * (-q) - self.jl_gamma_d * dq
+        z = self.gamma_p * (-q) - self.gamma_d * dq
         #print("z = ", z)
         a = np.linalg.inv(
             D_sigma(q, q_min, q_max)) @ z
@@ -189,7 +189,7 @@ class OriginalRMPJointLimitAvoidance:
     def _metric(self, q, dq, q_max, q_min,):
         """ジョイント制限処理計量"""
         dof = len(q)
-        return self.jl_lambda * np.eye(dof)
+        return self.lambda * np.eye(dof)
 
     def get_canonical(self, q, dq, q_max, q_min):
         """form []"""
@@ -241,15 +241,15 @@ class RMPfromGDSAttractor:
     """論文[R1]のRMP"""
 
     def __init__(self, **kwargs):
-        self.attract_max_speed = kwargs.pop('attract_max_speed')
-        self.attract_gain = kwargs.pop('attract_gain')
-        self.attract_alpha_f = kwargs.pop('attract_alpha_f')
-        self.attract_sigma_alpha = kwargs.pop('attract_sigma_alpha')
-        self.attract_sigma_gamma = kwargs.pop('attract_sigma_gamma')
-        self.attract_w_u = kwargs.pop('attract_w_u')
-        self.attract_w_l = kwargs.pop('attract_w_l')
-        self.attract_alpha = kwargs.pop('attract_alpha')
-        self.attract_epsilon = kwargs.pop('attract_epsilon')
+        self.max_speed = kwargs.pop('max_speed')
+        self.gain = kwargs.pop('gain')
+        self.alpha_f = kwargs.pop('alpha_f')
+        self.sigma_alpha = kwargs.pop('sigma_alpha')
+        self.sigma_gamma = kwargs.pop('sigma_gamma')
+        self.w_u = kwargs.pop('w_u')
+        self.w_l = kwargs.pop('w_l')
+        self.alpha = kwargs.pop('alpha')
+        self.epsilon = kwargs.pop('epsilon')
 
     def _inertia_matrix(self, x, dx, x0, dx0):
         """アトラクター慣性行列"""
@@ -258,20 +258,20 @@ class RMPfromGDSAttractor:
         M = rmp_fromGDS_attract_xi_M.attract_M(
             z, 
             dz, 
-            self.attract_sigma_alpha, 
-            self.attract_sigma_gamma, 
-            self.attract_w_u, 
-            self.attract_w_l, 
-            self.attract_alpha, 
-            self.attract_epsilon)
+            self.sigma_alpha, 
+            self.sigma_gamma, 
+            self.w_u, 
+            self.w_l, 
+            self.alpha, 
+            self.epsilon)
         return M
     
     def _f(self, x, dx, x0, dx0, M_attract):
         """アトラクト力（加速度？）"""
         # パラメーター
-        gamma_p = self.attract_gain
-        gamma_d = self.attract_gain / self.attract_max_speed
-        alpha = self.attract_alpha_f
+        gamma_p = self.gain
+        gamma_d = self.gain / self.max_speed
+        alpha = self.alpha_f
         # 変数変換
         z = x0 - x
         dz = dx0 - dx
@@ -281,12 +281,12 @@ class RMPfromGDSAttractor:
         xi_M = rmp_fromGDS_attract_xi_M.attract_xi_M(
             z, 
             dz, 
-            self.attract_sigma_alpha, 
-            self.attract_sigma_gamma, 
-            self.attract_w_u, 
-            self.attract_w_l, 
-            self.attract_alpha, 
-            self.attract_epsilon
+            self.sigma_alpha, 
+            self.sigma_gamma, 
+            self.w_u, 
+            self.w_l, 
+            self.alpha, 
+            self.epsilon
         )
         carv = -np.linalg.inv(M_attract) @ xi_M
         f = f1 + carv
@@ -405,10 +405,10 @@ class RMPfromGDSJointLimitAvoidance:
 
     def __init__(self, **kwargs):
         # ジョイント制限処理力
-        self.jl_gamma_p = kwargs.pop('jl_gamma_p')
-        self.jl_gamma_d = kwargs.pop('jl_gamma_d')
+        self.gamma_p = kwargs.pop('gamma_p')
+        self.gamma_d = kwargs.pop('gamma_d')
         # ジョイント制限処理計量
-        self.jl_lambda = kwargs.pop('jl_lambda')
+        self.jl_lambda = kwargs.pop('lambda')
         self.jl_sigma = kwargs.pop('jl_sigma')
 
     def _inertia_matrix(self, q, dq, q_max, q_min):
@@ -429,8 +429,8 @@ class RMPfromGDSJointLimitAvoidance:
     def _f(self, q, dq, q_max, q_min, metric_jl):
         """ジョイント制限処理力（加速度？）"""
         
-        gamma_p = self.jl_gamma_p
-        gamma_d = self.jl_gamma_d
+        gamma_p = self.gamma_p
+        gamma_d = self.gamma_d
         ddq_old = gamma_p * (-q) - gamma_d * dq
         
         A = metric_jl
