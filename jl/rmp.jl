@@ -63,15 +63,6 @@ function basic_metric_H(f::Vector{T}, alpha::T, beta::T) where T
     return beta .* metric_stretch(f, alpha) + (1 - beta) .* Matrix{T}(I, 3, 3)
 end
 
-# """アフィン変換されたシグモイド写像"""
-# sigma_L(q, q_min, q_max) = (q_max - q_min) * (1 / (1 + exp.(-q))) + q_min
-
-"""ジョイント制限に関する対角ヤコビ行列"""
-function D_sigma(q::Vector{T}, q_min::Vector{T}, q_max::Vector{T}) where T
-    diags = (q_max .- q_min) .* (exp.(-q) ./ (1.0 .+ exp.(-q)).^2)
-    #println(diags)
-    return diagm(diags)
-end
 
 
 """OriginalRMPの目標到達制御器のパラメータ"""
@@ -173,6 +164,15 @@ end
     gamma_p::T
     gamma_d::T
     lambda::T
+end
+
+# """アフィン変換されたシグモイド写像"""
+# sigma_L(q, q_min, q_max) = (q_max - q_min) * (1 / (1 + exp.(-q))) + q_min
+
+"""ジョイント制限に関する対角ヤコビ行列"""
+function D_sigma(q::Vector{T}, q_min::Vector{T}, q_max::Vector{T}) where T
+    diags = (q_max .- q_min) .* (exp.(-q) ./ (1.0 .+ exp.(-q)).^2)
+    return diagm(diags)
 end
 
 """ジョイント制限回避加速度 from OriginalRMP"""
@@ -398,8 +398,16 @@ function s(q::T, q_u::T, q_l::T) where T
     (q - q_l) / (q_u - q_l)
 end
 
+function dsdq(q::T, q_u::T, q_l::T) where T
+    1 / (q_u - q_l)
+end
+
 function d(s::T) where T
     4 * s * (1-s)
+end
+
+function dddq(s::T, dsdq::T) where T
+    (4.0 - 8 * s) * dsdq
 end
 
 function b(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
@@ -410,17 +418,52 @@ function b(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
     return s*(α_u * d + (1-α_u)) + (1-s)*(α_l * d + (1-α_l))
 end
 
+function dbdq(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
+    s = s(q, q_u, q_l)
+    d = d(s)
+    α_u = α_upper(dq, sigma)
+    α_l = α_lower(dq, sigma)
+    dsdq = dsdq(q, q_u, q_l)
+    dddq = dddq(s, dsdq)
+    return (dsdq*(α_u * d + (1-α_u)) + s * dddq) + -dsdq*(α_l * d + (1-α_l)) + (1-s) * dddq
+end
+
+"""慣性行列の対角要素"""
 function a(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
     b = b(q, dq, q_u, q_l, sigma)
     return b^(-2)
 end
 
-""""""
-function inertia_matrix(p::RMPfromGDSJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
-
-
+function dadq(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
+    b = b(q, dq, q_u, q_l, sigma)
+    return -2 * b^(-3) * dbdq(q, dq, q_u, q_l, sigma)
 end
 
+
+"""fromGDSのジョイント制限回避慣性行列"""
+function inertia_matrix(
+    p::RMPfromGDSJointLimitAvoidance{T}, q::Vector{T}, dq::Vector{T},
+    q_max::Vector{T}, q_min::Vector{T}
+    ) where T
+    A = Matrix{T}(0.0, 7, 7)
+
+    for i in 1:7
+        A[i, i] = a(q[i], dq[i], q_max[i], q_min[i], p.sigma)
+    end
+
+    return p.lambda * A
+end
+
+
+
+"""fromGDSのジョイント制限回避慣性力"""
+function f(
+    p::RMPfromGDSJointLimitAvoidance{T}, q::Vector{T}, dq::Vector{T},
+    q_neutral::Vector{T}, A::Matrix{T},
+    ) where T
+    xi_A = 0
+    return A * (p.gamma_p * (q_neutral .- q) - p.gamma_d * dq) - xi_A
+end
 
 
 """インピーダンス制御RMP（自作）
