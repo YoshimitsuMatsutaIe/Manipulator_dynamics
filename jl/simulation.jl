@@ -19,7 +19,7 @@ include("lagrange.jl")
 # using .RMP
 # using .RMPTree
 #using .StaticEnvironment
-using .Kinematics: q_neutral
+using .Kinematics: q_neutral, q_min, q_max
 #using .Utilis
 using .Dynamics
 
@@ -74,6 +74,7 @@ function set_rmp(rmp_param)
     for p in rmp_param
         #println(p)
 
+        # 目標到達
         if haskey(p, "goal_attractor") && !isnothing(p["goal_attractor"])
             pa = p["goal_attractor"]
             _p = pa["data"] |> keytosymbol
@@ -84,8 +85,8 @@ function set_rmp(rmp_param)
             end
         end
         
-        
-        if haskey(p, "collision_avoidance") &&!isnothing(p["collision_avoidance"])
+        # 障害物回避
+        if haskey(p, "collision_avoidance") && !isnothing(p["collision_avoidance"])
             po = p["collision_avoidance"]
             _p = po["data"] |> keytosymbol
             if po["name"] == "Original"
@@ -95,6 +96,7 @@ function set_rmp(rmp_param)
             end
         end
 
+        # ジョイント制限回避
         if haskey(p, "joint_limit_avoidance")
             pjl = p["joint_limit_avoidance"]
             _p = pjl["data"] |> keytosymbol
@@ -106,7 +108,7 @@ function set_rmp(rmp_param)
         end
     end
 
-    (
+    return (
         joint_limit_avoidance=jl[1],
         attractor=goal[1],
         obs_avoidance=obs,
@@ -114,11 +116,26 @@ function set_rmp(rmp_param)
 end
 
 
+"""ジョイント制限を守れてるかチェック"""
+function check_JointLimitation(q::Vector{T}) where T
+    return q_min .< q .< q_max
+end
+
+
+"""シミュレーションのデータ
+
+t : 時刻  
+q : ジョイントベクトルのリスト  
+dq :  
+ddq :  
+desired_ddq :  
+u :  
 
 
 
 
-"""シミュレーションのデータ"""
+
+"""
 struct Data{T}
     t::StepRangeLen{T}  # 時刻
     q::Vector{Vector{T}}  # ジョイントベクトル
@@ -131,6 +148,7 @@ struct Data{T}
     nodes::Vector{Vector{Vector{Node{T}}}}  # ノード
     goal::Vector{State{T}}
     obs::Vector{Vector{State{T}}}
+    jl::Vector{BitVector}
 end
 
 
@@ -143,8 +161,6 @@ function whithout_mass(
 ) where T
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
-    #goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
-    #goal = State([0.5, -0.5, 1.3], [0.0, 0.0, 0.0])
 
     # 初期値
     nodes₀ = update_nodes(nothing, q₀, dq₀)
@@ -160,7 +176,8 @@ function whithout_mass(
         Vector{T}(undef, length(t)),
         Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
         Vector{State{T}}(undef, length(t)),
-        Vector{Vector{State{T}}}(undef, length(t))
+        Vector{Vector{State{T}}}(undef, length(t)),
+        Vector{BitVector}(undef, length(t))
     )
 
     data.q[1] = q₀
@@ -172,6 +189,7 @@ function whithout_mass(
     data.nodes[1] = nodes₀
     data.goal[1] = goal
     data.obs[1] = obs
+    data.jl[1] = check_JointLimitation(q₀)
     #println(length(obs))
 
     # ぐるぐる回す
@@ -193,6 +211,7 @@ function whithout_mass(
         data.dq[i+1] = data.dq[i] .+ data.ddq[i]*Δt
         data.goal[i+1] = goal
         data.obs[i+1] = obs
+        data.jl[i+1] = check_JointLimitation(data.q[i+1])
     end
 
     data
@@ -224,8 +243,6 @@ function with_mass(
 ) where T
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
-    #goal = State([0.3, -0.75, 1.0], [0.0, 0.0, 0.0])
-    #goal = State([0.5, -0.5, 1.1], [0.0, 0.0, 0.0])
 
     # 初期値
     nodes₀ = update_nodes(nothing, q₀, dq₀)
@@ -241,7 +258,8 @@ function with_mass(
         Vector{T}(undef, length(t)),
         Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
         Vector{State{T}}(undef, length(t)),
-        Vector{Vector{State{T}}}(undef, length(t))
+        Vector{Vector{State{T}}}(undef, length(t)),
+        Vector{BitVector}(undef, length(t))
     )
 
     data.q[1] = q₀
@@ -254,6 +272,7 @@ function with_mass(
     data.nodes[1] = nodes₀
     data.goal[1] = goal
     data.obs[1] = obs
+    data.jl[1] = check_JointLimitation(q₀)
     #println(length(obs))
 
 
@@ -289,6 +308,7 @@ function with_mass(
         #data.dq[i+1] = data.dq[i] .+ data.ddq[i]*Δt
         data.goal[i+1] = goal
         data.obs[i+1] = obs
+        data.jl[i+1] = check_JointLimitation(data.q[i+1])
     end
 
     data

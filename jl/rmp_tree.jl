@@ -33,7 +33,7 @@ using .Kinematics: calc_all, q_max, q_min, q_neutral, cpoints_local
 """所望の加速度を計算（resolve演算結果を返す）"""
 function calc_desired_ddq(
     nodes::Vector{Vector{Node{T}}},
-    rmp_param::NamedTuple,#{Union{OriginalRMPAttractor{T}, RMPfromGDSAttractor{T}}, Union{OriginalRMPCollisionAvoidance{T}, RMPfromGDSCollisionAvoidance{T}}, Vector{OriginalJointLimitAvoidance{T}}},
+    rmp_param::NamedTuple,
     goal::State{T},
     obs::Vector{State{T}}
 ) where T
@@ -107,10 +107,7 @@ function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T
     cpoints_x_global, cpoints_dx_global,
     _, _, = calc_all(q, dq)
     for i in 1:9
-        #println("sinu")
-        #println(nodes[2])
         for j in 1:length(nodes[i])
-            #println("???")
             if i == 1
                 nodes[i][j].x = q
                 nodes[i][j].dx = dq
@@ -121,7 +118,6 @@ function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T
             end
         end
     end
-    #println("hh")
     return nodes
 end
 

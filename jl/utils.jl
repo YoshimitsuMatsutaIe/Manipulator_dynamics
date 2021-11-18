@@ -2,11 +2,11 @@
 
 
 
-export split_vec_of_arrays
-export rotate_3d
-export State
-export get_x_from_State
-export Node
+# export split_vec_of_arrays
+# export rotate_3d
+# export State
+# export get_x_from_State
+# export Node
 
 
 using StaticArrays
@@ -26,7 +26,7 @@ function rotate(a::T, b::T, c::T) where T
     a = deg2rad(a)
     b = deg2rad(b)
     c = deg2rad(c)
-    [
+    return [
         1.0 0.0 0.0
         0.0 cos(a) -sin(a)
         0.0 sin(a) cos(a)
