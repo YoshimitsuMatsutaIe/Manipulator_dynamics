@@ -378,6 +378,49 @@ function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zero
     return _f, M
 end
 
+"""RMPfromGDSのジョイント制限回避のパラメータ"""
+@with_kw struct RMPfromGDSJointLimitAvoidance{T}
+    gamma_p::T
+    gamma_d::T
+    lambda::T
+    sigma::T
+end
+
+function α_upper(dq::T, sigma::T) where T
+    1.0 - exp(-max(dq, 0) ^2 / (2 * sigma^2))
+end
+
+function α_lower(dq::T, sigma::T) where T
+    1.0 - exp(-min(dq, 0) ^2 / (2 * sigma^2))
+end
+
+function s(q::T, q_u::T, q_l::T) where T
+    (q - q_l) / (q_u - q_l)
+end
+
+function d(s::T) where T
+    4 * s * (1-s)
+end
+
+function b(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
+    s = s(q, q_u, q_l)
+    d = d(s)
+    α_u = α_upper(dq, sigma)
+    α_l = α_lower(dq, sigma)
+    return s*(α_u * d + (1-α_u)) + (1-s)*(α_l * d + (1-α_l))
+end
+
+function a(q::T, dq::T, q_u::T, q_l::T, sigma::T) where T
+    b = b(q, dq, q_u, q_l, sigma)
+    return b^(-2)
+end
+
+""""""
+function inertia_matrix(p::RMPfromGDSJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
+
+
+end
+
 
 
 """インピーダンス制御RMP（自作）
