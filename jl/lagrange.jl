@@ -172,7 +172,7 @@ end
 thetaはq[i]です  
 """
 function T(i::Int64, theta::Float64)
-    [
+    return [
         cos(theta) -cos(alpha[i])*sin(theta) sin(alpha[i])*sin(theta) a[i]*cos(theta)
         sin(theta) cos(alpha[i])*cos(theta) -sin(alpha[i])*cos(theta) a[i]*sin(theta)
         0.0 sin(alpha[i]) cos(alpha[i]) d[i]
@@ -187,8 +187,8 @@ function T(i::Int64, j::Int64, q::Vector{TU}) where TU
     for k in i+1:j
         ### 順番がわからない
 
-        z =  z * T(k, q[k])
-        #z = T(k, q[k]) * z  # 間違いなのに正しい結果
+        #z =  z * T(k, q[k])
+        z = T(k, q[k]) * z  # 間違いなのに正しい結果
         #mul!(_z, T(k, q[k]), z)
         #copy!(z, _z)
     end
@@ -209,7 +209,6 @@ end
 
 function U(i::Int64, j::Int64, q::Vector{TU}) where TU
     if j <= i
-        #println(T(1, j-1, q))
         return T(1, j-1, q) * Q * T(j, i, q)
     else
         return zeros(TU, 4, 4)

@@ -185,8 +185,6 @@ function calc_HTMs_local_and_global(DHparams::Vector{DHparam{T}}) where T
             HTMs_global[i] = HTM_BL_Wo
         elseif i == 2
             HTMs_local[i] = HTM_0_BL
-            # mul!(_H, HTMs_global[i-1], HTM_0_BL)
-            # copy!(HTMs_global[i], _H)
             HTMs_global[i] =  HTMs_global[i-1] * HTM_0_BL
         elseif i == 10
             HTMs_local[i] = HTM_GR_7

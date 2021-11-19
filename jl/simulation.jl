@@ -1,6 +1,7 @@
 using YAML
 using LinearAlgebra
 using Dates
+using Random
 
 #push!(LOAD_PATH, ".")  # includeの代わり．includeダメ絶対
 
@@ -273,12 +274,14 @@ function with_mass(
     data.obs[1] = obs
     data.jl[1] = check_JointLimitation(q₀)
 
-
-    F = zeros(T, 7)  # 外力
+    ## 一定外乱
+    F = zeros(T, 7)  # 外力なし
+    #F = rand(T, 7) * 0.001
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
-        #println("i = ", i)
+        #F = rand(T, 7) * 0.0001
+        
 
         data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
@@ -412,6 +415,10 @@ end
 
 
 config = "./config/sice.yaml"  # シミュレーション設定のパス
+config = "./config/sice_2.yaml"
+
+
+
 path = get_time_string()  # 実行時のデータ保存パス
 
 println("hoge...")
