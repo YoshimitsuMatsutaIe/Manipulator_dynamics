@@ -98,7 +98,7 @@ env_param :
     data :
       x : 0.5
       y : -0.9
-      z : 1.1
+      z : 1.2
   obstacle :
     -
       name : 'cylinder'
@@ -106,9 +106,9 @@ env_param :
         r : 0.1
         L : 1.0
         x : 0.25
-        y : -0.4
+        y : -0.8
         z : 1.0
-        n : 50
+        n : 100
         alpha : 0.0
         beta : 0.0
         gamma : 0.0
@@ -118,9 +118,9 @@ env_param :
         r : 0.1
         L : 1.0
         x : 0.25
-        y : -0.4
+        y : -0.8
         z : 1.0
-        n : 50
+        n : 100
         alpha : 0.0
         beta : 90.0
         gamma : 0.0
