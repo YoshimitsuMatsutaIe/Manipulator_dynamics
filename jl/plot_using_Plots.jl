@@ -79,7 +79,7 @@ end
 
 
 
-function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing, t=nothing)
+function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing, t=nothing, jl=nothing)
 
     _, _, _, _, _, _, _, _, cpoints_x_global, _, joints_x_global, _, = calc_all(q, dq)
     #fig = plot(size=(800,700))
@@ -146,6 +146,8 @@ function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing, 
         legend = false,
     )
 
+    id = findall(x->x==true, jl)
+    
 
     fig2 = plot(fig, camera=(90, 0))
     fig3 = plot(fig, camera=(0, 90))
@@ -153,7 +155,7 @@ function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing, 
     fig_all = plot(
         fig, fig2, fig3, fig4, layout=(2, 2),
         size=(1000, 1000),
-        title = string(round(t, digits=2)) * "[s]"
+        title = string(round(t, digits=2)) * "[s]" * ", " * string(id)
     )
     return fig_all
 end
@@ -176,7 +178,7 @@ function make_animation(data, path)
     anim = Animation()
     @gif for i in 1:step:length(data.q)
         _fig = draw_arm(
-            data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i]
+            data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
         )
         frame(anim, _fig)
     end

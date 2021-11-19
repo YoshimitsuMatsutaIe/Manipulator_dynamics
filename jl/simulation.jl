@@ -118,7 +118,7 @@ end
 
 """ジョイント制限を守れてるかチェック"""
 function check_JointLimitation(q::Vector{T}) where T
-    return q_min .< q .< q_max
+    return (q .< q_min) .| (q_max .< q)
 end
 
 
@@ -199,12 +199,10 @@ function whithout_mass(
         #println("OK3")
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
 
-        data.desired_ddq[i+1], data.dis_to_obs[i+1] = calc_desired_ddq(data.nodes[i], rmp_param, data.goal[i], data.obs[i])
+        data.desired_ddq[i+1], data.dis_to_obs[i+1] = calc_desired_ddq(
+            data.nodes[i], rmp_param, data.goal[i], data.obs[i]
+            )
         data.ddq[i+1] = data.desired_ddq[i+1]
-        #ddq[i+1] = zeros(T,7)
-        #println("q = ", q[i])
-        #println("dq = ", dq[i])
-        #println("ddq = ", ddq[i])
 
         data.q[i+1] = data.q[i] .+ data.dq[i]*Δt
         #q[i+1] = zeros(T,7)
@@ -227,7 +225,7 @@ dq : 関節角速度ベクトル
 u : 入力トルクベクトル  
 F : 外力ベクトル  
 """
-function dx(q::Vector{T}, dq::Vector{T}, u::Vector{T}, F::Vector{T}) where T
+function dx(;q::Vector{T}, dq::Vector{T}, u::Vector{T}, F::Vector{T}) where T
     ddq = calc_real_ddq(u, F, q, dq)
     return (dq = dq , ddq = ddq)
 end
@@ -240,7 +238,7 @@ end
 """
 function with_mass(
     q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, goal, rmp_param
-) where T
+    ) where T
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
 
@@ -262,6 +260,7 @@ function with_mass(
         Vector{BitVector}(undef, length(t))
     )
 
+    # 初期値代入
     data.q[1] = q₀
     data.dq[1] = dq₀
     data.ddq[1] = zeros(T, 7)
@@ -273,39 +272,54 @@ function with_mass(
     data.goal[1] = goal
     data.obs[1] = obs
     data.jl[1] = check_JointLimitation(q₀)
-    #println(length(obs))
 
 
-    F = zeros(T, 7)
+    F = zeros(T, 7)  # 外力
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
         #println("i = ", i)
 
         data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
-        
-        
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
 
-        data.desired_ddq[i+1], data.dis_to_obs[i+1] = calc_desired_ddq(data.nodes[i], rmp_param, data.goal[i], data.obs[i])
+        data.desired_ddq[i+1], data.dis_to_obs[i+1] = calc_desired_ddq(
+            data.nodes[i], rmp_param, data.goal[i], data.obs[i]
+            )
         data.u[i+1] = calc_torque(data.q[i], data.dq[i], data.desired_ddq[i+1])
 
-        k1 = dx(data.q[i], data.dq[i], data.u[i+1], F)
-        k2 = dx(data.q[i] .+ k1.dq .* Δt/2, data.dq[i] .+ k1.ddq .* Δt/2, data.u[i+1], F)
-        k3 = dx(data.q[i] .+ k2.dq .* Δt/2, data.dq[i] .+ k2.ddq .* Δt/2, data.u[i+1], F)
-        k4 = dx(data.q[i] .+ k3.dq .* Δt, data.dq[i] .+ k3.ddq .* Δt, data.u[i+1], F)
+        # ルンゲクッタで次の値を決定
+        k1 = dx(
+            q = data.q[i],
+            dq = data.dq[i],
+            u = data.u[i+1],
+            F = F
+            )
+        k2 = dx(
+            q = data.q[i] .+ k1.dq .* Δt/2,
+            dq = data.dq[i] .+ k1.ddq .* Δt/2,
+            u = data.u[i+1],
+            F = F
+            )
+        k3 = dx(
+            q = data.q[i] .+ k2.dq .* Δt/2,
+            dq = data.dq[i] .+ k2.ddq .* Δt/2,
+            u = data.u[i+1],
+            F = F
+            )
+        k4 = dx(
+            q = data.q[i] .+ k3.dq .* Δt,
+            dq = data.dq[i] .+ k3.ddq .* Δt,
+            u = data.u[i+1],
+            F = F
+            )
 
-        data.q[i+1] = data.q[i] .+ (k1.dq .+ 2 .* k2.dq .+ 2 .* k3.dq .+ k4.dq) .* Δt/6
-        data.dq[i+1] = data.dq[i] .+ (k1.ddq .+ 2 .* k2.ddq .+ 2 .* k3.ddq .+ k4.ddq) .* Δt/6
         data.ddq[i+1] = k1.ddq .+ 2 .* k2.ddq .+ 2 .* k3.ddq .+ k4.ddq
-        #ddq[i+1] = zeros(T,7)
-        #println("q = ", q[i])
-        #println("dq = ", dq[i])
-        #println("ddq = ", ddq[i])
-
-        #data.q[i+1] = data.q[i] .+ data.dq[i]*Δt
-        #q[i+1] = zeros(T,7)
-        #data.dq[i+1] = data.dq[i] .+ data.ddq[i]*Δt
+        data.q[i+1] = data.q[i] .+ (k1.dq .+ 2 .* k2.dq .+ 2 .* k3.dq .+ k4.dq) .* Δt/6
+        data.dq[i+1] = data.dq[i] .+ data.ddq[i+1] .* Δt/6
+        
+        
+        
         data.goal[i+1] = goal
         data.obs[i+1] = obs
         data.jl[i+1] = check_JointLimitation(data.q[i+1])
@@ -345,6 +359,8 @@ end
 """ランナー
 
 設定を読み込みシミュレーションを実行  
+config : yamlファイルのパス  
+path : 結果保存先のパス  
 """
 function runner(config, path)
     params = YAML.load_file(config)

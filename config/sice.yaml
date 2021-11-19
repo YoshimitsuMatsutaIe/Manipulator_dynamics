@@ -1,7 +1,7 @@
 sim_param : 
   isLeft : True
   isWithMass : True
-  TIME_SPAN : 1.0
+  TIME_SPAN : 10.0
   TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1
@@ -81,17 +81,17 @@ rmp_param :
         alpha : 0.1
   -  # ジョイント制限
     joint_limit_avoidance :
-      # name : 'Original'
-      # data : 
-      #   gamma_p : 0.05
-      #   gamma_d : 0.1
-      #   lambda : 0.1
-      name : "fromGDS"
+      name : 'Original'
       data : 
         gamma_p : 0.05
-        gamma_d : 0.01
-        lambda : 1.0
-        sigma : 0.1
+        gamma_d : 0.1
+        lambda : 0.1
+      # name : "fromGDS"
+      # data : 
+      #   gamma_p : 0.05
+      #   gamma_d : 0.01
+      #   lambda : 1.0
+      #   sigma : 0.1
 env_param :
   goal :
     name : 'static'

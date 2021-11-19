@@ -185,7 +185,10 @@ function T(i::Int64, j::Int64, q::Vector{TU}) where TU
     z = T(i, q[i])
     _z = similar(z)
     for k in i+1:j
-        z *= T(k, q[k])
+        ### 順番がわからない
+
+        z =  z * T(k, q[k])
+        #z = T(k, q[k]) * z  # 間違いなのに正しい結果
         #mul!(_z, T(k, q[k]), z)
         #copy!(z, _z)
     end
