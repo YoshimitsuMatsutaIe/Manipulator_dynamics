@@ -164,7 +164,7 @@ end
 """アニメ制作"""
 function make_animation(data, path)
     # 枚数決める
-    println(data.t)
+    #println(data.t)
     epoch_max = 100
     epoch = length(data.t)
     if epoch < epoch_max
@@ -173,7 +173,7 @@ function make_animation(data, path)
         step = div(epoch, epoch_max)
     end
 
-    println(step)
+    #println(step)
 
     anim = Animation()
     @gif for i in 1:step:length(data.q)

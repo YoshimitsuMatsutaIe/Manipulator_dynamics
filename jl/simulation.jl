@@ -2,6 +2,7 @@ using YAML
 using LinearAlgebra
 using Dates
 using Random
+using Parameters
 
 #push!(LOAD_PATH, ".")  # includeの代わり．includeダメ絶対
 
@@ -35,7 +36,7 @@ function set_obs(obs_param)
     if isnothing(obs_param)
         return nothing
     else
-        obs = Vector{State}()
+        obs = Vector{State{Float64}}()
         for param in obs_param
             p = param["data"] |> keytosymbol
             if param["name"] == "point"
@@ -123,6 +124,32 @@ function check_JointLimitation(q::Vector{T}) where T
 end
 
 
+"""制御点と障害物点の最小距離を計算"""
+function calc_min_dis_to_obs(nodes::Vector{Vector{Node{T}}}, obs::Vector{State{T}}) where T
+    dis_to_obs = 1.0  # 障害物への最小近接距離
+    
+    _temp_dis_to_obs = Vector{T}(undef, length(obs))
+    
+    for i in 2:9
+        for j in 1:length(nodes[i])
+            for k in 1:length(obs)
+                _temp_dis_to_obs[k] = norm(obs[k].x .- nodes[i][j].x)  # 障害物との距離
+            end
+            _d = minimum(_temp_dis_to_obs)
+            #println(dis_to_obs, _d)
+            if i == 1
+                dis_to_obs = _d
+            elseif dis_to_obs > _d
+                #println("k")
+                dis_to_obs = _d
+            end
+        end
+        
+    end
+    return dis_to_obs
+end
+
+
 """シミュレーションのデータ
 
 t : 時刻  
@@ -131,13 +158,8 @@ dq :
 ddq :  
 desired_ddq :  
 u :  
-
-
-
-
-
 """
-struct Data{T}
+@with_kw struct Data{T}
     t::StepRangeLen{T}  # 時刻
     q::Vector{Vector{T}}  # ジョイントベクトル
     dq::Vector{Vector{T}}  # ジョイント角速度ベクトル
@@ -167,18 +189,18 @@ function whithout_mass(
     nodes₀ = update_nodes(nothing, q₀, dq₀)
 
     data = Data(
-        t,
-        Vector{Vector{T}}(undef, length(t)),
-        Vector{Vector{T}}(undef, length(t)),
-        Vector{Vector{T}}(undef, length(t)),
-        Vector{Vector{T}}(undef, length(t)),
-        [zeros(T, 7) for i in 1:length(t)],
-        Vector{T}(undef, length(t)),
-        Vector{T}(undef, length(t)),
-        Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
-        Vector{State{T}}(undef, length(t)),
-        Vector{Vector{State{T}}}(undef, length(t)),
-        Vector{BitVector}(undef, length(t))
+        t = t,
+        q = Vector{Vector{T}}(undef, length(t)),
+        dq = Vector{Vector{T}}(undef, length(t)),
+        ddq = Vector{Vector{T}}(undef, length(t)),
+        desired_ddq = Vector{Vector{T}}(undef, length(t)),
+        u = [zeros(T, 7) for i in 1:length(t)],
+        error = Vector{T}(undef, length(t)),
+        dis_to_obs = Vector{T}(undef, length(t)),
+        nodes = Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
+        goal = Vector{State{T}}(undef, length(t)),
+        obs = Vector{Vector{State{T}}}(undef, length(t)),
+        jl = Vector{BitVector}(undef, length(t))
     )
 
     data.q[1] = q₀
@@ -199,8 +221,9 @@ function whithout_mass(
         data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
         #println("OK3")
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
+        data.dis_to_obs[i+1] = calc_min_dis_to_obs(data.nodes[i+1], obs)
 
-        data.desired_ddq[i+1], data.dis_to_obs[i+1] = calc_desired_ddq(
+        data.desired_ddq[i+1] = calc_desired_ddq(
             data.nodes[i], rmp_param, data.goal[i], data.obs[i]
             )
         data.ddq[i+1] = data.desired_ddq[i+1]
@@ -238,7 +261,8 @@ end
 ルンゲクッタを使用  
 """
 function with_mass(
-    q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, goal, rmp_param
+    q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T,
+    obs::Vector{State{T}}, goal::State{T}, rmp_param
     ) where T
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
@@ -246,19 +270,20 @@ function with_mass(
     # 初期値
     nodes₀ = update_nodes(nothing, q₀, dq₀)
 
+
     data = Data(
-        t,
-        Vector{Vector{T}}(undef, length(t)),
-        Vector{Vector{T}}(undef, length(t)),
-        Vector{Vector{T}}(undef, length(t)),
-        Vector{Vector{T}}(undef, length(t)),
-        Vector{Vector{T}}(undef, length(t)),
-        Vector{T}(undef, length(t)),
-        Vector{T}(undef, length(t)),
-        Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
-        Vector{State{T}}(undef, length(t)),
-        Vector{Vector{State{T}}}(undef, length(t)),
-        Vector{BitVector}(undef, length(t))
+        t = t,
+        q = Vector{Vector{T}}(undef, length(t)),
+        dq = Vector{Vector{T}}(undef, length(t)),
+        ddq = Vector{Vector{T}}(undef, length(t)),
+        desired_ddq = Vector{Vector{T}}(undef, length(t)),
+        u = Vector{Vector{T}}(undef, length(t)),
+        error = Vector{T}(undef, length(t)),
+        dis_to_obs = Vector{T}(undef, length(t)),
+        nodes = Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
+        goal = Vector{State{T}}(undef, length(t)),
+        obs = Vector{Vector{State{T}}}(undef, length(t)),
+        jl = Vector{BitVector}(undef, length(t))
     )
 
     # 初期値代入
@@ -268,8 +293,10 @@ function with_mass(
     data.desired_ddq[1] = zeros(T, 7)
     data.u[1] = zeros(T, 7)
     data.error[1] = norm(goal.x - nodes₀[9][1].x)
-    data.dis_to_obs[1] = 0.0
     data.nodes[1] = nodes₀
+    println(typeof(nodes₀))
+    println(typeof(obs))
+    data.dis_to_obs[1] = calc_min_dis_to_obs(nodes₀, obs)
     data.goal[1] = goal
     data.obs[1] = obs
     data.jl[1] = check_JointLimitation(q₀)
@@ -285,8 +312,9 @@ function with_mass(
 
         data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
+        data.dis_to_obs[i+1] = calc_min_dis_to_obs(data.nodes[i], data.obs[i])
 
-        data.desired_ddq[i+1], data.dis_to_obs[i+1] = calc_desired_ddq(
+        data.desired_ddq[i+1] = calc_desired_ddq(
             data.nodes[i], rmp_param, data.goal[i], data.obs[i]
             )
         data.u[i+1] = calc_torque(data.q[i], data.dq[i], data.desired_ddq[i+1])
