@@ -294,8 +294,8 @@ function with_mass(
     data.u[1] = zeros(T, 7)
     data.error[1] = norm(goal.x - nodes₀[9][1].x)
     data.nodes[1] = nodes₀
-    println(typeof(nodes₀))
-    println(typeof(obs))
+    #println(typeof(nodes₀))
+    #println(typeof(obs))
     data.dis_to_obs[1] = calc_min_dis_to_obs(nodes₀, obs)
     data.goal[1] = goal
     data.obs[1] = obs

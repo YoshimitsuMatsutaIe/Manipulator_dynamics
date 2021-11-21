@@ -57,7 +57,8 @@ function plot_simulation_data(data, path)
 
     fig_error = plot(
         data.t, data.error,
-        label="err", ylabel="error [m]", ylims=(0.0,), legend=:outerright
+        label="err", ylabel="error [m]", ylims=(0.0,), legend=:outerright,
+        ylim=(0, maximum(data.error))
     )
     fig_dis_to_obs = plot(
         data.t, data.dis_to_obs,

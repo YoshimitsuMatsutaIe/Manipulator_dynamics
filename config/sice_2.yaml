@@ -1,7 +1,7 @@
 sim_param : 
   isLeft : True
   isWithMass : True
-  TIME_SPAN : 1.0
+  TIME_SPAN : 30.0
   TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1
@@ -78,7 +78,7 @@ rmp_param :
       data : 
         rw : 0.5
         sigma : 1.0
-        alpha : 0.1
+        alpha : 0.01
   -  # ジョイント制限
     joint_limit_avoidance :
       # name : 'Original'
@@ -97,7 +97,7 @@ env_param :
     name : 'static'
     data :
       x : 0.5
-      y : -0.9
+      y : -0.8
       z : 1.2
   obstacle :
     -
