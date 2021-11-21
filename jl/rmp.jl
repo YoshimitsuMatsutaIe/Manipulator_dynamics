@@ -60,7 +60,8 @@ end
 
 """基本の計量"""
 function basic_metric_H(f::Vector{T}, alpha::T, beta::T) where T
-    return beta .* metric_stretch(f, alpha) + (1 - beta) .* Matrix{T}(I, 3, 3)
+    dim = length(f)
+    return beta .* metric_stretch(f, alpha) + (1 - beta) .* Matrix{T}(I, dim, dim)
 end
 
 
@@ -70,7 +71,7 @@ end
     max_speed::T
     gain::T
     ddq_damp_r::T
-    simga_W::T
+    sigma_W::T
     sigma_H::T
     metric_damp_r::T
 end
@@ -89,7 +90,7 @@ function inertia_matrix(
     p::OriginalRMPAttractor{T}, z::Vector{T}, dz::Vector{T}, z0::Vector{T}, ddq::Vector{T}
 ) where T
     dis = norm(z0 .- z)
-    weight = exp(-dis ./ p.simga_W)
+    weight = exp(-dis ./ p.sigma_W)
     beta = 1.0 - exp(-1/2 * (dis / p.sigma_H)^2)
     return weight .* basic_metric_H(ddq, p.ddq_damp_r, beta)
 end
@@ -140,9 +141,10 @@ end
 
 """障害物計量 from OriginalRMP"""
 function inertia_matrix(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0, ddq) where T
+    dim = length(z)
     d = norm(z .- z0)
     weight = (d / p.r)^2 - 2 * d / p.r + 1
-    return weight .* Matrix{T}(I, 3, 3)
+    return weight .* Matrix{T}(I, dim, dim)
 end
 
 """canonical form []"""
@@ -155,7 +157,7 @@ end
 """natural form ()"""
 function get_natural(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
     a, M = get_canonical(p, z, dz, z0)
-    f = M * a * 0.01
+    f = M * a
     return f, M
 end
 
