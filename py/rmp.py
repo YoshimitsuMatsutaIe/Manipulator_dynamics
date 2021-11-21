@@ -171,11 +171,9 @@ class OriginalRMPJointLimitAvoidance:
     """論文[R1]のRMP"""
 
     def __init__(self, **kwargs):
-        # ジョイント制限処理加速度
         self.gamma_p = kwargs.pop('gamma_p')
         self.gamma_d = kwargs.pop('gamma_d')
-        # ジョイント制限処理計量
-        self.lambda = kwargs.pop('lambda')
+        self.lam = kwargs.pop('lambda')
 
     def _a(self, q, dq, q_max, q_min):
         """ジョイント制限処理加速度"""
@@ -189,7 +187,7 @@ class OriginalRMPJointLimitAvoidance:
     def _metric(self, q, dq, q_max, q_min,):
         """ジョイント制限処理計量"""
         dof = len(q)
-        return self.lambda * np.eye(dof)
+        return self.lam * np.eye(dof)
 
     def get_canonical(self, q, dq, q_max, q_min):
         """form []"""
