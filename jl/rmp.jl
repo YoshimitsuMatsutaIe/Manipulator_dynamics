@@ -287,19 +287,20 @@ function get_natural(p::RMPfromGDSAttractor{T}, x, dx, x₀) where T
 end
 
 
+"""fromGDSの障害物回避rmpのパラメータ"""
 @with_kw struct RMPfromGDSCollisionAvoidance{T}
     rw::T
     sigma::T
     alpha::T
 end
 
-"""重み関数"""
-w(s) = s^(-4)
+# """重み関数"""
+# w(s) = s^(-4)
 
-#function w(s)
 
-"""重み関数の微分"""
-dwds(s) = -4 * s^(-5)
+
+# """重み関数の微分"""
+# dwds(s) = -4 * s^(-5)
 
 function w2(s, rw=1.0)
     if rw - s > 0.0
