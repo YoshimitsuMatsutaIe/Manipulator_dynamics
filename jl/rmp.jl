@@ -187,7 +187,8 @@ end
 
 """ジョイント制限回避計量 from OriginalRMP"""
 function inertia_matrix(p::OriginalJointLimitAvoidance{T}, q, dq) where T
-    return p.lambda .* Matrix{T}(I, 7, 7)
+    n = length(q)
+    return p.lambda .* Matrix{T}(I, n, n)
 end
 
 """canonical form []"""
@@ -239,10 +240,11 @@ w(x, sigma_gamma, wu, wl) = (wu-wl) * α_or_γ(x, sigma_gamma) + wl
 
 """fromGDSのアトラクター慣性行列"""
 function inertia_matrix(x, p::RMPfromGDSAttractor{T}, x₀) where T
+    dim = length(x)
     z = x .- x₀
     ∇pot = ∇potential_2(z, p.alpha)
     α = α_or_γ(z, p.sigma_alpha)
-    return w(z, p.sigma_gamma, p.wu, p.wl) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.epsilon).*Matrix{T}(I, 3, 3))
+    return w(z, p.sigma_gamma, p.wu, p.wl) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.epsilon).*Matrix{T}(I, dim, dim))
 end
 
 """力用"""
@@ -253,8 +255,9 @@ end
 """曲率項"""
 function ξ(p::RMPfromGDSAttractor{T}, x, dx, x₀) where T
     # 第一項を計算
-    A = Matrix{T}(undef, 3, 3)
-    for i in 1:3
+    dim = length(x)  # タスク空間の次元
+    A = Matrix{T}(undef, dim, dim)
+    for i in 1:dim
         _M(x) = inertia_matrix(x, p, x₀)[:, i]
         _jacobian_M = ForwardDiff.jacobian(_M, x)
         #println(_jacobian_M)
@@ -353,7 +356,8 @@ function inertia_matrix(p::RMPfromGDSCollisionAvoidance{T}, s, ds) where T
     return w2(s, p.rw) * δ(s, ds, p.sigma)
 end
 
-function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zeros(Float64, 3)) where T
+function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zero(x₀)) where T
+    
     s_vec = x₀ .- x
     ds_vec = dx₀ .- dx
     s = norm(s_vec)
@@ -437,9 +441,10 @@ function inertia_matrix(
     p::RMPfromGDSJointLimitAvoidance{T}, q::Vector{T}, dq::Vector{T},
     q_max::Vector{T}, q_min::Vector{T}
     ) where T
-    A = zeros(T, 7, 7)
+    dim = length(q)
+    A = zeros(T, dim, dim)
 
-    for i in 1:7
+    for i in 1:dim
         A[i, i] = _a(q[i], dq[i], q_max[i], q_min[i], p.sigma)
     end
     #println(A)
@@ -448,8 +453,11 @@ end
 
 """ジョイント制限回避の曲率項"""
 function ξ(q::Vector{T}, dq::Vector{T}, q_max::Vector{T}, q_min::Vector{T}, sigma::T) where T
+    
     z = Vector{T}(undef, 7)
-    for i in 1:7
+    dim = length(q)
+
+    for i in 1:dim
         z[i] = 1/2 * _dadq(q[i], dq[i], q_max[i], q_min[i], sigma) * dq[i]^2
     end
     return z
