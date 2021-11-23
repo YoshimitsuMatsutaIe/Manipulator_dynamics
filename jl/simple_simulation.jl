@@ -43,7 +43,92 @@ end
 
 
 
+"""multi-robot-rmpのrmp"""
+function multi_attractor_rmp(x::Vector{T}, dx::Vector{T}, g::Vector{T}) where T
+    wu = 10.0
+    wl = 1.0
+    sigma = 1.0
+    alpha = 1.0
+    eta = 2.0
+    gain = 1.0
+    tol = 0.005
 
+    z = x - g
+    dz = dx
+    #J = Matrix{T}(I, 2, 2)
+    #dJ = zeros(T, 2, 2)
+
+    z_norm = norm(z)
+    beta = exp(-z_norm^2 / 2 / (sigma^2))
+    w = (wu - wl) * beta + wl
+    s = (1-exp(-2*alpha*z_norm)) / (1+exp(-2*alpha*z_norm))
+
+    G = Matrix{T}(I, 2, 2) * w
+    
+    if z_norm > tol
+        grad_phi = s / z_norm * w * z * gain
+    else
+        grad_phi = 0.0
+    end
+
+    Bx_dot = eta * w * dz
+    grad_w = -beta * (wu-wl) / sigma^2*z
+
+    dz_norm = norm(dz)
+
+    xi = -0.5 * (dz_norm^2 * grad_W - 2*dot(dot(dz, dz'), grad_w))
+
+    M = G
+    f = -grad_phi - Bx_dot - xi
+
+    return f, M
+end
+
+
+"""multi-robot-rmpのrmp"""
+function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
+    R = 1.0
+    alpha = 1e-5
+    eta = 0.0
+    epsilon = 0.2
+
+    z = norm(x-o)/R -1
+    J = 1/rnom(x-o) * (x-o)' / R
+    dJ = dot(
+        dx',
+        (-1/norm(x-o)^3 * dot((x-o), (x-o)') + 1/norm(x-o) * Matrix{T}(I, 2, 2))
+        ) / R
+    dz = J * dx
+
+
+    if z < 0
+        w = 1.0e10
+        grad_w = 0.0
+    else
+        w = 1/z^4
+        grad_w = -4/z^5
+    end
+    
+    u = epsilon + min(0.0, dz) * dz
+    g = w * u
+
+    grad_u = 2 * min(0.0, dz)
+    grad_phi = alpha * w * grad_w
+    xi = 0.5 * dz^2 * u * grad_w
+
+    _M = g + 0.5 * dz * w * grad_u
+    M = min(max(_M, -1.0e5), 1.0e5)
+
+    Bx_dot = eta * g * dz
+
+    _f = grad_phi - xi -Bx_dot
+    f = min(max(_f, -1.0e10), 1.0e10)
+
+    pulled_f = J' * (f .- M * dJ * dx)
+    pulled_M = J' * M * J
+
+    return pulled_f, pulled_M
+end
 
 
 
