@@ -76,7 +76,7 @@ function multi_attractor_rmp(x::Vector{T}, dx::Vector{T}, g::Vector{T}) where T
 
     dz_norm = norm(dz)
 
-    xi = -0.5 * (dz_norm^2 * grad_W - 2*dot(dot(dz, dz'), grad_w))
+    xi = -0.5 * (dz_norm^2 * grad_w - 2 * dz * dz' * dz * dz' * grad_w)
 
     M = G
     f = -grad_phi - Bx_dot - xi
@@ -93,11 +93,8 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     epsilon = 0.2
 
     z = norm(x-o)/R -1
-    J = 1/rnom(x-o) * (x-o)' / R
-    dJ = dot(
-        dx',
-        (-1/norm(x-o)^3 * dot((x-o), (x-o)') + 1/norm(x-o) * Matrix{T}(I, 2, 2))
-        ) / R
+    J = 1/norm(x-o) * (x-o)' / R
+    dJ = (dx' * (-1/norm(x-o)^3 * (x-o) * (x-o)' + 1/norm(x-o) * Matrix{T}(I, 2, 2))) / R
     dz = J * dx
 
 
@@ -173,11 +170,15 @@ const g = [-3.0, 3.0]
 """所望の加速度"""
 function ddx(x, dx)
 
-    fg, Mg = get_natural(p.attractor, x, dx, g)
-    fo, Mo = get_natural(p.obs_avoidance, x, dx, o)
+    #fg, Mg = get_natural(p.attractor, x, dx, g)
+    #fo, Mo = get_natural(p.obs_avoidance, x, dx, o)
 
     #fo = zero(fg)
     #Mo = zero(Mg)
+
+    fg, Mg = multi_attractor_rmp(x, dx, g)
+    fo, Mo = multi_avoidance_rmp(x, dx, o)
+
 
     root_f = fg .+ fo
     root_M = Mg .+ Mo
@@ -200,16 +201,16 @@ function run()
 
 
     x0 = [2.5, -3.2]
-    #dx0 = [-1.0, 1.0]
+    dx0 = [-1.0, 1.0]
 
     #x0 = [-3.0, 3.0]
-    dx0 = [0.0, 0.0]
+    #dx0 = [0.0, 0.0]
 
     t, X, fg, fo = solve_RungeKutta(
         f = dX,
         x₀ = [x0; dx0],
-        t_span = (0.0, 400.0),
-        Δt = 0.01
+        t_span = (0.0, 5.0),
+        Δt = 0.001
     )
 
 
@@ -221,6 +222,16 @@ function run()
     scatter!(fig, [x[end]], [y[end]], label="xend")
     scatter!(fig, [g[1]], [g[2]], markershape=:star6, label="g")
     scatter!(fig, [o[1]], [o[2]], label="o")
+
+    function circle()
+        theta = LinRange(0, 2*pi, 500)
+        o[1] .+ 1*sin.(theta), o[2] .+ 1*cos.(theta)
+    end
+    plot!(
+        fig, circle(), seriestype=[:shape,], lw=0.5,
+        legend=false, fillalpha=0.2, aspect_ratio=1,
+    
+    )
 
     fig2 = plot(t, x, label="_x", legend=:outerright)
     plot!(fig2, t, y, label="_y")
