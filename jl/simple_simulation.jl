@@ -79,7 +79,7 @@ function multi_attractor_rmp(x::Vector{T}, dx::Vector{T}, g::Vector{T}) where T
     xi = -0.5 * (dz_norm^2 * grad_w - 2 * dz * dz' * dz * dz' * grad_w)
 
     M = G
-    f = -grad_phi - Bx_dot - xi
+    f = -grad_phi .- Bx_dot .- xi
 
     return f, M
 end
@@ -209,7 +209,7 @@ function run()
     t, X, fg, fo = solve_RungeKutta(
         f = dX,
         x₀ = [x0; dx0],
-        t_span = (0.0, 30.0),
+        t_span = (0.0, 35.0),
         Δt = 0.01
     )
 
