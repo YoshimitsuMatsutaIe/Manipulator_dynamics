@@ -111,9 +111,9 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
 
     grad_u = 2 * min(0.0, dz)
     grad_phi = alpha * w * grad_w
-    xi = 0.5 * dz^2 * u * grad_w
+    xi = 1/2 * dz^2 * u * grad_w
 
-    _M = g + 0.5 * dz * w * grad_u
+    _M = g + 1/2 * dz * w * grad_u
     M = min(max(_M, -1e5), 1e5)
 
     Bx_dot = eta * g * dz
