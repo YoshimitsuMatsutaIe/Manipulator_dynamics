@@ -210,7 +210,7 @@ function run()
         f = dX,
         x₀ = [x0; dx0],
         t_span = (0.0, 35.0),
-        Δt = 0.01
+        Δt = 0.001
     )
 
 

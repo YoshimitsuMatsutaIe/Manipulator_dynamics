@@ -50,14 +50,14 @@ function calc_desired_ddq(
 
     for i in 1:9
         if i == 1  # ジョイント制限rmp
-            _f, _M = get_natural(
-                rmp_param.joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx,
-                q_max, q_min, q_neutral
-            )
-            #_f = zeros(T, 7)
-            #_M = zeros(T, 7, 7)
-            @. root_f += _f
-            @. root_M += _M
+            # _f, _M = get_natural(
+            #     rmp_param.joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx,
+            #     q_max, q_min, q_neutral
+            # )
+            # #_f = zeros(T, 7)
+            # #_M = zeros(T, 7, 7)
+            # @. root_f += _f
+            # @. root_M += _M
             
         else
             if i == 9  # 目標王達rmpを追加
@@ -71,14 +71,14 @@ function calc_desired_ddq(
 
             # 障害物回避rmpを追加
             for j in 1:length(nodes[i])
-                for k in 1:length(obs)
-                    _f, _M = get_natural(
-                        rmp_param.obs_avoidance[i-1], nodes[i][j].x, nodes[i][j].dx, obs[k].x
-                    )
-                    _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].Jo,)
-                    @. root_f += _pulled_f
-                    @. root_M += _pulled_M
-                end
+                # for k in 1:length(obs)
+                #     _f, _M = get_natural(
+                #         rmp_param.obs_avoidance[i-1], nodes[i][j].x, nodes[i][j].dx, obs[k].x
+                #     )
+                #     _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].Jo,)
+                #     @. root_f += _pulled_f
+                #     @. root_M += _pulled_M
+                # end
             end
         end
     end
