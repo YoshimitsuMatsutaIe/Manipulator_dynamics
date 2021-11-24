@@ -92,7 +92,7 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     eta = 0.0
     epsilon = 0.2
 
-    z = norm(x-o)/R -1.0
+    z = norm(x-o)/R - 1
     J = 1/norm(x-o) * (x-o)' / R
     dJ = (dx' * (-1/norm(x-o)^3 * (x-o) * (x-o)' + 1/norm(x-o) * Matrix{T}(I, 2, 2))) / R
     dz = J * dx
@@ -102,8 +102,8 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
         w = 1.0e10
         grad_w = 0.0
     else
-        w = 1/z^4
-        grad_w = -4/z^5
+        w = 1 / z^4
+        grad_w = -4 / z^5
     end
     
     u = epsilon + min(0.0, dz) * dz
@@ -114,12 +114,12 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     xi = 0.5 * dz^2 * u * grad_w
 
     _M = g + 0.5 * dz * w * grad_u
-    M = min(max(_M, -1.0e5), 1.0e5)
+    M = min(max(_M, -1e5), 1e5)
 
     Bx_dot = eta * g * dz
 
-    _f = grad_phi - xi -Bx_dot
-    f = min(max(_f, -1.0e10), 1.0e10)
+    _f = - grad_phi - xi -Bx_dot
+    f = min(max(_f, -1e10), 1e10)
 
     pulled_f = J' * (f .- M * dJ * dx)
     pulled_M = J' * M * J
@@ -209,8 +209,8 @@ function run()
     t, X, fg, fo = solve_RungeKutta(
         f = dX,
         x₀ = [x0; dx0],
-        t_span = (0.0, 5.0),
-        Δt = 0.001
+        t_span = (0.0, 30.0),
+        Δt = 0.01
     )
 
 
