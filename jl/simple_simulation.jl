@@ -92,21 +92,21 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     eta = 0.0
     epsilon = 0.2
 
+    ### マルチロボットの安全距離付きタスク写像 ###
     # z = norm(x-o)/R - 1
     # J = 1/norm(x-o) * (x-o)' / R
     # dJ = (dx' * (-1/norm(x-o)^3 * (x-o) * (x-o)' + 1/norm(x-o) * Matrix{T}(I, 2, 2))) / R
     
-    
+    ### 普通の障害物との距離関数のタスク写像 ###
     z = norm(x-o)
     dz = (1/z .* dot((x-o), (dx)))[1]
     J = 1/z * (x-o)'
-    dJ = -z^(-2) .* ((dx)' .- (x-o)' .* dz)
+    dJ = -z^(-2) .* (dx' .- ((x-o)' .* dz))
 
-    
-    
     dz = J * dx
 
 
+    
 
     if z < 0
         w = 1.0e10
@@ -118,7 +118,7 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     
     u = epsilon + min(0.0, dz) * dz
     g = w * u
-
+    
     grad_u = 2 * min(0.0, dz)
     grad_phi = alpha * w * grad_w
     xi = 1/2 * dz^2 * u * grad_w
@@ -127,11 +127,13 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     M = min(max(_M, -1e5), 1e5)
 
     Bx_dot = eta * g * dz
-
+    
     _f = - grad_phi - xi -Bx_dot
     f = min(max(_f, -1e10), 1e10)
+    
 
-    pulled_f = J' * (f .- M * dJ * dx)
+    pulled_f = J' * (f .- M * dJ * dx)[1]
+
     pulled_M = J' * M * J
 
     return pulled_f, pulled_M
