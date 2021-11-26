@@ -361,8 +361,8 @@ end
 
 function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zero(x₀)) where T
     
-    s_vec = x₀ .- x
-    ds_vec = dx₀ .- dx
+    s_vec = x .- x₀
+    ds_vec = dx .- dx₀
     s = norm(s_vec)
     ds = (1/s .* dot(s_vec, ds_vec))[1]
 
