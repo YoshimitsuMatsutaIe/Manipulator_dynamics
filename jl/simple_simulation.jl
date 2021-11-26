@@ -92,10 +92,20 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     eta = 0.0
     epsilon = 0.2
 
-    z = norm(x-o)/R - 1
-    J = 1/norm(x-o) * (x-o)' / R
-    dJ = (dx' * (-1/norm(x-o)^3 * (x-o) * (x-o)' + 1/norm(x-o) * Matrix{T}(I, 2, 2))) / R
+    # z = norm(x-o)/R - 1
+    # J = 1/norm(x-o) * (x-o)' / R
+    # dJ = (dx' * (-1/norm(x-o)^3 * (x-o) * (x-o)' + 1/norm(x-o) * Matrix{T}(I, 2, 2))) / R
+    
+    
+    z = norm(x-o)
+    dz = (1/z .* dot((x-o), (dx)))[1]
+    J = 1/z * (x-o)'
+    dJ = -z^(-2) .* ((dx)' .- (x-o)' .* dz)
+
+    
+    
     dz = J * dx
+
 
 
     if z < 0

@@ -378,6 +378,8 @@ function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zero
     return _f, M
 end
 
+
+
 """RMPfromGDSのジョイント制限回避のパラメータ"""
 @with_kw struct RMPfromGDSJointLimitAvoidance{T}
     gamma_p::T
