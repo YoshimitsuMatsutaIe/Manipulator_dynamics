@@ -75,13 +75,15 @@ Jay : y軸回りの回転軸ベクトルの関節角度ベクトルによるヤ�
 Jaz : z軸回りの回転軸ベクトルの関節角度ベクトルによるヤコビ行列  
 Jo : 位置ベクトルの関節角度ベクトルによるヤコビ行列  
 """
-mutable struct Node{T}
+@with_kw mutable struct Node{T}
     x::Vector{T}  # 位置
     dx::Vector{T}
     #Jax::Matrix{T}  # 角度を制御する場合必要
     #Jay::Matrix{T}
     #Jaz::Matrix{T}
     Jo::Matrix{T}
+    f::Union{Vector{T}, Nothing}
+    M::Union{Matrix{T}, Nothing}
 end
 
 

@@ -112,16 +112,24 @@ function update_nodes(nodes::Nothing, q::Vector{T}, dq::Vector{T}) where T
         #println("i = ", i)
         if i == 1  # rootノード
             _children_node = Vector{Node{T}}(undef, 1)
-            _children_node[1] = Node(q, dq, Matrix{T}(I, 7, 7))
+            _children_node[1] = Node(
+                x = q,
+                dx = dq,
+                Jo = Matrix{T}(I, 7, 7),
+                f = nothing,
+                M = nothing
+                )
             #println("wow")
         else
             n = length(cpoints_local[i-1])
             _children_node = Vector{Node{T}}(undef, n)
             for j in 1:n
                 _children_node[j] = Node(
-                    cpoints_x_global[i-1][j],
-                    cpoints_dx_global[i-1][j],
-                    Jos_cpoint_all[i-1][j]
+                    x = cpoints_x_global[i-1][j],
+                    dx = cpoints_dx_global[i-1][j],
+                    Jo = Jos_cpoint_all[i-1][j],
+                    f = nothing,
+                    M = nothing,
                 )
             end
         end
@@ -133,7 +141,10 @@ end
 
 
 """nodeを更新"""
-function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T}) where T
+function update_nodes(;
+    nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T},
+    rmp_param::NamedTuple, goal::State{T}, obs::Vector{State{T}}
+    ) where T
     # 更新
     _, _,
     _, _, _, _,
@@ -142,13 +153,30 @@ function update_nodes(nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T
     _, _, = calc_all(q, dq)
     for i in 1:9
         for j in 1:length(nodes[i])
-            if i == 1
+            if i == 1  # root
                 nodes[i][j].x = q
                 nodes[i][j].dx = dq
+                
+                nodes[i][j].f, nodes[i][j].M = get_natural(
+                    rmp_param.joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx,
+                    q_max, q_min, q_neutral
+                )
+                #nodes[i][j].f = nothing
+                #nodes[i][j].M = nothing
             else
                 nodes[i][j].x = cpoints_x_global[i-1][j]
                 nodes[i][j].dx = cpoints_dx_global[i-1][j]
                 nodes[i][j].Jo = Jos_cpoint_all[i-1][j]
+                nodes[i][j].f, nodes[i][j].M = get_natural(
+                    rmp_param.obs_avoidance[i-1], nodes[i][j].x, nodes[i][j].dx, obs[k].x
+                )
+                if i==9
+                    _f, _M = get_natural(
+                        rmp_param.attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
+                    )
+                    @. nodes[i][j].f += _f
+                    @. nodes[i][j].M += _M
+                end
             end
         end
     end
@@ -157,7 +185,51 @@ end
 
 
 
+"""nodesからf, Mを集めて所望の加速度を生成
+
+新手法  
+"""
+function calc_desired_ddq(nodes::Vector{Vector{Node{T}}}, obs::Vector{State{T}}) where T
+    root_f = zeros(T, 7)
+    root_M = zeros(T, 7, 7)
+
+    for i in 1:9
+        if i == 1 && isnothing(nodes[i][1].f)  # ジョイント制限rmp
+            @. root_f += nodes[i][1].f
+            @. root_M += nodes[i][1].M
+            
+        else
+            if i == 9 && isnothing(nodes[i][1].f) # 目標王達rmpを追加
+            _pulled_f, _pulled_M = pullbacked_rmp(nodes[i][1].f, _nodes[i][1].M, nodes[i][1].Jo,)
+            @. root_f += _pulled_f
+            @. root_M += _pulled_M
+            end
+
+            # 障害物回避rmpを追加
+            for j in 1:length(nodes[i])
+                for k in 1:length(obs)
+                    if isnothing(nodes[i][j].f)
+                        _pulled_f, _pulled_M = pullbacked_rmp(nodes[i][j].f, nodes[i][j].M, nodes[i][j].Jo,)
+                        @. root_f += _pulled_f
+                        @. root_M += _pulled_M
+                    end
+                end
+            end
+        end
+    end
+
+    #root_f += zeros(T, 7)
+    #root_M += zeros(T, 7, 7)
+
+    #println("root_f = ", root_f)
+    #println("root_M = ", root_M)
 
 
+    ddq = pinv(root_M) * root_f
+    #println("ddq = ", ddq)
+    #ddq = np.linalg.pinv(root_M) * root_f
 
+    #ddq = zeros(T, 7)
+    return ddq
+end
 #end

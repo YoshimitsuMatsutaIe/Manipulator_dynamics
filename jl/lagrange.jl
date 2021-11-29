@@ -353,10 +353,13 @@ function _test()
     
     i = 3
     j = 5
-    println(M(q))
+    println(det(M(q)))
+    D = eigvals(M(q))
+    println(D)
+    #println(P)
     
     #println(M(q))
-    u = calc_torque(q, dq, ddq)
+    #u = calc_torque(q, dq, ddq)
     #println(u)
     #F = zeros(Float64, 7)
     #r_ddq = calc_real_ddq(u, F, q, dq)
@@ -370,6 +373,6 @@ end
 #@time for i in 1:10; Dynamics._test(); end
 
 
-#using .Dynamics
+using .Dynamics
 
-#println(Dynamics._test())
+Dynamics._test()

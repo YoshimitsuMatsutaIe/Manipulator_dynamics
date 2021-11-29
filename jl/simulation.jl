@@ -175,13 +175,13 @@ u :
 end
 
 
+
 """
 オイラー法で（質量考えずに）シミュレーション
 """
 function whithout_mass(
-    saveRmpData::Bool,
     q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, goal, rmp_param
-) where T
+    ) where T
 
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
 
@@ -200,7 +200,7 @@ function whithout_mass(
         nodes = Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
         goal = Vector{State{T}}(undef, length(t)),
         obs = Vector{Vector{State{T}}}(undef, length(t)),
-        jl = Vector{BitVector}(undef, length(t))
+        jl = Vector{BitVector}(undef, length(t)),
     )
 
 
@@ -214,18 +214,26 @@ function whithout_mass(
     data.goal[1] = goal
     data.obs[1] = obs
     data.jl[1] = check_JointLimitation(q₀)
+    
     #println(length(obs))
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
         #println("i = ", i)
-        data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
+        data.nodes[i+1] = update_nodes(
+            nodes = data.nodes[i],
+            q = data.q[i],
+            dq = data.dq[i],
+            rmp_param = rmp_param,
+            goal = data.goal[i],
+            obs = data.obs[i],
+            )
         #println("OK3")
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
         data.dis_to_obs[i+1] = calc_min_dis_to_obs(data.nodes[i+1], obs)
 
         data.desired_ddq[i+1] = calc_desired_ddq(
-            data.nodes[i], rmp_param, data.goal[i], data.obs[i]
+            data.nodes[i], data.obs[i]
             )
         data.ddq[i+1] = data.desired_ddq[i+1]
 
@@ -262,7 +270,6 @@ end
 ルンゲクッタを使用  
 """
 function with_mass(
-    saveRmpData::Bool,
     q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T,
     obs::Vector{State{T}}, goal::State{T}, rmp_param
     ) where T
@@ -312,13 +319,18 @@ function with_mass(
         #F = rand(T, 7) * 0.0001
         
 
-        data.nodes[i+1] = update_nodes(data.nodes[i], data.q[i], data.dq[i])
+        data.nodes[i+1] = update_nodes(
+            nodes = data.nodes[i],
+            q = data.q[i],
+            dq = data.dq[i],
+            rmp_param = rmp_param,
+            goal = data.goal[i],
+            obs = data.obs[i],
+        )
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
         data.dis_to_obs[i+1] = calc_min_dis_to_obs(data.nodes[i], data.obs[i])
 
-        data.desired_ddq[i+1] = calc_desired_ddq(
-            data.nodes[i], rmp_param, data.goal[i], data.obs[i]
-            )
+        data.desired_ddq[i+1] = calc_desired_ddq(data.nodes[i], data.obs[i])
         data.u[i+1] = calc_torque(data.q[i], data.dq[i], data.desired_ddq[i+1])
 
         # ルンゲクッタで次の値を決定
@@ -377,9 +389,9 @@ function run_simulation(
     dq₀ = zeros(T, 7)
 
     if isWithMas
-        data = with_mass(saveRmpData, q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
+        data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
     else
-        data = whithout_mass(saveRmpData, q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
+        data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
     end
     
     plot_simulation_data(data, t)
