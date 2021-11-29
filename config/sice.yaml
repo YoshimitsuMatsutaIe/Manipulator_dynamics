@@ -1,7 +1,8 @@
 sim_param : 
   isLeft : True
+  saveRmpData : True
   isWithMass : True
-  TIME_SPAN : 10.0
+  TIME_SPAN : 0.5
   TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1
@@ -57,7 +58,7 @@ rmp_param :
     collision_avoidance :
       name : 'fromGDS'
       data : 
-        rw : 0.5
+        rw : 0.3
         sigma : 1.0
         alpha : 0.1
   -  # 8
@@ -76,7 +77,7 @@ rmp_param :
     collision_avoidance :
       name : 'fromGDS'
       data : 
-        rw : 0.5
+        rw : 0.05
         sigma : 1.0
         alpha : 0.1
   -  # ジョイント制限
@@ -96,9 +97,9 @@ env_param :
   goal :
     name : 'static'
     data :
-      x : 0.5
+      x : 0.05
       y : -0.9
-      z : 1.1
+      z : 1.2
   obstacle :
     # -
     #   name : 'point'
@@ -109,7 +110,7 @@ env_param :
     -
       name : 'plane'
       data :
-        x : 0.25
+        x : 0.2
         y : -0.8
         z : 1.0
         lx : 1.0
@@ -117,4 +118,4 @@ env_param :
         alpha : 0.0
         beta : 0.0
         gamma : 0.0
-        n : 1000
+        n : 500

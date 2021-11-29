@@ -175,11 +175,11 @@ u :
 end
 
 
-
 """
 オイラー法で（質量考えずに）シミュレーション
 """
 function whithout_mass(
+    saveRmpData::Bool,
     q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, goal, rmp_param
 ) where T
 
@@ -202,6 +202,7 @@ function whithout_mass(
         obs = Vector{Vector{State{T}}}(undef, length(t)),
         jl = Vector{BitVector}(undef, length(t))
     )
+
 
     data.q[1] = q₀
     data.dq[1] = dq₀
@@ -261,6 +262,7 @@ end
 ルンゲクッタを使用  
 """
 function with_mass(
+    saveRmpData::Bool,
     q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T,
     obs::Vector{State{T}}, goal::State{T}, rmp_param
     ) where T
@@ -367,7 +369,7 @@ end
 
 """ひとまずシミュレーションやってみｓる"""
 function run_simulation(
-    isWithMas::Bool, TIME_SPAN::T, Δt::T,
+    saveRmpData::Bool, isWithMas::Bool, TIME_SPAN::T, Δt::T,
     rmps, obs, goal, t
 ) where T
 
@@ -375,9 +377,9 @@ function run_simulation(
     dq₀ = zeros(T, 7)
 
     if isWithMas
-        data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
+        data = with_mass(saveRmpData, q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
     else
-        data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
+        data = whithout_mass(saveRmpData, q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
     end
     
     plot_simulation_data(data, t)
@@ -403,6 +405,7 @@ function runner(config, path)
     rmps = set_rmp(rmp_param)
     
     data= run_simulation(
+        sim_param["saveRmpData"],
         sim_param["isWithMass"],
         sim_param["TIME_SPAN"],
         sim_param["TIME_INTERVAL"],
@@ -443,7 +446,7 @@ end
 
 
 config = "./config/sice.yaml"  # シミュレーション設定のパス
-config = "./config/sice_2.yaml"
+#config = "./config/sice_2.yaml"
 
 
 

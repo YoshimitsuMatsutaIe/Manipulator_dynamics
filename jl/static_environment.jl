@@ -95,8 +95,8 @@ function _set_obs(p::ObsParam_plane{T, U}) where {T, U}
 
     for i in 1:p.n
         X = [
-            (rand(T) - 0.5) * p.lx
-            (rand(T) - 0.5) * p.ly
+            (rand(sd, T) - 0.5) * p.lx
+            (rand(sd, T) - 0.5) * p.ly
             0.0
         ]
 
@@ -173,7 +173,7 @@ function _set_obs(p::ObsParam_cylinder{T}) where {T}
         X = [
             p.r * cos(theta)
             p.r * sin(theta)
-            (p.L)*(rand(T) - 1/2)
+            (p.L)*(rand(sd, T) - 1/2)
         ]
         obs[i] = State(
             R * X + t,

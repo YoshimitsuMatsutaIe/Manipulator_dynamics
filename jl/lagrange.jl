@@ -326,7 +326,7 @@ q : （現在の）関節角度ベクトル
 dq : （現在の）関節角速度ベクトル  
 """
 function calc_real_ddq(u::Vector{TU}, F::Vector{TU}, q::Vector{TU}, dq::Vector{TU}) where TU
-    println(det(M(q)))
+    #println(det(M(q)))
     inv(M(q)) * (u .+ F .- (C(q, dq) .+ G(q))) |> vec
 end
 
