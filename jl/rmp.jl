@@ -147,14 +147,14 @@ function inertia_matrix(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0, ddq) whe
     return weight .* Matrix{T}(I, dim, dim)
 end
 
-"""canonical form []"""
+"""canonical form ()"""
 function get_canonical(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
     a = ddz(p, z, dz, z0)
     M = inertia_matrix(p, z, dz, z0, a)
     return a, M
 end
 
-"""natural form ()"""
+"""natural form []"""
 function get_natural(p::OriginalRMPCollisionAvoidance{T}, z, dz, z0) where T
     a, M = get_canonical(p, z, dz, z0)
     f = M * a
@@ -193,13 +193,13 @@ function inertia_matrix(p::OriginalJointLimitAvoidance{T}, q, dq) where T
     return p.lambda .* Matrix{T}(I, n, n)
 end
 
-"""canonical form []"""
+"""canonical form ()"""
 function get_canonical(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min) where T
     return ddz(p, q, dq, q_max, q_min), inertia_matrix(p, q, dq)
 end
 
 
-"""natural form ()"""
+"""natural form []"""
 function get_natural(p::OriginalJointLimitAvoidance{T}, q, dq, q_max, q_min, q_neutral) where T
     a, M = get_canonical(p, q, dq, q_max, q_min)
     f = M * a
@@ -258,7 +258,8 @@ end
 function ξ(p::RMPfromGDSAttractor{T}, x, dx, x₀) where T
     # 第一項を計算
     dim = length(x)  # タスク空間の次元
-    A = Matrix{T}(undef, dim, dim)
+    #A = Matrix{T}(undef, dim, dim)
+    A = zeros(T, dim, dim)
     for i in 1:dim
         _M(x) = inertia_matrix(x, p, x₀)[:, i]
         _jacobian_M = ForwardDiff.jacobian(_M, x)
@@ -282,13 +283,16 @@ function f(p::RMPfromGDSAttractor{T}, x, dx, x₀, M) where T
     return (-p.gain .* ∇potential_2(z, p.alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
 end
 
-""""""
+"""fromGDSのアトラクタの自然形式RMPを取得"""
 function get_natural(p::RMPfromGDSAttractor{T}, x, dx, x₀) where T
     M = inertia_matrix(x, p, x₀)
     return f(p, x, dx, x₀, M), M
 end
 
 
+
+
+### 障害物回避 ###
 """fromGDSの障害物回避rmpのパラメータ"""
 @with_kw struct RMPfromGDSCollisionAvoidance{T}
     rw::T
@@ -296,7 +300,7 @@ end
     alpha::T
 end
 
-# """重み関数"""
+# 
 # w(s) = s^(-4)
 
 
@@ -304,14 +308,23 @@ end
 # """重み関数の微分"""
 # dwds(s) = -4 * s^(-5)
 
+
+
+
+
+
+
+"""距離に関する重み関数"""
 function w2(s, rw=1.0)
     if rw - s > 0.0
         return (rw - s)^2 / s
     else
         return 0.0
     end
+    
 end
 
+"""重み関数のs微分"""
 function dw2(s, rw)
     if rw - s > 0.0
         return (-2*(rw - s) * s + (rw - s)) / s^2
@@ -320,8 +333,8 @@ function dw2(s, rw)
     end
 end
 
-
-function u(ds, σ)
+"""速度に関する重み関数"""
+function u2(ds, σ)
     if ds < 0.0
         return 1 - exp(-ds^2 / (2*σ^2))
     else
@@ -329,7 +342,8 @@ function u(ds, σ)
     end
 end
 
-function du(ds, σ)
+"""重み関数のds微分"""
+function du2(ds, σ)
     if ds < 0.0
         return -exp(-ds^2 / (2*σ^2)) * (-ds / σ^2)
     else
@@ -338,12 +352,12 @@ function du(ds, σ)
 end
 
 function δ(s, ds, σ)
-    u(ds, σ) + 1/2 * ds * du(ds, σ)
+    u2(ds, σ) + 1/2 * ds * du2(ds, σ)
 end
 
 """曲率項"""
 function ξ(s, ds, σ, rw)
-    1/2 * u(ds, σ) * dw2(s, rw) * ds^2
+    1/2 * u2(ds, σ) * dw2(s, rw) * ds^2
 end
 
 """障害物回避ポテンシャル"""
@@ -356,9 +370,10 @@ function ∇Φ1(s, α, rw)
     α * w2(s, rw) * dw2(s, rw)
 end
 
+
 """fromGDSの障害物回避力"""
 function f(p::RMPfromGDSCollisionAvoidance{T}, s, ds) where T
-    return -w2(s, p.rw) * ∇Φ1(s, p.alpha, p.rw) - ξ(s, ds, p.sigma, p.rw)
+    return -∇Φ1(s, p.alpha, p.rw) - ξ(s, ds, p.sigma, p.rw)
 end
 
 """fromGDSの障害物回避慣性行列"""
@@ -366,6 +381,7 @@ function inertia_matrix(p::RMPfromGDSCollisionAvoidance{T}, s, ds) where T
     return w2(s, p.rw) * δ(s, ds, p.sigma)
 end
 
+"""fromGDSの障害物回避rmpの自然形式を取得"""
 function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zero(x₀)) where T
     
     s_vec = x .- x₀
@@ -377,7 +393,7 @@ function get_natural(p::RMPfromGDSCollisionAvoidance{T}, x, dx, x₀, dx₀=zero
     m = inertia_matrix(p, s, ds)
     _f = f(p, s, ds)
 
-    J = -(x .- dx)' ./ s
+    J = -s_vec' ./ s
     J̇ = -s^(-2) .* (ds_vec' .- s_vec' .* ds)
 
     _f, M = pullbacked_rmp(_f, m, J, J̇, dx)
@@ -466,7 +482,8 @@ end
 """ジョイント制限回避の曲率項"""
 function ξ(q::Vector{T}, dq::Vector{T}, q_max::Vector{T}, q_min::Vector{T}, sigma::T) where T
     
-    z = Vector{T}(undef, 7)
+    #z = Vector{T}(undef, 7)
+    z = zeros(T, 7)
     dim = length(q)
 
     for i in 1:dim
@@ -558,7 +575,8 @@ end
 """曲率項"""
 function ξ(p::RMPfromGDSImpedance{T}, y, dy, y_d, y_e) where T
     # 第一項を計算
-    A = Matrix{T}(undef, 3, 3)
+    #A = Matrix{T}(undef, 3, 3)
+    A = zeros(T, dim, dim)
     for i in 1:3
         _M(y) = inertia_matrix(y, p, y_d, y_E)[:, i]
         _jacobian_M = ForwardDiff.jacobian(_M, y)

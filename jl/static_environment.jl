@@ -16,7 +16,7 @@ using Parameters
 
 include("utils.jl")
 
-
+sd = Random.seed!(123)
 
 ### 目標位置 ###
 
@@ -169,7 +169,7 @@ function _set_obs(p::ObsParam_cylinder{T}) where {T}
     R = rotate(p.alpha, p.beta, p.gamma)
     t = [p.x, p.y, p.z]
     for i in 1:p.n
-        theta = 2π * rand(T)
+        theta = 2π * rand(sd, T)
         X = [
             p.r * cos(theta)
             p.r * sin(theta)
