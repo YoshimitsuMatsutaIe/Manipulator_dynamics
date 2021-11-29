@@ -337,17 +337,24 @@ function du(ds, σ)
     end
 end
 
-δ(s, ds, σ) = u(ds, σ) + 1/2 * ds * du(ds, σ)
+function δ(s, ds, σ)
+    u(ds, σ) + 1/2 * ds * du(ds, σ)
+end
 
 """曲率項"""
-ξ(s, ds, σ, rw) = 1/2 * u(ds, σ) * dw2(s, rw) * ds^2
+function ξ(s, ds, σ, rw)
+    1/2 * u(ds, σ) * dw2(s, rw) * ds^2
+end
 
 """障害物回避ポテンシャル"""
-Φ1(s, α, rw) = 1/2 * α * w2(s, rw)^2
+function Φ1(s, α, rw)
+    1/2 * α * w2(s, rw)^2
+end
 
 """障害物回避ポテンシャルの勾配"""
-∇Φ1(s, α, rw) = α * w2(s, rw) * dw2(s, rw)
-
+function ∇Φ1(s, α, rw)
+    α * w2(s, rw) * dw2(s, rw)
+end
 
 """fromGDSの障害物回避力"""
 function f(p::RMPfromGDSCollisionAvoidance{T}, s, ds) where T
@@ -389,11 +396,11 @@ end
 end
 
 function α_upper(dq::T, sigma::T) where T
-    1.0 - exp(-max(dq, 0) ^2 / (2 * sigma^2))
+    1.0 - exp(-max(dq, 0)^2 / (2 * sigma^2))
 end
 
 function α_lower(dq::T, sigma::T) where T
-    1.0 - exp(-min(dq, 0) ^2 / (2 * sigma^2))
+    1.0 - exp(-min(dq, 0)^2 / (2 * sigma^2))
 end
 
 function _s(q::T, q_u::T, q_l::T) where T
