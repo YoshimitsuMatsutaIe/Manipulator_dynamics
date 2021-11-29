@@ -92,8 +92,8 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     eta = 0.0
     epsilon = 0.2
 
-    z_vec = (x - o)*-1
-    dz_vec = dx*-1
+    z_vec = (x - o)
+    dz_vec = dx
 
 
     # ## マルチロボットの安全距離付きタスク写像 ###
@@ -113,7 +113,6 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     dz = J * dx
 
 
-    
 
     if z < 0
         w = 1.0e10
