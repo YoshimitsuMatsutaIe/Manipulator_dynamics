@@ -8,6 +8,7 @@ using Plots
 
 """基本的なものだけplot"""
 function plot_simulation_data(data, path)
+    println("基本グラフを作成中...")
     q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.q)
     fig_q = plot(data.t, q1, ylabel="q", label="_q1", legend=:outerright)
     plot!(fig_q, data.t, q2, label="_q2")
@@ -72,16 +73,15 @@ function plot_simulation_data(data, path)
     )
 
 
-    fname = path * ".png"
+    fname = path * "basic_his.png"
     savefig(fig, fname)
 
+    println("基本グラフ作成完了")
 end
 
 
 
-
 function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing, t=nothing, jl=nothing)
-
     _, _, _, _, _, _, _, _, cpoints_x_global, _, joints_x_global, _, = calc_all(q, dq)
     #fig = plot(size=(800,700))
 
@@ -164,6 +164,7 @@ end
 
 """アニメ制作"""
 function make_animation(data, path)
+    println("アニメ作成中...")
     # 枚数決める
     #println(data.t)
     epoch_max = 100
@@ -185,8 +186,9 @@ function make_animation(data, path)
     end
 
 
-    fname = path *  ".gif"
+    fname = path *  "animation.gif"
 
     gif(anim, fname, fps = 60)
-    #return anim
+    
+    println("アニメ作成完了")
 end 

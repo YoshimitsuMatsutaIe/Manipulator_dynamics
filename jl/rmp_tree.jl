@@ -167,10 +167,20 @@ function update_nodes(;
                 nodes[i][j].x = cpoints_x_global[i-1][j]
                 nodes[i][j].dx = cpoints_dx_global[i-1][j]
                 nodes[i][j].Jo = Jos_cpoint_all[i-1][j]
-                nodes[i][j].f, nodes[i][j].M = get_natural(
-                    rmp_param.obs_avoidance[i-1], nodes[i][j].x, nodes[i][j].dx, obs[k].x
-                )
-                if i==9
+
+                f = zeros(T, 3)
+                M = zeros(T, 3, 3)
+                for k in 1:length(obs)
+                    _f, _M = get_natural(
+                        rmp_param.obs_avoidance[i-1], nodes[i][j].x, nodes[i][j].dx, obs[k].x
+                    )
+                    @. f += _f
+                    @. M += _M
+                end
+                nodes[i][j].f = f
+                nodes[i][j].M = M
+
+                if i==9  # エンドエフェクタのときは目標rmpを追加
                     _f, _M = get_natural(
                         rmp_param.attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
                     )
@@ -189,32 +199,19 @@ end
 
 新手法  
 """
-function calc_desired_ddq(nodes::Vector{Vector{Node{T}}}, obs::Vector{State{T}}) where T
+function calc_desired_ddq(nodes::Vector{Vector{Node{T}}}) where T
     root_f = zeros(T, 7)
     root_M = zeros(T, 7, 7)
 
     for i in 1:9
-        if i == 1 && isnothing(nodes[i][1].f)  # ジョイント制限rmp
-            @. root_f += nodes[i][1].f
-            @. root_M += nodes[i][1].M
-            
-        else
-            if i == 9 && isnothing(nodes[i][1].f) # 目標王達rmpを追加
-            _pulled_f, _pulled_M = pullbacked_rmp(nodes[i][1].f, _nodes[i][1].M, nodes[i][1].Jo,)
-            @. root_f += _pulled_f
-            @. root_M += _pulled_M
+        for j in 1:length(nodes[i])  # 目標rmpと障害物rmpの合算
+            if !isnothing(nodes[i][j].f)
+                _pulled_f, _pulled_M = pullbacked_rmp(nodes[i][j].f, nodes[i][j].M, nodes[i][j].Jo,)
+                @. root_f += _pulled_f
+                @. root_M += _pulled_M
             end
 
-            # 障害物回避rmpを追加
-            for j in 1:length(nodes[i])
-                for k in 1:length(obs)
-                    if isnothing(nodes[i][j].f)
-                        _pulled_f, _pulled_M = pullbacked_rmp(nodes[i][j].f, nodes[i][j].M, nodes[i][j].Jo,)
-                        @. root_f += _pulled_f
-                        @. root_M += _pulled_M
-                    end
-                end
-            end
+        
         end
     end
 

@@ -233,7 +233,7 @@ function whithout_mass(
         data.dis_to_obs[i+1] = calc_min_dis_to_obs(data.nodes[i+1], obs)
 
         data.desired_ddq[i+1] = calc_desired_ddq(
-            data.nodes[i], data.obs[i]
+            data.nodes[i]
             )
         data.ddq[i+1] = data.desired_ddq[i+1]
 
@@ -330,7 +330,7 @@ function with_mass(
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
         data.dis_to_obs[i+1] = calc_min_dis_to_obs(data.nodes[i], data.obs[i])
 
-        data.desired_ddq[i+1] = calc_desired_ddq(data.nodes[i], data.obs[i])
+        data.desired_ddq[i+1] = calc_desired_ddq(data.nodes[i])
         data.u[i+1] = calc_torque(data.q[i], data.dq[i], data.desired_ddq[i+1])
 
         # ルンゲクッタで次の値を決定
@@ -380,22 +380,25 @@ end
 
 
 """ひとまずシミュレーションやってみｓる"""
-function run_simulation(
+function run_simulation(;
     saveRmpData::Bool, isWithMas::Bool, TIME_SPAN::T, Δt::T,
-    rmps, obs, goal, t
+    rmps, obs, goal, save_path
 ) where T
 
     q₀ = q_neutral
     dq₀ = zeros(T, 7)
 
     if isWithMas
-        data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
+        @time data = with_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
     else
-        data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
+        @time data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
     end
     
-    plot_simulation_data(data, t)
-    return data
+    get_rmp_data(data)
+    #@time plot_simulation_data(data, save_path)
+    #@time make_animation(data, save_path)
+
+    #return data
 end
 
 
@@ -407,7 +410,7 @@ end
 config : yamlファイルのパス  
 path : 結果保存先のパス  
 """
-function runner(config, path)
+function runner(config, save_path)
     params = YAML.load_file(config)
     sim_param = params["sim_param"]
     rmp_param = params["rmp_param"]
@@ -416,17 +419,17 @@ function runner(config, path)
     goal = set_goal(env_param["goal"])
     rmps = set_rmp(rmp_param)
     
-    data= run_simulation(
-        sim_param["saveRmpData"],
-        sim_param["isWithMass"],
-        sim_param["TIME_SPAN"],
-        sim_param["TIME_INTERVAL"],
-        rmps,
-        obs,
-        goal,
-        path
+    run_simulation(
+        saveRmpData = sim_param["saveRmpData"],
+        isWithMas = sim_param["isWithMass"],
+        TIME_SPAN = sim_param["TIME_SPAN"],
+        Δt = sim_param["TIME_INTERVAL"],
+        rmps = rmps,
+        obs = obs,
+        goal = goal,
+        save_path = save_path
     )
-    return data
+    #return data
 end
 
 
@@ -457,16 +460,14 @@ end
 
 
 
-config = "./config/sice.yaml"  # シミュレーション設定のパス
-#config = "./config/sice_2.yaml"
+#config = "./config/sice.yaml"  # シミュレーション設定のパス
+config = "./config/sice_2.yaml"
 
 
 
 path = get_time_string()  # 実行時のデータ保存パス
 
 println("hoge...")
-@time data = runner(config, path)
+runner(config, path)
 println("hoge!")
-
-@time make_animation(data, path)
 
