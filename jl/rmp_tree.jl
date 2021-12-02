@@ -30,73 +30,73 @@ using .Kinematics: calc_all, q_max, q_min, q_neutral, cpoints_local
 
 
 
-"""所望の加速度を計算（resolve演算結果を返す）
+# """所望の加速度を計算（resolve演算結果を返す）
 
-# args
-- nodes :  
-- rmp_param :  
-- goal :  
-- obs :  
-"""
-function calc_desired_ddq(
-    nodes::Vector{Vector{Node{T}}},
-    rmp_param::NamedTuple,
-    goal::State{T},
-    obs::Vector{State{T}}
-    ) where T
+# # args
+# - nodes :  
+# - rmp_param :  
+# - goal :  
+# - obs :  
+# """
+# function calc_desired_ddq(
+#     nodes::Vector{Vector{Node{T}}},
+#     rmp_param::NamedTuple,
+#     goal::State{T},
+#     obs::Vector{State{T}}
+#     ) where T
 
-    root_f = zeros(T, 7)
-    root_M = zeros(T, 7, 7)
+#     root_f = zeros(T, 7)
+#     root_M = zeros(T, 7, 7)
 
-    for i in 1:9
-        if i == 1  # ジョイント制限rmp
-            _f, _M = get_natural(
-                rmp_param.joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx,
-                q_max, q_min, q_neutral
-            )
-            #_f = zeros(T, 7)
-            #_M = zeros(T, 7, 7)
-            @. root_f += _f
-            @. root_M += _M
+#     for i in 1:9
+#         if i == 1  # ジョイント制限rmp
+#             _f, _M = get_natural(
+#                 rmp_param.joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx,
+#                 q_max, q_min, q_neutral
+#             )
+#             #_f = zeros(T, 7)
+#             #_M = zeros(T, 7, 7)
+#             @. root_f += _f
+#             @. root_M += _M
             
-        else
-            if i == 9  # 目標王達rmpを追加
-            _f, _M = get_natural(
-                rmp_param.attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
-            )
-            _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][1].Jo,)
-            @. root_f += _pulled_f
-            @. root_M += _pulled_M
-            end
+#         else
+#             if i == 9  # 目標王達rmpを追加
+#             _f, _M = get_natural(
+#                 rmp_param.attractor, nodes[i][1].x, nodes[i][1].dx, goal.x
+#             )
+#             _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][1].Jo,)
+#             @. root_f += _pulled_f
+#             @. root_M += _pulled_M
+#             end
 
-            # 障害物回避rmpを追加
-            for j in 1:length(nodes[i])
-                for k in 1:length(obs)
-                    _f, _M = get_natural(
-                        rmp_param.obs_avoidance[i-1], nodes[i][j].x, nodes[i][j].dx, obs[k].x
-                    )
-                    _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].Jo,)
-                    @. root_f += _pulled_f
-                    @. root_M += _pulled_M
-                end
-            end
-        end
-    end
+#             # 障害物回避rmpを追加
+#             for j in 1:length(nodes[i])
+#                 for k in 1:length(obs)
+#                     _f, _M = get_natural(
+#                         rmp_param.obs_avoidance[i-1], nodes[i][j].x, nodes[i][j].dx, obs[k].x
+#                     )
+#                     _pulled_f, _pulled_M = pullbacked_rmp(_f, _M, nodes[i][j].Jo,)
+#                     @. root_f += _pulled_f
+#                     @. root_M += _pulled_M
+#                 end
+#             end
+#         end
+#     end
 
-    #root_f += zeros(T, 7)
-    #root_M += zeros(T, 7, 7)
+#     #root_f += zeros(T, 7)
+#     #root_M += zeros(T, 7, 7)
 
-    #println("root_f = ", root_f)
-    #println("root_M = ", root_M)
+#     #println("root_f = ", root_f)
+#     #println("root_M = ", root_M)
 
 
-    ddq = pinv(root_M) * root_f
-    #println("ddq = ", ddq)
-    #ddq = np.linalg.pinv(root_M) * root_f
+#     ddq = pinv(root_M) * root_f
+#     #println("ddq = ", ddq)
+#     #ddq = np.linalg.pinv(root_M) * root_f
 
-    #ddq = zeros(T, 7)
-    return ddq
-end
+#     #ddq = zeros(T, 7)
+#     return ddq
+# end
 
 
 """nodeを新規作成"""
@@ -224,11 +224,15 @@ function calc_desired_ddq(nodes::Vector{Vector{Node{T}}}) where T
     for i in 1:9
         for j in 1:length(nodes[i])  # 目標rmpと障害物rmpの合算
             if i == 1 && !isnothing(nodes[i][j].f)
-                _pulled_f, _pulled_M = pullbacked_rmp(nodes[i][j].f, nodes[i][j].M, nodes[i][j].Jo,)
+                _pulled_f, _pulled_M = pullbacked_rmp(
+                    nodes[i][j].f, nodes[i][j].M, nodes[i][j].Jo,
+                )
                 @. root_f += _pulled_f
                 @. root_M += _pulled_M
             elseif i > 1 && !isnothing(nodes[i][j].f)
-                _pulled_f, _pulled_M = pullbacked_rmp(nodes[i][j].f, nodes[i][j].M, nodes[i][j].Jo,)
+                _pulled_f, _pulled_M = pullbacked_rmp(
+                    nodes[i][j].f, nodes[i][j].M, nodes[i][j].Jo,
+                )
                 @. root_f += _pulled_f
                 @. root_M += _pulled_M
             end
@@ -284,8 +288,6 @@ end
 
 """nodesからrmpを取得（グラフアニメ用）"""
 function get_rmps_from_nodes(nodes::Vector{Vector{Node{T}}}) where T
-
-    println(T)
     fs = Vector{Vector{Vector{T}}}(undef, 9)
     Ms = Vector{Vector{Matrix{T}}}(undef, 9)
 
@@ -332,17 +334,21 @@ end
 
 
 """fノルムsを時刻でまとめる"""
-function get_f_norms_from_nodes_list(nodes_list::Vector{Vector{Vector{Node{T}}}}) where T
-    f_norms_list = Vector{Vector{Vector{Vector{T}}}}(undef, 9)
-    t_max = length(nodes_list.q)
+function get_f_norms_from_nodes_list(
+    t_max::Int64,
+    nodes_list::Vector{Vector{Vector{Node{T}}}}
+    ) where T
+
+    f_norms_list = Vector{Vector{Vector{T}}}(undef, 9)
 
     for (t, nodes) in enumerate(nodes_list)
         fs, _ = get_rmps_from_nodes(nodes)
         f_norms = get_f_norms_from_fs(fs)
-        if t == 1
+
+        if t == 1  # 1回目は配列を宣言する
             
             for (i, f) in enumerate(f_norms)
-                _f_norms_list = Vector{Vector{Vector{T}}}(undef, length(f))
+                _f_norms_list = Vector{Vector{T}}(undef, length(f))
                 for (j, _f) in enumerate(f)
                     _f_norms_list[j] = Vector{T}(undef, t_max)
                     _f_norms_list[j][1] = _f

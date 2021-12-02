@@ -80,6 +80,51 @@ function plot_simulation_data(data, path)
 end
 
 
+"""rmpのグラフに使用"""
+function naming(i::Int64, j::Int64)
+    if i == 1
+        n = "root_"
+    elseif i == 9
+        n = "ee_"
+    else
+        n = "c" * string(i-1) * "_"
+    end
+    n *= string(j)
+end
+
+"""rmpの力fをグラフ化"""
+function plot_rmp_f(
+    data, save_path
+    )
+
+    println("rmpの力をグラフ化中...")
+
+    f_norms_list = get_f_norms_from_nodes_list(
+        length(data.q), data.nodes
+    )
+
+
+    fig = plot()
+    for (i, fs) in enumerate(f_norms_list)
+        for (j, f) in enumerate(fs)
+            plot!(fig, data.t, f, label = naming(i,j), legend=:outerright)
+
+        end
+    end
+
+    plot!(
+        fig,
+        xlabel="time [sec]", ylabel="norm(f)",
+        xlims=(0, data.t[end]), ylims=(0,)
+    )
+    fname = path * "rmp_his.png"
+    savefig(fig, fname)
+
+    println("rmpの力グラフ作成完了!")
+end
+
+
+
 
 function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing, t=nothing, jl=nothing)
     _, _, _, _, _, _, _, _, cpoints_x_global, _, joints_x_global, _, = calc_all(q, dq)
@@ -179,14 +224,14 @@ function make_animation(data, path)
 
     anim = Animation()
     @gif for i in 1:step:length(data.q)
-        # _fig = draw_arm(
-        #     data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
-        # )
-
-        println(data.nodes[i] == data.nodes[i])
         _fig = draw_arm(
-            data.nodes[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
+            data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
         )
+
+        #println(data.nodes[i] == data.nodes[i])
+        # _fig = draw_arm(
+        #     data.nodes[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
+        # )
 
         frame(anim, _fig)
     end

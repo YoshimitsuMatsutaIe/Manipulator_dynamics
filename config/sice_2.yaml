@@ -2,7 +2,7 @@ sim_param :
   isLeft : True
   isWithMass : False
   saveRmpData : True
-  TIME_SPAN : 0.05
+  TIME_SPAN : 5.0
   TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1

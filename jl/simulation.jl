@@ -125,7 +125,9 @@ end
 
 
 """制御点と障害物点の最小距離を計算"""
-function calc_min_dis_to_obs(nodes::Vector{Vector{Node{T}}}, obs::Vector{State{T}}) where T
+function calc_min_dis_to_obs(
+    nodes::Vector{Vector{Node{T}}}, obs::Vector{State{T}}
+    ) where T
     dis_to_obs = 1.0  # 障害物への最小近接距離
     
     _temp_dis_to_obs = Vector{T}(undef, length(obs))
@@ -214,8 +216,7 @@ function whithout_mass(
     data.goal[1] = goal
     data.obs[1] = obs
     data.jl[1] = check_JointLimitation(q₀)
-    
-    #println(length(obs))
+
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
@@ -303,8 +304,6 @@ function with_mass(
     data.u[1] = zeros(T, 7)
     data.error[1] = norm(goal.x - nodes₀[9][1].x)
     data.nodes[1] = nodes₀
-    #println(typeof(nodes₀))
-    #println(typeof(obs))
     data.dis_to_obs[1] = calc_min_dis_to_obs(nodes₀, obs)
     data.goal[1] = goal
     data.obs[1] = obs
@@ -395,10 +394,14 @@ function run_simulation(;
     end
     
     
-    # @time plot_simulation_data(data, save_path)
-    # @time make_animation(data, save_path)
+    @time plot_simulation_data(data, save_path)
+    @time plot_rmp_f(data, save_path)
+    @time make_animation(data, save_path)
 
-    hoge = get_f_norms_from_nodes_list(data.nodes)
+    #println(typeof(length(data.q)))
+
+    
+    #println(hoge)
     #return data
 end
 
