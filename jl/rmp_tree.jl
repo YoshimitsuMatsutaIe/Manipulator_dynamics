@@ -149,7 +149,7 @@ end
 
 
 """nodeを更新"""
-function update_nodes(;
+function update_nodes!(;
     nodes::Vector{Vector{Node{T}}}, q::Vector{T}, dq::Vector{T},
     rmp_param::NamedTuple, goal::State{T}, obs::Vector{State{T}}
     ) where T
@@ -159,6 +159,10 @@ function update_nodes(;
     _, Jos_cpoint_all,
     cpoints_x_global, cpoints_dx_global,
     joints_x_global, joints_dx_global = calc_all(q, dq)
+
+    #hoge = nodes[1][1].x
+    #nodes = copy(nodes)
+    #println(old[1][1].x)
 
     for i in 1:9
         for j in 1:length(nodes[i])
@@ -170,6 +174,7 @@ function update_nodes(;
                     rmp_param.joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx,
                     q_max, q_min, q_neutral
                 )
+                #println(nodes[1][1].x - hoge)
 
             else  # root以外
                 if j == 1   # ジョイント位置
@@ -179,7 +184,6 @@ function update_nodes(;
                     nodes[i][j].f = nothing
                     nodes[i][j].M = nothing
                 else
-                    #println("hohoho")
                     nodes[i][j].x = cpoints_x_global[i-1][j-1]
                     nodes[i][j].dx = cpoints_dx_global[i-1][j-1]
                     nodes[i][j].Jo = Jos_cpoint_all[i-1][j-1]
@@ -207,7 +211,8 @@ function update_nodes(;
             end
         end
     end
-    
+    # println(nodes[1][1].x)
+    # println(nodes[1][1].x == old[1][1].x)
     return nodes
 end
 

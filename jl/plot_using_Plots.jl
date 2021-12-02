@@ -224,14 +224,16 @@ function make_animation(data, path)
 
     anim = Animation()
     @gif for i in 1:step:length(data.q)
-        _fig = draw_arm(
-            data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
-        )
-
-        #println(data.nodes[i] == data.nodes[i])
         # _fig = draw_arm(
-        #     data.nodes[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
+        #     data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
         # )
+
+        # if i > 2
+        #     println(data.nodes[i] == data.nodes[i-1])
+        # end
+        _fig = draw_arm(
+            data.nodes[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
+        )
 
         frame(anim, _fig)
     end

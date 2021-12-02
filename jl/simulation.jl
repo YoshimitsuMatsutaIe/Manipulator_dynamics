@@ -221,8 +221,8 @@ function whithout_mass(
     # ぐるぐる回す
     for i in 1:length(data.t)-1
         #println("i = ", i)
-        data.nodes[i+1] = update_nodes(
-            nodes = data.nodes[i],
+        data.nodes[i+1] = update_nodes!(
+            nodes = deepcopy(data.nodes[i]),
             q = data.q[i],
             dq = data.dq[i],
             rmp_param = rmp_param,
@@ -244,6 +244,12 @@ function whithout_mass(
         data.goal[i+1] = goal
         data.obs[i+1] = obs
         data.jl[i+1] = check_JointLimitation(data.q[i+1])
+
+
+        #println(data.nodes[i][1][1].x - data.nodes[i+1][1][1].x)
+        #println(data.nodes[i][1] == data.nodes[i+1][1])
+
+
     end
 
     data
@@ -318,8 +324,8 @@ function with_mass(
         #F = rand(T, 7) * 0.0001
         
 
-        data.nodes[i+1] = update_nodes(
-            nodes = data.nodes[i],
+        data.nodes[i+1] = update_nodes!(
+            nodes = deepcopy(data.nodes[i]),
             q = data.q[i],
             dq = data.dq[i],
             rmp_param = rmp_param,
@@ -401,8 +407,9 @@ function run_simulation(;
     #println(typeof(length(data.q)))
 
     
-    #println(hoge)
-    #return data
+    
+    #
+    return data
 end
 
 
@@ -423,7 +430,7 @@ function runner(config, save_path)
     goal = set_goal(env_param["goal"])
     rmps = set_rmp(rmp_param)
     
-    run_simulation(
+    data = run_simulation(
         saveRmpData = sim_param["saveRmpData"],
         isWithMas = sim_param["isWithMass"],
         TIME_SPAN = sim_param["TIME_SPAN"],
@@ -433,7 +440,7 @@ function runner(config, save_path)
         goal = goal,
         save_path = save_path
     )
-    #return data
+    return data
 end
 
 
@@ -472,6 +479,6 @@ config = "./config/sice_2.yaml"
 path = get_time_string()  # 実行時のデータ保存パス
 
 println("hoge...")
-runner(config, path)
+data = runner(config, path)
 println("hoge!")
 
