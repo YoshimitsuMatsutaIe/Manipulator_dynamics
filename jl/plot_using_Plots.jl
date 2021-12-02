@@ -107,8 +107,11 @@ function plot_rmp_f(
     fig = plot()
     for (i, fs) in enumerate(f_norms_list)
         for (j, f) in enumerate(fs)
-            plot!(fig, data.t, f, label = naming(i,j), legend=:outerright)
-
+            plot!(
+                fig,
+                data.t, f, label = naming(i,j),
+                legend=:outerright,#linestyle=:dot
+            )
         end
     end
 
@@ -228,9 +231,6 @@ function make_animation(data, path)
         #     data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
         # )
 
-        # if i > 2
-        #     println(data.nodes[i] == data.nodes[i-1])
-        # end
         _fig = draw_arm(
             data.nodes[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
         )
