@@ -317,7 +317,7 @@ function calc_cpoint_x_and_dx_global(
 end
 
 
-"""原点+ジョイント位置を取得（図示用）"""
+"""原点+ジョイント位置を取得"""
 function calc_joints_x_and_dx_global(
     HTMs_global::Vector{Matrix{T}},
     Jos_joint_all::Vector{Matrix{T}},

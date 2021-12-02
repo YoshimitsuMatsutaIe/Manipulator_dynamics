@@ -81,7 +81,7 @@ Jo : 位置ベクトルの関節角度ベクトルによるヤコビ行列
     #Jax::Matrix{T}  # 角度を制御する場合必要
     #Jay::Matrix{T}
     #Jaz::Matrix{T}
-    Jo::Matrix{T}
+    Jo::Union{Matrix{T}, Nothing}
     f::Union{Vector{T}, Nothing}
     M::Union{Matrix{T}, Nothing}
 end

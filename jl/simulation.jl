@@ -394,10 +394,11 @@ function run_simulation(;
         @time data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
     end
     
-    get_rmp_data(data)
-    #@time plot_simulation_data(data, save_path)
-    #@time make_animation(data, save_path)
+    
+    # @time plot_simulation_data(data, save_path)
+    # @time make_animation(data, save_path)
 
+    hoge = get_f_norms_from_nodes_list(data.nodes)
     #return data
 end
 

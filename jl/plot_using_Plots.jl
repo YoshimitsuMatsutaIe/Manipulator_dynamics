@@ -179,9 +179,15 @@ function make_animation(data, path)
 
     anim = Animation()
     @gif for i in 1:step:length(data.q)
+        # _fig = draw_arm(
+        #     data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
+        # )
+
+        println(data.nodes[i] == data.nodes[i])
         _fig = draw_arm(
-            data.q[i], data.dq[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
+            data.nodes[i], data.goal[i], data.obs[i], data.t[i], data.jl[i]
         )
+
         frame(anim, _fig)
     end
 
@@ -192,3 +198,86 @@ function make_animation(data, path)
     
     println("アニメ作成完了")
 end 
+
+
+"""ロボットアームを描画（nodesから）"""
+function draw_arm(nodes, goal=nothing, obs=nothing, t=nothing, jl=nothing)
+
+
+    fig = plot()
+    x, y, z = nodes |> get_joint_positions_from_nodes |> split_vec_of_arrays
+    plot!(
+        fig,
+        x, y, z,
+        aspect_ratio = 1,
+        marker=:circle,
+        markerα = 0.5,
+        label = "joints",
+        xlabel = "X[m]", ylabel = "Y[m]", zlabel = "Z[m]"
+    )
+
+    cname = ("1", "2", "3", "4", "5", "6", "7", "GL")
+
+    cpoints_x_global = nodes |> get_cpoints_from_nodes
+    for (i, cs) in enumerate(cpoints_x_global)
+        x, y, z = split_vec_of_arrays(cs)
+        scatter!(
+            fig,
+            x, y, z,
+            label = cname[i],
+            markersize=5,
+        )
+    end
+
+    if !isnothing(goal)
+        scatter!(
+            [goal.x[1]], [goal.x[2]], [goal.x[3]],
+            markershape=:star6,
+            markersize=8,
+        )
+    end
+
+    if !isnothing(obs)
+        _o = get_x_from_State(obs)
+        x, y, z = split_vec_of_arrays(_o)
+        scatter!(
+            x, y, z,
+            markershape=:circle,
+            markerα = 0.5,
+            #markersize=2,
+            #markercolor="black"
+        )
+    end
+
+    x_max = 1.0
+    x_min = -1.0
+    y_max = 0.2
+    y_min = -1.0
+    z_max = 2.0
+    z_min = 0.0
+    max_range = max(x_max-x_min, y_max-y_min, z_max-z_min)*0.5
+    x_mid = (x_max + x_min) / 2
+    y_mid = (y_max + y_min) / 2
+    z_mid = (z_max + z_min) / 2
+
+    plot!(
+        fig,
+        xlims=(x_mid-max_range, x_mid+max_range),
+        ylims=(y_mid-max_range, y_mid+max_range),
+        zlims=(z_mid-max_range, z_mid+max_range),
+        legend = false,
+    )
+
+    id = findall(x->x==true, jl)
+    
+
+    fig2 = plot(fig, camera=(90, 0))
+    fig3 = plot(fig, camera=(0, 90))
+    fig4 = plot(fig, camera=(0,0))
+    fig_all = plot(
+        fig, fig2, fig3, fig4, layout=(2, 2),
+        size=(1000, 1000),
+        title = string(round(t, digits=2)) * "[s]" * ", " * string(id)
+    )
+    return fig_all
+end

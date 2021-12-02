@@ -2,7 +2,7 @@ sim_param :
   isLeft : True
   isWithMass : False
   saveRmpData : True
-  TIME_SPAN : 0.03
+  TIME_SPAN : 0.05
   TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1
@@ -109,7 +109,7 @@ env_param :
         x : 0.25
         y : -0.8
         z : 1.0
-        n : 100
+        n : 1
         alpha : 0.0
         beta : 0.0
         gamma : 0.0
@@ -121,7 +121,7 @@ env_param :
         x : 0.25
         y : -0.8
         z : 1.0
-        n : 100
+        n : 1
         alpha : 0.0
         beta : 90.0
         gamma : 0.0
