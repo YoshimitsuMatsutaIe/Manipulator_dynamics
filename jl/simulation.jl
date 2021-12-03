@@ -459,13 +459,14 @@ function get_time_string()
     _h = _nd |> Dates.hour |> string
     _m = _nd |> Dates.minute |> string
     _s = _nd |> Dates.second |> string
-    t = _Y * _M * _D * "-" * _h * _m * _s
+    t = _h * "_" * _m * "_" * _s
 
-    linpath = "../result_of_manipulator_dynamics/" * _Y * _M * _D * "/"
-    if !ispath(linpath)
-        mkdir(linpath)
-    end
-    path = linpath * t
+    linpath = "../result_of_manipulator_dynamics/" *
+    _Y * "_" * _M * "_" * _D * "/" *
+    t * "/"
+
+    mkpath(linpath)
+    path = linpath
     return path
 end
 
