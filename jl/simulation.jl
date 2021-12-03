@@ -399,9 +399,6 @@ function run_simulation(;
 
     #println(typeof(length(data.q)))
 
-    
-    
-    #
     return data
 end
 

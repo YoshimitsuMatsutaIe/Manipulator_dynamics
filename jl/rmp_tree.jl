@@ -170,14 +170,14 @@ function update_nodes!(;
                 nodes[i][j].x = q
                 nodes[i][j].dx = dq
                 nodes[i][j].Jo = Matrix{T}(I, 7, 7)
-                # nodes[i][j].f, nodes[i][j].M = get_natural(
-                #     rmp_param.joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx,
-                #     q_max, q_min, q_neutral
-                # )
+                nodes[i][j].f, nodes[i][j].M = get_natural(
+                    rmp_param.joint_limit_avoidance, nodes[i][1].x, nodes[i][1].dx,
+                    q_max, q_min, q_neutral
+                )
 
-                # ジョイント制限を考慮しない
-                nodes[i][j].f = zeros(T, 7)
-                nodes[i][j].M = zeros(T, 7, 7)
+                # # ジョイント制限を考慮しない
+                # nodes[i][j].f = zeros(T, 7)
+                # nodes[i][j].M = zeros(T, 7, 7)
 
 
             else  # root以外
@@ -194,13 +194,13 @@ function update_nodes!(;
 
                     f = zeros(T, 3)
                     M = zeros(T, 3, 3)
-                    # for k in 1:length(obs)
-                    #     _f, _M = get_natural(
-                    #         rmp_param.obs_avoidance[i-1], nodes[i][j].x, nodes[i][j].dx, obs[k].x
-                    #     )
-                    #     @. f += _f
-                    #     @. M += _M
-                    # end
+                    for k in 1:length(obs)
+                        _f, _M = get_natural(
+                            rmp_param.obs_avoidance[i-1], nodes[i][j].x, nodes[i][j].dx, obs[k].x
+                        )
+                        @. f += _f
+                        @. M += _M
+                    end
                     nodes[i][j].f = f
                     nodes[i][j].M = M
 

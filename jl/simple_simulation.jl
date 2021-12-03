@@ -43,7 +43,7 @@ end
 
 
 
-"""multi-robot-rmpのrmp"""
+"""multi-robot-rmpのアトラクタrmp"""
 function multi_attractor_rmp(x::Vector{T}, dx::Vector{T}, g::Vector{T}) where T
     wu = 10.0
     wl = 1.0
@@ -85,7 +85,7 @@ function multi_attractor_rmp(x::Vector{T}, dx::Vector{T}, g::Vector{T}) where T
 end
 
 
-"""multi-robot-rmpのrmp"""
+"""multi-robot-rmpの障害物回避rmp"""
 function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     R = 1.0
     alpha = 1e-5
@@ -108,11 +108,7 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     dJ = -z^(-2) .* (dz_vec' .- ((z_vec)' .* dz))
 
 
-
-
     dz = J * dx
-
-
 
     if z < 0
         w = 1.0e10

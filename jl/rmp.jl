@@ -279,8 +279,8 @@ end
 function f(p::RMPfromGDSAttractor{T}, x, dx, x₀, M) where T
     z = x .- x₀
     damp = p.gain / p.max_speed
-    #return M * (-p.gain .* soft_normal(z, p.f_alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
-    return (-p.gain .* ∇potential_2(z, p.alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
+    return M * (-p.gain .* soft_normal(z, p.f_alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
+    #return (-p.gain .* ∇potential_2(z, p.alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
 end
 
 """fromGDSのアトラクタの自然形式RMPを取得"""
