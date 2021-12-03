@@ -401,7 +401,7 @@ function run_simulation(;
     
     
     @time plot_simulation_data(data, save_path)
-    @time plot_rmp_f(data, save_path)
+    @time plot_rmp(data, save_path)
     @time make_animation(data, save_path)
 
     #println(typeof(length(data.q)))

@@ -7,7 +7,7 @@ using Plots
 
 
 """基本的なものだけplot"""
-function plot_simulation_data(data, path)
+function plot_simulation_data(data, savepath)
     println("基本グラフを作成中...")
     q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.q)
     fig_q = plot(data.t, q1, ylabel="q", label="_q1", legend=:outerright)
@@ -55,10 +55,9 @@ function plot_simulation_data(data, path)
     plot!(fig_u, data.t, q7, label="u*7")
 
 
-
     fig_error = plot(
         data.t, data.error,
-        label="err", ylabel="error [m]", ylims=(0.0,), legend=:outerright,
+        label="err", ylabel="error [m]", legend=:outerright,
         ylim=(0, maximum(data.error))
     )
     fig_dis_to_obs = plot(
@@ -66,39 +65,42 @@ function plot_simulation_data(data, path)
         label="obs", ylabel="min distance to obs [m]", ylims=(0.0,), legend=:outerright
     )
 
-    fig = plot(
+
+    fig_integrate = plot(
         fig_q, fig_dq, fig_ddq, fig_desired_ddq, fig_u, fig_error, fig_dis_to_obs,
         layout=(7,1),
         size=(500,1400)
     )
 
-
-    fname = path * "basic_his.png"
-    savefig(fig, fname)
+    fname = savepath * "basic_his.png"
+    savefig(fig_integrate, fname)
 
     println("基本グラフ作成完了")
 end
 
 
 """rmpのグラフに使用"""
-function naming(i::Int64, j::Int64)
+function styling(i::Int64, j::Int64)
     if i == 1
-        n = "root_"
+        n = "ro_"
+        ls = :dash
+        lw = 5
     elseif i == 9
         n = "ee_"
+        ls = :dashdot
+        lw = 5
     else
         n = "c" * string(i-1) * "_"
+        ls = :solid
+        lw = :auto
     end
     n *= string(j)
+
+    return (label=n, linestyle=ls, linewidth=lw)
 end
 
 """rmpの力fをグラフ化"""
-function plot_rmp_f(
-    data, save_path
-    )
-
-    println("rmpの力をグラフ化中...")
-
+function plot_rmp_f(data)
     f_norms_list = get_f_norms_from_nodes_list(
         length(data.q), data.nodes
     )
@@ -107,10 +109,12 @@ function plot_rmp_f(
     fig = plot()
     for (i, fs) in enumerate(f_norms_list)
         for (j, f) in enumerate(fs)
+            n = styling(i,j)
             plot!(
                 fig,
-                data.t, f, label = naming(i,j),
-                legend=:outerright,#linestyle=:dot
+                data.t, f, label = n.label,
+                legend=:outerright, #linestyle=n.linestyle,
+                linewidth=n.linewidth
             )
         end
     end
@@ -120,18 +124,61 @@ function plot_rmp_f(
         xlabel="time [sec]", ylabel="norm(f)",
         xlims=(0, data.t[end]), ylims=(0,)
     )
-    fname = path * "rmp_his.png"
-    savefig(fig, fname)
 
-    println("rmpの力グラフ作成完了!")
+    return fig
 end
 
 
+"""rmp関連だけplot"""
+function plot_rmp(data, savepath)
+    println("rmpグラフを作成中...")
+
+    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.q)
+    fig_q = plot(data.t, q1, ylabel="q", label="_q1_", legend=:outerright)
+    plot!(fig_q, data.t, q2, label="_q2_")
+    plot!(fig_q, data.t, q3, label="_q3_")
+    plot!(fig_q, data.t, q4, label="_q4_")
+    plot!(fig_q, data.t, q5, label="_q5_")
+    plot!(fig_q, data.t, q6, label="_q6_")
+    plot!(fig_q, data.t, q7, label="_q7_")
+
+    fig_error = plot(
+        data.t, data.error,
+        label="err_", ylabel="error [m]", ylims=(0.0,), legend=:outerright,
+        ylim=(0, maximum(data.error))
+    )
+    fig_dis_to_obs = plot(
+        data.t, data.dis_to_obs,
+        label="obs_", ylabel="min distance to obs [m]", ylims=(0.0,), legend=:outerright
+    )
+
+    fig_f = plot_rmp_f(data)
+
+    q1, q2, q3, q4, q5, q6, q7 = split_vec_of_arrays(data.desired_ddq)
+    fig_desired_ddq = plot(data.t, q1, ylabel="desired ddq", label="_a*1", legend=:outerright)
+    plot!(fig_desired_ddq, data.t, q2, label="_a*2")
+    plot!(fig_desired_ddq, data.t, q3, label="_a*3")
+    plot!(fig_desired_ddq, data.t, q4, label="_a*4")
+    plot!(fig_desired_ddq, data.t, q5, label="_a*5")
+    plot!(fig_desired_ddq, data.t, q6, label="_a*6")
+    plot!(fig_desired_ddq, data.t, q7, label="_a*7")
+
+    fig_integrate = plot(
+        fig_q, fig_error, fig_dis_to_obs, fig_f, fig_desired_ddq,
+        layout=(5,1),
+        size=(700,1800)
+    )
+
+    fname = savepath * "rmp_his.png"
+    savefig(fig_integrate, fname)
+
+    println("rmpグラフを作成完了")
+end
 
 
+"""ロボットアームを描画（q, dqの時刻歴から）"""
 function draw_arm(q=q_neutral, dq=zeros(Float64, 7), goal=nothing, obs=nothing, t=nothing, jl=nothing)
     _, _, _, _, _, _, _, _, cpoints_x_global, _, joints_x_global, _, = calc_all(q, dq)
-    #fig = plot(size=(800,700))
 
     fig = plot()
     x, y, z = split_vec_of_arrays(joints_x_global)
