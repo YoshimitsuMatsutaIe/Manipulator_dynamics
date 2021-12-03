@@ -65,8 +65,8 @@ rmp_param :
     goal_attractor :
       name : 'fromGDS'
       data : 
-        max_speed : 5.0
-        gain : 5.0
+        max_speed : 10.0
+        gain : 20.0
         f_alpha : 0.15
         sigma_alpha : 1.0
         sigma_gamma : 1.0

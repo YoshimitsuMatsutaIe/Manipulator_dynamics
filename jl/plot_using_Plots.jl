@@ -141,15 +141,18 @@ function plot_rmp(data, savepath)
     plot!(fig_q, data.t, q5, label="_q5_")
     plot!(fig_q, data.t, q6, label="_q6_")
     plot!(fig_q, data.t, q7, label="_q7_")
+    plot!(xlims=(0, data.t[end]),)
 
     fig_error = plot(
         data.t, data.error,
-        label="err_", ylabel="error [m]", ylims=(0.0,), legend=:outerright,
+        label="err_", ylabel="error [m]",
+        xlims=(0.0, data.t[end]), legend=:outerright,
         ylim=(0, maximum(data.error))
     )
     fig_dis_to_obs = plot(
         data.t, data.dis_to_obs,
-        label="obs_", ylabel="min distance to obs [m]", ylims=(0.0,), legend=:outerright
+        label="obs_", ylabel="min distance to obs [m]",
+        xlims=(0, data.t[end]), legend=:outerright
     )
 
     fig_f = plot_rmp_f(data)

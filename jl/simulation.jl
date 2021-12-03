@@ -177,26 +177,27 @@ u :
 end
 
 
-
-"""
-オイラー法で（質量考えずに）シミュレーション
-"""
-function whithout_mass(
-    q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, goal, rmp_param
+"""初期に行うやつ"""
+function init_Data(
+    q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, goal,
+    ;isWithMass::Bool,
     ) where T
-
+    
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
 
-    # 初期値
-    nodes₀ = update_nodes(nothing, q₀, dq₀)
-
+    if isWithMass
+        _u = Vector{Vector{T}}(undef, length(t))
+    else
+        _u = [zeros(T, 7) for i in 1:length(t)]
+    end
+    
     data = Data(
         t = t,
         q = Vector{Vector{T}}(undef, length(t)),
         dq = Vector{Vector{T}}(undef, length(t)),
         ddq = Vector{Vector{T}}(undef, length(t)),
         desired_ddq = Vector{Vector{T}}(undef, length(t)),
-        u = [zeros(T, 7) for i in 1:length(t)],
+        u = _u,
         error = Vector{T}(undef, length(t)),
         dis_to_obs = Vector{T}(undef, length(t)),
         nodes = Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
@@ -205,18 +206,40 @@ function whithout_mass(
         jl = Vector{BitVector}(undef, length(t)),
     )
 
+    # 初期値代入
+    nodes₀ = update_nodes(nothing, q₀, dq₀)  # 初期ノード
 
     data.q[1] = q₀
     data.dq[1] = dq₀
     data.ddq[1] = zeros(T, 7)
     data.desired_ddq[1] = zeros(T, 7)
-    data.error[1] = norm(goal.x - nodes₀[9][1].x)
+    data.error[1] = norm(goal.x - nodes₀[end][1].x)
     data.dis_to_obs[1] = 0.0
     data.nodes[1] = nodes₀
     data.goal[1] = goal
     data.obs[1] = obs
     data.jl[1] = check_JointLimitation(q₀)
 
+    if isWithMass
+        data.u[1] = zeros(T, 7)
+    end
+
+    return data
+end
+
+
+
+
+"""
+オイラー法で（質量考えずに）シミュレーション
+"""
+function whithout_mass(
+    q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, goal, rmp_param
+    ) where T
+
+    data = init_Data(
+        q₀, dq₀, TIME_SPAN, Δt, obs, goal, isWithMass=false
+        )
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
@@ -230,7 +253,7 @@ function whithout_mass(
             obs = data.obs[i],
             )
         #println("OK3")
-        data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
+        data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][end][1].x)
         data.dis_to_obs[i+1] = calc_min_dis_to_obs(data.nodes[i+1], obs)
 
         data.desired_ddq[i+1] = calc_desired_ddq(
@@ -281,39 +304,9 @@ function with_mass(
     obs::Vector{State{T}}, goal::State{T}, rmp_param
     ) where T
 
-    t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
-
-    # 初期値
-    nodes₀ = update_nodes(nothing, q₀, dq₀)
-
-
-    data = Data(
-        t = t,
-        q = Vector{Vector{T}}(undef, length(t)),
-        dq = Vector{Vector{T}}(undef, length(t)),
-        ddq = Vector{Vector{T}}(undef, length(t)),
-        desired_ddq = Vector{Vector{T}}(undef, length(t)),
-        u = Vector{Vector{T}}(undef, length(t)),
-        error = Vector{T}(undef, length(t)),
-        dis_to_obs = Vector{T}(undef, length(t)),
-        nodes = Vector{Vector{Vector{Node{T}}}}(undef, length(t)),
-        goal = Vector{State{T}}(undef, length(t)),
-        obs = Vector{Vector{State{T}}}(undef, length(t)),
-        jl = Vector{BitVector}(undef, length(t))
+    data = init_Data(
+        q₀, dq₀, TIME_SPAN, Δt, obs, goal, isWithMass=true
     )
-
-    # 初期値代入
-    data.q[1] = q₀
-    data.dq[1] = dq₀
-    data.ddq[1] = zeros(T, 7)
-    data.desired_ddq[1] = zeros(T, 7)
-    data.u[1] = zeros(T, 7)
-    data.error[1] = norm(goal.x - nodes₀[9][1].x)
-    data.nodes[1] = nodes₀
-    data.dis_to_obs[1] = calc_min_dis_to_obs(nodes₀, obs)
-    data.goal[1] = goal
-    data.obs[1] = obs
-    data.jl[1] = check_JointLimitation(q₀)
 
     ## 一定外乱
     F = zeros(T, 7)  # 外力なし
@@ -332,7 +325,7 @@ function with_mass(
             goal = data.goal[i],
             obs = data.obs[i],
         )
-        data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][9][1].x)
+        data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][end][1].x)
         data.dis_to_obs[i+1] = calc_min_dis_to_obs(data.nodes[i], data.obs[i])
 
         data.desired_ddq[i+1] = calc_desired_ddq(data.nodes[i])
