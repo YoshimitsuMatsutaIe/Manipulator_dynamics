@@ -2,7 +2,7 @@ sim_param :
   isLeft : True
   isWithMass : True
   saveRmpData : True
-  TIME_SPAN : 60.0
+  TIME_SPAN : 30.0
   TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1
@@ -65,19 +65,19 @@ rmp_param :
     goal_attractor :
       name : 'fromGDS'
       data : 
-        max_speed : 10.0
-        gain : 20.0
+        max_speed : 5.0
+        gain : 5.0
         f_alpha : 0.15
-        sigma_alpha : 2.0
-        sigma_gamma : 2.0
-        wu : 1.0
-        wl : 0.01
+        sigma_alpha : 1.0
+        sigma_gamma : 1.0
+        wu : 10.0
+        wl : 1.0
         alpha : 0.15
         epsilon : 1.0e-5
     collision_avoidance :
       name : 'fromGDS'
       data : 
-        rw : 0.5
+        rw : 0.1
         sigma : 1.0
         alpha : 0.01
   -  # ジョイント制限
@@ -109,19 +109,19 @@ env_param :
         x : 0.25
         y : -0.8
         z : 1.0
-        n : 100
+        n : 1
         alpha : 0.0
         beta : 0.0
         gamma : 0.0
-    -
-      name : 'cylinder'
-      data:
-        r : 0.1
-        L : 1.0
-        x : 0.25
-        y : -0.8
-        z : 1.0
-        n : 100
-        alpha : 0.0
-        beta : 90.0
-        gamma : 0.0
+    # -
+    #   name : 'cylinder'
+    #   data:
+    #     r : 0.1
+    #     L : 1.0
+    #     x : 0.25
+    #     y : -0.8
+    #     z : 1.0
+    #     n : 1
+    #     alpha : 0.0
+    #     beta : 90.0
+    #     gamma : 0.0

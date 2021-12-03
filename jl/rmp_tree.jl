@@ -249,8 +249,6 @@ function calc_desired_ddq(nodes::Vector{Vector{Node{T}}}) where T
 
     #println("root_f = ", root_f)
     #println("root_M = ", root_M)
-
-
     ddq = pinv(root_M) * root_f
     #println("ddq = ", ddq)
     #ddq = np.linalg.pinv(root_M) * root_f
