@@ -320,15 +320,27 @@ end
 
 """現実世界での加速度
 
-u : トルクベクトル R(7)  
-F : 外力ベクトル R(7)  
+u : 入力トルクベクトル R(7)  
 q : （現在の）関節角度ベクトル  
 dq : （現在の）関節角速度ベクトル  
+F : 外乱ベクトル R(7)  
+Fe : エンドエフェクタに加わる外力ベクトル  
+Jend : エンドエフェクタのヤコビ行列  
 """
-function calc_real_ddq(u::Vector{TU}, F::Vector{TU}, q::Vector{TU}, dq::Vector{TU}) where TU
-    #println(det(M(q)))
+function calc_real_ddq(;
+    u::Vector{TU}, q::Vector{TU}, dq::Vector{TU},
+    F::Vector{TU}, Fe::Vector{TU},
+    Jend::Matrix{TU}
+    ) where TU
+
+    @. F += J' * Fend
+
     inv(M(q)) * (u .+ F .- (C(q, dq) .+ G(q))) |> vec
 end
+
+
+
+
 
 #export calc_real_ddq
 

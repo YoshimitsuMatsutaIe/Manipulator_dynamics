@@ -279,6 +279,24 @@ function whithout_mass(
 end
 
 
+"""外力を計算
+
+仮定なのでおかしいかも  
+（実際には加えられた力がそのまま返されるので）  
+"""
+function externalF_at_ee(
+    x::Vector{T}, xd::Vector{T}, xe::Vector{T}, dx::Vector{T},
+    Pe::Matrix{T}, De::Matrix{T},
+    ) where T
+
+    if norm(x - xd) < 1e-5
+        return zeros(T, 7)
+    else
+        return -Pe*(x .- xe) .- De*dx
+end
+
+
+
 
 """
 ルンゲクッタ用
@@ -288,8 +306,14 @@ dq : 関節角速度ベクトル
 u : 入力トルクベクトル  
 F : 外力ベクトル  
 """
-function dx(;q::Vector{T}, dq::Vector{T}, u::Vector{T}, F::Vector{T}) where T
-    ddq = calc_real_ddq(u, F, q, dq)
+function dx(;
+    q::Vector{T}, dq::Vector{T}, u::Vector{T},
+    F::Vector{T},Fe::Vector{T},
+    Jend::Matrix{T}
+    ) where T
+    ddq = calc_real_ddq(
+        u=u, q=q, dq=dq, F=F, Fe=Fe, Jend=Jend
+    )
     return (dq = dq , ddq = ddq)
 end
 
@@ -311,6 +335,7 @@ function with_mass(
     ## 一定外乱
     F = zeros(T, 7)  # 外力なし
     #F = rand(T, 7) * 0.001
+
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1

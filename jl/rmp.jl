@@ -280,7 +280,7 @@ function f(p::RMPfromGDSAttractor{T}, x, dx, x₀, M) where T
     z = x .- x₀
     damp = p.gain / p.max_speed
     #return M * (-p.gain .* soft_normal(z, p.f_alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
-    return (-p.gain .* ∇potential_2(z, p.alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
+    return M * (-p.gain .* ∇potential_2(z, p.alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
 end
 
 """fromGDSのアトラクタの自然形式RMPを取得"""
@@ -537,8 +537,6 @@ eta_e : 外力の平衡位置に関するスケール係数
     a::T  # シグモイドのパラメータ
     eta_d::T
     eta_e::T
-    max_speed::T
-    gain::T
     f_alpha::T
     sigma_alpha::T
     sigma_gamma::T
@@ -565,7 +563,7 @@ hat(x) = x / norm(x)
 
 ・計算には使いません
 """
-function pot_I(e_d, eta_d, e_e, eta_e, a)
+function potential_I(e_d, eta_d, e_e, eta_e, a)
     alpha = sigmoid(norm(e_d), a)
     return (1-alpha)*soft_normal(e_d, eta_d) + alpha*soft_normal(e_e, eta_e)
 end
@@ -573,19 +571,17 @@ end
 
 
 """インピーダンスポテンシャルの勾配"""
-function ∇pot_I(p::RMPfromGDSImpedance{T}, e_d, eta_d, e_e, eta_e, a)
+function ∇potential_I(e_d, eta_d, e_e, eta_e, a)
     inv_M_d = inv(p.M_d)
     P_tilde_e = inv_M_d * p.P_e
-    D_tilde_e = inv_M_d * p.D_e
     P_tilde_d = inv_M_d * p.P_d
-    D_tilde_d = inv_M_d * p.D_d
 
-    alpha = sigmoid(norm(e_d), p.a)
+    alpha = sigmoid(norm(e_d), a)
 
-    t1 = -(1-alpha)*alpha * hat(e_d) * soft_normal(e_d, p.eta_d)
-    t2 = (1-alpha) * s_alpha(e_d, p.eta_d) * hat(e_d)
-    t3 = (1-alpha)*alpha * hat(e_e) * soft_normal(e_e, p.eta_e)
-    t4 = alpha * s_alpha(e_e, p.eta_e) * hat(e_e)
+    t1 = -(1-alpha)*alpha * hat(e_d) * soft_normal(e_d, eta_d)
+    t2 = (1-alpha) * s_alpha(e_d, eta_d) * hat(e_d)
+    t3 = (1-alpha)*alpha * hat(e_e) * soft_normal(e_e, eta_e)
+    t4 = alpha * s_alpha(e_e, eta_e) * hat(e_e)
 
     t1 .+ 
     P_tilde_d * t2 .+ 
@@ -596,26 +592,25 @@ end
 
 
 """インピーダンスRMPの慣性行列"""
-function inertia_matrix(y, p::RMPfromGDSImpedance{T}, y_d, y_e) where T
-    e_d = y .- y_d  # y_d ~ y_eと考えy_dを優先させる
-    e_e = y .- y_e
-    ∇pot = ∇pot(e_d, p.alpha, e_e, p.alpha)
+function inertia_matrix(p::RMPfromGDSImpedance{T}, e_d, e_e) where T
+    dim = length(x)
+    ∇pot = ∇potential_I(e_d, p.eta_d, e_e, p.eta_e, p.a)
     α = α_or_γ(e_d, p.sigma_alpha)
-    return w(e_d, p.sigma_gamma, p.wu, p.wl) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.epsilon).*Matrix{T}(I, 3, 3))
+    return w(e_d, p.sigma_gamma, p.wu, p.wl) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.epsilon).*Matrix{T}(I, dim, dim))
 end
 
 """力用"""
-function xMx(y, p::RMPfromGDSImpedance{T}, dy, y_d, y_e) where T
-    dx' * inertia_matrix(y, p, y_d, y_e) * dx
+function xMx(p::RMPfromGDSImpedance{T}, e_d, e_e, dy) where T
+    dy' * inertia_matrix(p, e_d, e_e) * dy
 end
 
 """曲率項"""
-function ξ(p::RMPfromGDSImpedance{T}, y, dy, y_d, y_e) where T
+function ξ(p::RMPfromGDSImpedance{T}, e_d, e_e, dy) where T
     # 第一項を計算
     #A = Matrix{T}(undef, 3, 3)
     A = zeros(T, dim, dim)
     for i in 1:3
-        _M(y) = inertia_matrix(y, p, y_d, y_E)[:, i]
+        _M(y) = inertia_matrix(p, e_d, e_E)[:, i]
         _jacobian_M = ForwardDiff.jacobian(_M, y)
         #println(_jacobian_M)
         A[:, i] = _jacobian_M * dy
@@ -623,18 +618,25 @@ function ξ(p::RMPfromGDSImpedance{T}, y, dy, y_d, y_e) where T
     A *= dy
 
     # 第二項を計算
-    _xMx(y) = xMx(y, p, dy, y_d, y_e)
+    _xMx(y) = xMx(p, e_d, e_e, dy)
     B = 1/2 .* ForwardDiff.gradient(_xMx, y)  # 便利
     
     return A .- B
 end
 
 """fromGDSのアトラクター力"""
-function f(p::RMPfromGDSImpedance{T}, y, dy, y_d, y_e, M) where T
-    z = x .- x₀
-    damp = p.gain / p.max_speed
+function f(p::RMPfromGDSImpedance{T}, e_d, e_e, dy, M) where T
+
+    inv_M_d = inv(p.M_d)
+    D_tilde_e = inv_M_d * p.D_e
+    D_tilde_d = inv_M_d * p.D_d
     #return M * (-p.gain .* soft_normal(z, p.f_alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
-    return (-p.gain .* ∇potential_2(z, p.alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
+
+    alpha = sigmoid(norm(e_d), a)
+
+    return -∇potential_I(e_d, p.eta_d, e_e, p.eta_e, p.a) .-
+    (D_tilde_d .+ alpha .* D_tilde_e) * dy .-
+    ξ(p, e_d, e_e, dy)
 end
 
 """"""
