@@ -534,8 +534,9 @@ eta_e : 外力の平衡位置に関するスケール係数
     P_d::Matrix{T}
     D_e::Matrix{T}
     P_e::Matrix{T}
-    # eta_d::T
-    # eta_e::T
+    a::T  # シグモイドのパラメータ
+    eta_d::T
+    eta_e::T
     max_speed::T
     gain::T
     f_alpha::T
@@ -547,13 +548,49 @@ eta_e : 外力の平衡位置に関するスケール係数
     epsilon::T
 end
 
+"""シグモイド関数"""
+sigmoid(x, a) = 1/(1+exp(-a*x))
 
-"""インピーダンスポテンシャル"""
-pot(e_d, eta_d, e_e, eta_e) = (soft_normal(e_d, eta_d) + soft_normal(e_e, eta_e)) / 2
+
+function s_alpha(x, η)
+    x_norm = norm(x)
+    (1-exp(-2*η*x_norm)) / (1+exp(-2*η*x_norm))
+end
+
+
+hat(x) = x / norm(x)
+
+
+"""インピーダンスポテンシャル
+
+・計算には使いません
+"""
+function pot_I(e_d, eta_d, e_e, eta_e, a)
+    alpha = sigmoid(norm(e_d), a)
+    return (1-alpha)*soft_normal(e_d, eta_d) + alpha*soft_normal(e_e, eta_e)
+end
+
+
 
 """インピーダンスポテンシャルの勾配"""
-function ∇pot(e_d, eta_d, e_e, eta_e)
-    (∇potential_2(e_d, eta_d) .+ ∇potential_2(e_e, eta_e)) ./ 2
+function ∇pot_I(p::RMPfromGDSImpedance{T}, e_d, eta_d, e_e, eta_e, a)
+    inv_M_d = inv(p.M_d)
+    P_tilde_e = inv_M_d * p.P_e
+    D_tilde_e = inv_M_d * p.D_e
+    P_tilde_d = inv_M_d * p.P_d
+    D_tilde_d = inv_M_d * p.D_d
+
+    alpha = sigmoid(norm(e_d), p.a)
+
+    t1 = -(1-alpha)*alpha * hat(e_d) * soft_normal(e_d, p.eta_d)
+    t2 = (1-alpha) * s_alpha(e_d, p.eta_d) * hat(e_d)
+    t3 = (1-alpha)*alpha * hat(e_e) * soft_normal(e_e, p.eta_e)
+    t4 = alpha * s_alpha(e_e, p.eta_e) * hat(e_e)
+
+    t1 .+ 
+    P_tilde_d * t2 .+ 
+    t3 .+ 
+    P_tilde_e * t4
 end
 
 
