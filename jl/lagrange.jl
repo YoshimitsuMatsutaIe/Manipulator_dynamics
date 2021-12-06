@@ -311,12 +311,12 @@ end
 計算トルク法です  
 q : 関節角度ベクトル  
 dq : 関節角速度ベクトル  
-ddq : （所望の）関節角速度ベクトル  
+desired_ddq : （所望の）関節角速度ベクトル  
 """
 function calc_torque(
-    q::Vector{TU}, dq::Vector{TU}, ddq::Vector{TU}
+    q::Vector{TU}, dq::Vector{TU}, desired_ddq::Vector{TU}
     ) where TU
-    M(q)*ddq .+ C(q, dq) .+ G(q) |> vec
+    M(q)*desired_ddq .+ C(q, dq) .+ G(q) |> vec
 end
 
 

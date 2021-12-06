@@ -302,6 +302,7 @@ function externalF_at_ee(
         return zero(x)
     else
         return -Pe*(x .- xe) .- De*dx |> vec
+    end
 end
 
 
@@ -318,6 +319,7 @@ function externalF_at_ee(;
         return zero(x)
     else
         return -pinv(Jend') * u |> vec
+    end
 end
 
 
@@ -342,7 +344,7 @@ end
 
 
 """ルンゲクッタのワンステップ"""
-function runge_kutta_onestep(q, dq, nodes, u, goal, Δt)
+function runge_kutta_onestep(q, dq, nodes, u, goal, Δt, F)
     # 1
     _exF = externalF_at_ee(
         x = nodes[end][end].x,
@@ -356,17 +358,17 @@ function runge_kutta_onestep(q, dq, nodes, u, goal, Δt)
         u = u,
         F = F,
         Fc = _exF,
-        Jend = data.nodes[i][end][end].Jo,
+        Jend = nodes[end][end].Jo,
     )
     
     # 2
-    q = q . + k1.dq .* Δt/2
-    dq = dq .+ k1.ddq .* Δt/2
+    _q = q .+ k1.dq .* Δt/2
+    _dq = dq .+ k1.ddq .* Δt/2
     _, _,
     _, _, _, _,
     _, Jos_cpoint_all,
     cpoints_x_global, cpoints_dx_global,
-    _, _ = calc_all(q, dq)
+    _, _ = calc_all(_q, _dq)
 
     _exF = externalF_at_ee(
         x = cpoints_x_global[end][end],
@@ -375,8 +377,8 @@ function runge_kutta_onestep(q, dq, nodes, u, goal, Δt)
         Jend = Jos_cpoint_all[end][end],
     )
     k2 = dx(
-        q=q,
-        dq=dq,
+        q=_q,
+        dq=_dq,
         u=u,
         F=F,
         Fc=_exF,
@@ -384,21 +386,56 @@ function runge_kutta_onestep(q, dq, nodes, u, goal, Δt)
     )
     
     # 3
+    _q = _q .+ k2.dq .* Δt/2
+    _dq = _dq .+ k2.ddq .* Δt/2
+    _, _,
+    _, _, _, _,
+    _, Jos_cpoint_all,
+    cpoints_x_global, cpoints_dx_global,
+    _, _ = calc_all(_q, _dq)
+    _exF = externalF_at_ee(
+        x = cpoints_x_global[end][end],
+        xd = goal.x,
+        u = u,
+        Jend = Jos_cpoint_all[end][end],
+    )
     k3 = dx(
-        q = data.q[i] .+ k2.dq .* Δt/2,
-        dq = data.dq[i] .+ k2.ddq .* Δt/2,
-        u = data.u[i+1],
-        F = F
-        )
+        q = _q,
+        dq = _dq,
+        u = u,
+        F = F,
+        Fc = _exF,
+        Jend = Jend=Jos_cpoint_all[end][end]
+    )
+    
+    # 4
+    _q = _q .+ k3.dq .* Δt
+    _dq = _dq .+ k3.ddq .* Δt
+    _, _,
+    _, _, _, _,
+    _, Jos_cpoint_all,
+    cpoints_x_global, cpoints_dx_global,
+    _, _ = calc_all(_q, _dq)
+    _exF = externalF_at_ee(
+        x = cpoints_x_global[end][end],
+        xd = goal.x,
+        u = u,
+        Jend = Jos_cpoint_all[end][end],
+    )
     k4 = dx(
-        q = data.q[i] .+ k3.dq .* Δt,
-        dq = data.dq[i] .+ k3.ddq .* Δt,
-        u = data.u[i+1],
-        F = F
-        )
-    data.ddq[i+1] = k1.ddq .+ 2 .* k2.ddq .+ 2 .* k3.ddq .+ k4.ddq
-    data.q[i+1] = data.q[i] .+ (k1.dq .+ 2 .* k2.dq .+ 2 .* k3.dq .+ k4.dq) .* Δt/6
-    data.dq[i+1] = data.dq[i] .+ data.ddq[i+1] .* Δt/6
+        q = _q,
+        dq = _dq,
+        u = u,
+        F = F,
+        Fc = _exF,
+        Jend = Jos_cpoint_all[end][end]
+    )
+    
+    ddq = k1.ddq .+ 2 .* k2.ddq .+ 2 .* k3.ddq .+ k4.ddq
+    dq = dq .+ ddq .* Δt/6
+    q = q .+ (k1.dq .+ 2 .* k2.dq .+ 2 .* k3.dq .+ k4.dq) .* Δt/6
+    
+    return ddq, dq, q
 end
 
 
@@ -441,7 +478,7 @@ function with_mass(
 
         # ルンゲクッタで次の値を決定
         data.ddq[i+1], data.dq[i+1], data.q[i+1] = runge_kutta_onestep(
-            data.q[i], data.dq[i], data.nodes[i], data.u[i], data.goal[i], Δt
+            data.q[i], data.dq[i], data.nodes[i], data.u[i], data.goal[i], Δt, F
         )
 
 
