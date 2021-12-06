@@ -318,7 +318,7 @@ function externalF_at_ee(;
     if norm(x - xd) < 1e-5
         return zero(x)
     else
-        return -pinv(Jend') * u |> vec
+        return -pinv(transpose(Jend)) * u |> vec
     end
 end
 
@@ -352,6 +352,8 @@ function runge_kutta_onestep(q, dq, nodes, u, goal, Δt, F)
         u = u,
         Jend = nodes[end][end].Jo,
     )
+    # println(_exF)
+    # println(size(nodes[end][end].Jo))
     k1 = dx(
         q = q,
         dq = dq,
