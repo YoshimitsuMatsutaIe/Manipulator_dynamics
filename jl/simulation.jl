@@ -174,6 +174,8 @@ u :
     goal::Vector{State{T}}
     obs::Vector{Vector{State{T}}}
     jl::Vector{BitVector}
+    F::Vector{Vector{T}}  # 外力トルクベクトル
+    Fend::Vector{Vector{T}}  # 実際に対称に加えた力
 end
 
 
@@ -187,8 +189,12 @@ function init_Data(
 
     if isWithMass
         _u = Vector{Vector{T}}(undef, length(t))
+        _F = Vector{Vector{T}}(undef, length(t))
+        _Fend = Vector{Vector{T}}(undef, length(t))
     else
         _u = [zeros(T, 7) for i in 1:length(t)]
+        _F = [zeros(T, 7) for i in 1:length(t)]
+        _Fend = [zeros(T, 3) for i in 1:length(t)]
     end
     
     data = Data(
@@ -204,6 +210,8 @@ function init_Data(
         goal = Vector{State{T}}(undef, length(t)),
         obs = Vector{Vector{State{T}}}(undef, length(t)),
         jl = Vector{BitVector}(undef, length(t)),
+        F = _F,
+        Fend = _Fend,
     )
 
     # 初期値代入
@@ -222,6 +230,8 @@ function init_Data(
 
     if isWithMass
         data.u[1] = zeros(T, 7)
+        data.F[1] = zeros(T, 7)
+        data.Fend[1] = zeros(T, 3)
     end
 
     return data
@@ -291,7 +301,7 @@ function externalF_at_ee(
     if norm(x - xd) < 1e-5
         return zero(x)
     else
-        return -Pe*(x .- xe) .- De*dx
+        return -Pe*(x .- xe) .- De*dx |> vec
 end
 
 
@@ -299,7 +309,7 @@ end
 
 そっくりそのまま返す
 """
-function externalF_at_ee(
+function externalF_at_ee(;
     x::Vector{T}, xd::Vector{T},
     u::Vector{T}, Jend::Matrix{T},
     ) where T
@@ -307,7 +317,7 @@ function externalF_at_ee(
     if norm(x - xd) < 1e-5
         return zero(x)
     else
-        return -pinv(Jend') * u
+        return -pinv(Jend') * u |> vec
 end
 
 
@@ -367,13 +377,19 @@ function with_mass(
         data.desired_ddq[i+1] = calc_desired_ddq(data.nodes[i])
         data.u[i+1] = calc_torque(data.q[i], data.dq[i], data.desired_ddq[i+1])
 
+
         # ルンゲクッタで次の値を決定
+        F = externalF_at_ee(
+            x = data.nodes[i+1]
+
+        )
         k1 = dx(
             q = data.q[i],
             dq = data.dq[i],
             u = data.u[i+1],
             F = F
             )
+        
         k2 = dx(
             q = data.q[i] .+ k1.dq .* Δt/2,
             dq = data.dq[i] .+ k1.ddq .* Δt/2,
