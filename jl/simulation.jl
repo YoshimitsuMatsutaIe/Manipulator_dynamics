@@ -341,6 +341,67 @@ function dx(;
 end
 
 
+"""ルンゲクッタのワンステップ"""
+function runge_kutta_onestep(q, dq, nodes, u, goal, Δt)
+    # 1
+    _exF = externalF_at_ee(
+        x = nodes[end][end].x,
+        xd = goal.x,
+        u = u,
+        Jend = nodes[end][end].Jo,
+    )
+    k1 = dx(
+        q = q,
+        dq = dq,
+        u = u,
+        F = F,
+        Fc = _exF,
+        Jend = data.nodes[i][end][end].Jo,
+    )
+    
+    # 2
+    q = q . + k1.dq .* Δt/2
+    dq = dq .+ k1.ddq .* Δt/2
+    _, _,
+    _, _, _, _,
+    _, Jos_cpoint_all,
+    cpoints_x_global, cpoints_dx_global,
+    _, _ = calc_all(q, dq)
+
+    _exF = externalF_at_ee(
+        x = cpoints_x_global[end][end],
+        xd = goal.x,
+        u = u,
+        Jend = Jos_cpoint_all[end][end],
+    )
+    k2 = dx(
+        q=q,
+        dq=dq,
+        u=u,
+        F=F,
+        Fc=_exF,
+        Jend=Jos_cpoint_all[end][end]
+    )
+    
+    # 3
+    k3 = dx(
+        q = data.q[i] .+ k2.dq .* Δt/2,
+        dq = data.dq[i] .+ k2.ddq .* Δt/2,
+        u = data.u[i+1],
+        F = F
+        )
+    k4 = dx(
+        q = data.q[i] .+ k3.dq .* Δt,
+        dq = data.dq[i] .+ k3.ddq .* Δt,
+        u = data.u[i+1],
+        F = F
+        )
+    data.ddq[i+1] = k1.ddq .+ 2 .* k2.ddq .+ 2 .* k3.ddq .+ k4.ddq
+    data.q[i+1] = data.q[i] .+ (k1.dq .+ 2 .* k2.dq .+ 2 .* k3.dq .+ k4.dq) .* Δt/6
+    data.dq[i+1] = data.dq[i] .+ data.ddq[i+1] .* Δt/6
+end
+
+
 """
 質量を考えてシミュレーション実行
 
@@ -379,39 +440,11 @@ function with_mass(
 
 
         # ルンゲクッタで次の値を決定
-        F = externalF_at_ee(
-            x = data.nodes[i+1]
-
+        data.ddq[i+1], data.dq[i+1], data.q[i+1] = runge_kutta_onestep(
+            data.q[i], data.dq[i], data.nodes[i], data.u[i], data.goal[i], Δt
         )
-        k1 = dx(
-            q = data.q[i],
-            dq = data.dq[i],
-            u = data.u[i+1],
-            F = F
-            )
-        
-        k2 = dx(
-            q = data.q[i] .+ k1.dq .* Δt/2,
-            dq = data.dq[i] .+ k1.ddq .* Δt/2,
-            u = data.u[i+1],
-            F = F
-            )
-        k3 = dx(
-            q = data.q[i] .+ k2.dq .* Δt/2,
-            dq = data.dq[i] .+ k2.ddq .* Δt/2,
-            u = data.u[i+1],
-            F = F
-            )
-        k4 = dx(
-            q = data.q[i] .+ k3.dq .* Δt,
-            dq = data.dq[i] .+ k3.ddq .* Δt,
-            u = data.u[i+1],
-            F = F
-            )
 
-        data.ddq[i+1] = k1.ddq .+ 2 .* k2.ddq .+ 2 .* k3.ddq .+ k4.ddq
-        data.q[i+1] = data.q[i] .+ (k1.dq .+ 2 .* k2.dq .+ 2 .* k3.dq .+ k4.dq) .* Δt/6
-        data.dq[i+1] = data.dq[i] .+ data.ddq[i+1] .* Δt/6
+
         data.goal[i+1] = goal
         data.obs[i+1] = obs
         data.jl[i+1] = check_JointLimitation(data.q[i+1])

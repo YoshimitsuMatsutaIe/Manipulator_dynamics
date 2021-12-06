@@ -313,7 +313,9 @@ q : 関節角度ベクトル
 dq : 関節角速度ベクトル  
 ddq : （所望の）関節角速度ベクトル  
 """
-function calc_torque(q::Vector{TU}, dq::Vector{TU}, ddq::Vector{TU}) where TU
+function calc_torque(
+    q::Vector{TU}, dq::Vector{TU}, ddq::Vector{TU}
+    ) where TU
     M(q)*ddq .+ C(q, dq) .+ G(q) |> vec
 end
 
