@@ -324,16 +324,16 @@ u : 入力トルクベクトル R(7)
 q : （現在の）関節角度ベクトル  
 dq : （現在の）関節角速度ベクトル  
 F : 外乱ベクトル R(7)  
-Fe : エンドエフェクタに加わる外力ベクトル  
+Fc : エンドエフェクタに加わる外力ベクトル  
 Jend : エンドエフェクタのヤコビ行列  
 """
 function calc_real_ddq(;
     u::Vector{TU}, q::Vector{TU}, dq::Vector{TU},
-    F::Vector{TU}, Fe::Vector{TU},
+    F::Vector{TU}, Fc::Vector{TU},
     Jend::Matrix{TU}
     ) where TU
 
-    @. F += J' * Fend
+    @. F += Jend' * Fc
 
     inv(M(q)) * (u .+ F .- (C(q, dq) .+ G(q))) |> vec
 end

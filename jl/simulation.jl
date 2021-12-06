@@ -274,7 +274,6 @@ function whithout_mass(
 
 
     end
-
     data
 end
 
@@ -290,12 +289,26 @@ function externalF_at_ee(
     ) where T
 
     if norm(x - xd) < 1e-5
-        return zeros(T, 7)
+        return zero(x)
     else
         return -Pe*(x .- xe) .- De*dx
 end
 
 
+"""外力を計算
+
+そっくりそのまま返す
+"""
+function externalF_at_ee(
+    x::Vector{T}, xd::Vector{T},
+    u::Vector{T}, Jend::Matrix{T},
+    ) where T
+
+    if norm(x - xd) < 1e-5
+        return zero(x)
+    else
+        return -pinv(Jend') * u
+end
 
 
 """
@@ -308,11 +321,11 @@ F : 外力ベクトル
 """
 function dx(;
     q::Vector{T}, dq::Vector{T}, u::Vector{T},
-    F::Vector{T},Fe::Vector{T},
+    F::Vector{T}, Fc::Vector{T},
     Jend::Matrix{T}
     ) where T
     ddq = calc_real_ddq(
-        u=u, q=q, dq=dq, F=F, Fe=Fe, Jend=Jend
+        u=u, q=q, dq=dq, F=F, Fc=Fc, Jend=Jend
     )
     return (dq = dq , ddq = ddq)
 end
@@ -333,14 +346,12 @@ function with_mass(
     )
 
     ## 一定外乱
-    F = zeros(T, 7)  # 外力なし
+    F = zeros(T, 7)  # なし
     #F = rand(T, 7) * 0.001
 
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
-        #F = rand(T, 7) * 0.0001
-        
 
         data.nodes[i+1] = update_nodes!(
             nodes = deepcopy(data.nodes[i]),
@@ -385,9 +396,6 @@ function with_mass(
         data.ddq[i+1] = k1.ddq .+ 2 .* k2.ddq .+ 2 .* k3.ddq .+ k4.ddq
         data.q[i+1] = data.q[i] .+ (k1.dq .+ 2 .* k2.dq .+ 2 .* k3.dq .+ k4.dq) .* Δt/6
         data.dq[i+1] = data.dq[i] .+ data.ddq[i+1] .* Δt/6
-        
-        
-        
         data.goal[i+1] = goal
         data.obs[i+1] = obs
         data.jl[i+1] = check_JointLimitation(data.q[i+1])
