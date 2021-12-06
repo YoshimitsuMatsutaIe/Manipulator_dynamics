@@ -149,6 +149,14 @@ function plot_rmp(data, savepath)
         xlims=(0.0, data.t[end]), legend=:outerright,
         ylim=(0, maximum(data.error))
     )
+
+    fig_force = plot(
+        data.t, norm.(data.Fc),
+        label="extF", ylabel="eforce [N]",
+        xlims=(0.0, data.t[end]), legend=:outerright,
+        #ylim=(0, maximum(data.error))
+    )
+
     fig_dis_to_obs = plot(
         data.t, data.dis_to_obs,
         label="obs_", ylabel="min distance to obs [m]",
@@ -167,9 +175,9 @@ function plot_rmp(data, savepath)
     plot!(fig_desired_ddq, data.t, q7, label="_a*7")
 
     fig_integrate = plot(
-        fig_q, fig_error, fig_dis_to_obs, fig_f, fig_desired_ddq,
-        layout=(5,1),
-        size=(700,1800)
+        fig_q, fig_error, fig_force, fig_dis_to_obs, fig_f, fig_desired_ddq,
+        layout=(6,1),
+        size=(700,1900)
     )
 
     fname = savepath * "rmp_his.png"

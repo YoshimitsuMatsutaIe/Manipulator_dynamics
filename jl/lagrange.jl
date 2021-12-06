@@ -335,12 +335,14 @@ function calc_real_ddq(;
     Jend::Matrix{TU}
     ) where TU
 
-    println(size(transpose(Jend)))
-    println(transpose(Jend) * Fc)
+    # println(size(transpose(Jend)))
+    # println(transpose(Jend) * Fc)
+    # println(F)
 
-    @. F += transpose(Jend) * Fc
+    _Fc = transpose(Jend) * Fc
+    @. F += _Fc
 
-    println(F)
+    # println(F)
 
     inv(M(q)) * (u .+ F .- (C(q, dq) .+ G(q))) |> vec
 end

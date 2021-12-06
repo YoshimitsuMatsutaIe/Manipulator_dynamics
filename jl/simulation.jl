@@ -175,7 +175,7 @@ u :
     obs::Vector{Vector{State{T}}}
     jl::Vector{BitVector}
     F::Vector{Vector{T}}  # 外力トルクベクトル
-    Fend::Vector{Vector{T}}  # 実際に対称に加えた力
+    Fc::Vector{Vector{T}}  # 実際に対象に加えた力
 end
 
 
@@ -190,11 +190,11 @@ function init_Data(
     if isWithMass
         _u = Vector{Vector{T}}(undef, length(t))
         _F = Vector{Vector{T}}(undef, length(t))
-        _Fend = Vector{Vector{T}}(undef, length(t))
+        _Fc = Vector{Vector{T}}(undef, length(t))
     else
         _u = [zeros(T, 7) for i in 1:length(t)]
         _F = [zeros(T, 7) for i in 1:length(t)]
-        _Fend = [zeros(T, 3) for i in 1:length(t)]
+        _Fc = [zeros(T, 3) for i in 1:length(t)]
     end
     
     data = Data(
@@ -211,7 +211,7 @@ function init_Data(
         obs = Vector{Vector{State{T}}}(undef, length(t)),
         jl = Vector{BitVector}(undef, length(t)),
         F = _F,
-        Fend = _Fend,
+        Fc = _Fc,
     )
 
     # 初期値代入
@@ -221,7 +221,7 @@ function init_Data(
     data.dq[1] = dq₀
     data.ddq[1] = zeros(T, 7)
     data.desired_ddq[1] = zeros(T, 7)
-    data.error[1] = norm(goal.x - nodes₀[end][1].x)
+    data.error[1] = norm(goal.x - nodes₀[end][end].x)
     data.dis_to_obs[1] = 0.0
     data.nodes[1] = nodes₀
     data.goal[1] = goal
@@ -231,7 +231,7 @@ function init_Data(
     if isWithMass
         data.u[1] = zeros(T, 7)
         data.F[1] = zeros(T, 7)
-        data.Fend[1] = zeros(T, 3)
+        data.Fc[1] = zeros(T, 3)
     end
 
     return data
@@ -263,7 +263,7 @@ function whithout_mass(
             obs = data.obs[i],
             )
         #println("OK3")
-        data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][end][1].x)
+        data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][end][end].x)
         data.dis_to_obs[i+1] = calc_min_dis_to_obs(data.nodes[i+1], obs)
 
         data.desired_ddq[i+1] = calc_desired_ddq(
@@ -315,9 +315,11 @@ function externalF_at_ee(;
     u::Vector{T}, Jend::Matrix{T},
     ) where T
 
-    if norm(x - xd) < 1e-5
+    if norm(x - xd) > 0.001
+        #println("範囲外")
         return zero(x)
     else
+        #println("接触!!!")
         return -pinv(transpose(Jend)) * u |> vec
     end
 end
@@ -471,7 +473,7 @@ function with_mass(
             goal = data.goal[i],
             obs = data.obs[i],
         )
-        data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][end][1].x)
+        data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][end][end].x)
         data.dis_to_obs[i+1] = calc_min_dis_to_obs(data.nodes[i], data.obs[i])
 
         data.desired_ddq[i+1] = calc_desired_ddq(data.nodes[i])
@@ -483,6 +485,13 @@ function with_mass(
             data.q[i], data.dq[i], data.nodes[i], data.u[i], data.goal[i], Δt, F
         )
 
+        data.F[i+1] = F
+        data.Fc[i+1] = externalF_at_ee(
+            x = data.nodes[i][end][end].x,
+            xd = data.goal[i].x,
+            u = data.u[i],
+            Jend = data.nodes[i][end][end].Jo,
+        )
 
         data.goal[i+1] = goal
         data.obs[i+1] = obs
