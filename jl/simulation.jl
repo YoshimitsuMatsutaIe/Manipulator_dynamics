@@ -287,17 +287,21 @@ end
 
 """外力を計算
 
-仮定なのでおかしいかも
-（実際には加えられた力がそのまま返されるので）
+xdのx座標が左に来たらそれに比例した反力
 """
 function externalF_at_ee(
-    x::Vector{T}, xd::Vector{T}, xe::Vector{T}, dx::Vector{T},
-    Pe::Matrix{T}, De::Matrix{T},
+    x::Vector{T}, xd::Vector{T}, dx::Vector{T}, t
     ) where T
 
-    if norm(x - xd) > 1e-5
+    if x[1] >= xd[1]
         return zero(x)
     else
+        println("t = ", t)
+        println("接触!!!")
+        xe = [x[1]-xd[1], x[2], x[3]]  # コンプライアンス中心
+        Pe = diagm([5.0, 0.0, 0.0])
+        De = diagm([1.0, 0.0, 0.0])
+        println("反発力 = ", -Pe*(x .- xe) .- De*dx)
         return -Pe*(x .- xe) .- De*dx |> vec
     end
 end
@@ -305,7 +309,7 @@ end
 
 """外力を計算
 
-そっくりそのまま返す
+そっくりそのまま返す（難しい）
 """
 function externalF_at_ee(;
     x::Vector{T}, xd::Vector{T},
@@ -345,11 +349,18 @@ end
 
 """オイラー法"""
 function euler_onestep(q, dq, nodes, u, goal, Δt, F)
+    # _exF = externalF_at_ee(
+    #     x = nodes[end][end].x,
+    #     xd = goal.x,
+    #     u = u,
+    #     Jend = nodes[end][end].Jo,
+    # )
+
     _exF = externalF_at_ee(
-        x = nodes[end][end].x,
-        xd = goal.x,
-        u = u,
-        Jend = nodes[end][end].Jo,
+        nodes[end][end].x,
+        goal.x,
+        nodes[end][end].dx,
+        0.0
     )
 
     k1 = dx(
@@ -493,7 +504,7 @@ function with_mass(
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
-        println("t = ", data.t[i])
+        #println("t = ", data.t[i])
         data.nodes[i+1] = update_nodes!(
             nodes = deepcopy(data.nodes[i]),
             q = data.q[i],
@@ -520,11 +531,18 @@ function with_mass(
         )
 
         data.F[i+1] = F
+        # data.Fc[i+1] = externalF_at_ee(
+        #     x = data.nodes[i][end][end].x,
+        #     xd = data.goal[i].x,
+        #     u = data.u[i],
+        #     Jend = data.nodes[i][end][end].Jo,
+        # )
+
         data.Fc[i+1] = externalF_at_ee(
-            x = data.nodes[i][end][end].x,
-            xd = data.goal[i].x,
-            u = data.u[i],
-            Jend = data.nodes[i][end][end].Jo,
+            data.nodes[i][end][end].x,
+            goal.x,
+            data.nodes[i][end][end].dx,
+            data.t[i]
         )
 
         data.goal[i+1] = goal
