@@ -30,7 +30,7 @@ using .Dynamics
 
 """動かない障害物をセット
 
-obs_param : yamlを読んで作ったObsParam_の入ったリスト  
+obs_param : yamlを読んで作ったObsParam_の入ったリスト
 """
 function set_obs(obs_param)
     if isnothing(obs_param)
@@ -86,7 +86,7 @@ function set_rmp(rmp_param)
                 push!(goal, RMPfromGDSAttractor(;_p...))
             end
         end
-        
+
         # 障害物回避
         if haskey(p, "collision_avoidance") && !isnothing(p["collision_avoidance"])
             po = p["collision_avoidance"]
@@ -129,9 +129,9 @@ function calc_min_dis_to_obs(
     nodes::Vector{Vector{Node{T}}}, obs::Vector{State{T}}
     ) where T
     dis_to_obs = 1.0  # 障害物への最小近接距離
-    
+
     _temp_dis_to_obs = Vector{T}(undef, length(obs))
-    
+
     for i in 2:9
         for j in 1:length(nodes[i])
             for k in 1:length(obs)
@@ -146,7 +146,7 @@ function calc_min_dis_to_obs(
                 dis_to_obs = _d
             end
         end
-        
+
     end
     return dis_to_obs
 end
@@ -154,12 +154,12 @@ end
 
 """シミュレーションのデータ
 
-t : 時刻  
-q : ジョイントベクトルのリスト  
-dq :  
-ddq :  
-desired_ddq :  
-u :  
+t : 時刻
+q : ジョイントベクトルのリスト
+dq :
+ddq :
+desired_ddq :
+u :
 """
 @with_kw struct Data{T}
     t::StepRangeLen{T}  # 時刻
@@ -184,7 +184,7 @@ function init_Data(
     q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T, obs, goal,
     ;isWithMass::Bool,
     ) where T
-    
+
     t = range(0.0, TIME_SPAN, step = Δt)  # 時間軸
 
     if isWithMass
@@ -196,7 +196,7 @@ function init_Data(
         _F = [zeros(T, 7) for i in 1:length(t)]
         _Fc = [zeros(T, 3) for i in 1:length(t)]
     end
-    
+
     data = Data(
         t = t,
         q = Vector{Vector{T}}(undef, length(t)),
@@ -261,8 +261,7 @@ function whithout_mass(
             rmp_param = rmp_param,
             goal = data.goal[i],
             obs = data.obs[i],
-            )
-        #println("OK3")
+        )
         data.error[i+1] = norm(data.goal[i].x .- data.nodes[i][end][end].x)
         data.dis_to_obs[i+1] = calc_min_dis_to_obs(data.nodes[i+1], obs)
 
@@ -270,9 +269,7 @@ function whithout_mass(
             data.nodes[i]
             )
         data.ddq[i+1] = data.desired_ddq[i+1]
-
         data.q[i+1] = data.q[i] .+ data.dq[i]*Δt
-        #q[i+1] = zeros(T,7)
         data.dq[i+1] = data.dq[i] .+ data.ddq[i]*Δt
         data.goal[i+1] = goal
         data.obs[i+1] = obs
@@ -290,15 +287,15 @@ end
 
 """外力を計算
 
-仮定なのでおかしいかも  
-（実際には加えられた力がそのまま返されるので）  
+仮定なのでおかしいかも
+（実際には加えられた力がそのまま返されるので）
 """
 function externalF_at_ee(
     x::Vector{T}, xd::Vector{T}, xe::Vector{T}, dx::Vector{T},
     Pe::Matrix{T}, De::Matrix{T},
     ) where T
 
-    if norm(x - xd) < 1e-5
+    if norm(x - xd) > 1e-5
         return zero(x)
     else
         return -Pe*(x .- xe) .- De*dx |> vec
@@ -315,23 +312,24 @@ function externalF_at_ee(;
     u::Vector{T}, Jend::Matrix{T},
     ) where T
 
-    if norm(x - xd) > 0.001
+    if norm(x - xd) > 0.005
         #println("範囲外")
         return zero(x)
     else
-        #println("接触!!!")
+        println("接触!!!")
+        println("物体からの反力の大きさ = ", norm(pinv(transpose(Jend)) * u))
         return -pinv(transpose(Jend)) * u |> vec
     end
 end
 
 
 """
-ルンゲクッタ用
+ルンゲクッタとオイラー用
 
-q : 関節角度ベクトル  
-dq : 関節角速度ベクトル  
-u : 入力トルクベクトル  
-F : 外力ベクトル  
+q : 関節角度ベクトル
+dq : 関節角速度ベクトル
+u : 入力トルクベクトル
+F : 外力ベクトル
 """
 function dx(;
     q::Vector{T}, dq::Vector{T}, u::Vector{T},
@@ -343,6 +341,34 @@ function dx(;
     )
     return (dq = dq , ddq = ddq)
 end
+
+
+"""オイラー法"""
+function euler_onestep(q, dq, nodes, u, goal, Δt, F)
+    _exF = externalF_at_ee(
+        x = nodes[end][end].x,
+        xd = goal.x,
+        u = u,
+        Jend = nodes[end][end].Jo,
+    )
+
+    k1 = dx(
+        q = q,
+        dq = dq,
+        u = u,
+        F = F,
+        Fc = _exF,
+        Jend = nodes[end][end].Jo,
+    )
+
+
+    ddq = k1.ddq
+    dq = dq .+ k1.ddq .* Δt
+    q = q .+ k1.dq .*Δt
+
+    return ddq, dq, q
+end
+
 
 
 """ルンゲクッタのワンステップ"""
@@ -364,7 +390,7 @@ function runge_kutta_onestep(q, dq, nodes, u, goal, Δt, F)
         Fc = _exF,
         Jend = nodes[end][end].Jo,
     )
-    
+
     # 2
     _q = q .+ k1.dq .* Δt/2
     _dq = dq .+ k1.ddq .* Δt/2
@@ -388,7 +414,7 @@ function runge_kutta_onestep(q, dq, nodes, u, goal, Δt, F)
         Fc=_exF,
         Jend=Jos_cpoint_all[end][end]
     )
-    
+
     # 3
     _q = _q .+ k2.dq .* Δt/2
     _dq = _dq .+ k2.ddq .* Δt/2
@@ -411,7 +437,7 @@ function runge_kutta_onestep(q, dq, nodes, u, goal, Δt, F)
         Fc = _exF,
         Jend = Jend=Jos_cpoint_all[end][end]
     )
-    
+
     # 4
     _q = _q .+ k3.dq .* Δt
     _dq = _dq .+ k3.ddq .* Δt
@@ -434,19 +460,22 @@ function runge_kutta_onestep(q, dq, nodes, u, goal, Δt, F)
         Fc = _exF,
         Jend = Jos_cpoint_all[end][end]
     )
-    
+
     ddq = k1.ddq .+ 2 .* k2.ddq .+ 2 .* k3.ddq .+ k4.ddq
     dq = dq .+ ddq .* Δt/6
     q = q .+ (k1.dq .+ 2 .* k2.dq .+ 2 .* k3.dq .+ k4.dq) .* Δt/6
-    
+
+
     return ddq, dq, q
 end
+
+
 
 
 """
 質量を考えてシミュレーション実行
 
-ルンゲクッタを使用  
+ルンゲクッタを使用
 """
 function with_mass(
     q₀::Vector{T}, dq₀::Vector{T}, TIME_SPAN::T, Δt::T,
@@ -464,7 +493,7 @@ function with_mass(
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
-
+        println("t = ", data.t[i])
         data.nodes[i+1] = update_nodes!(
             nodes = deepcopy(data.nodes[i]),
             q = data.q[i],
@@ -480,8 +509,13 @@ function with_mass(
         data.u[i+1] = calc_torque(data.q[i], data.dq[i], data.desired_ddq[i+1])
 
 
-        # ルンゲクッタで次の値を決定
-        data.ddq[i+1], data.dq[i+1], data.q[i+1] = runge_kutta_onestep(
+        # # ルンゲクッタで次の値を決定
+        # data.ddq[i+1], data.dq[i+1], data.q[i+1] = runge_kutta_onestep(
+        #     data.q[i], data.dq[i], data.nodes[i], data.u[i], data.goal[i], Δt, F
+        # )
+
+        # オイラー法で次の値を決定
+        data.ddq[i+1], data.dq[i+1], data.q[i+1] = euler_onestep(
             data.q[i], data.dq[i], data.nodes[i], data.u[i], data.goal[i], Δt, F
         )
 
@@ -521,8 +555,8 @@ function run_simulation(;
     else
         @time data = whithout_mass(q₀, dq₀, TIME_SPAN, Δt, obs, goal, rmps)
     end
-    
-    
+
+
     @time plot_simulation_data(data, save_path)
     @time plot_rmp(data, save_path)
     @time make_animation(data, save_path)
@@ -537,9 +571,9 @@ end
 
 """ランナー
 
-設定を読み込みシミュレーションを実行  
-config : yamlファイルのパス  
-path : 結果保存先のパス  
+設定を読み込みシミュレーションを実行
+config : yamlファイルのパス
+path : 結果保存先のパス
 """
 function runner(config, save_path)
     params = YAML.load_file(config)
@@ -549,7 +583,7 @@ function runner(config, save_path)
     obs = set_obs(env_param["obstacle"])
     goal = set_goal(env_param["goal"])
     rmps = set_rmp(rmp_param)
-    
+
     data = run_simulation(
         saveRmpData = sim_param["saveRmpData"],
         isWithMas = sim_param["isWithMass"],
@@ -568,8 +602,8 @@ end
 
 """データ保存先のパス
 
-シミュレーション結果を保存するディレクトリのパスを返す  
-ないなら新規作成  
+シミュレーション結果を保存するディレクトリのパスを返す
+ないなら新規作成
 """
 function get_time_string()
     _nd = now()  # 時刻取得
