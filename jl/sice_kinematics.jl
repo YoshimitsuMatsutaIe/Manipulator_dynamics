@@ -4,9 +4,12 @@ sice用のモジュール
 """
 module SiceKinematics
 
-export x1, x2, x3, x4
-export J1, J2, J3, J4
-export J1_dot, J2_dot, J3_dot, J4_dot
+# export x1, x2, x3, x4
+# export J1, J2, J3, J4
+# export J1_dot, J2_dot, J3_dot, J4_dot
+
+export calc_x, calc_J, calc_dJ
+
 
 const l1 = 1.0
 const l2 = 1.0
@@ -111,7 +114,7 @@ function calc_J(q::Vector{T}) where T
 end
 
 """ヤコビ行列の時間微分を全部計算"""
-function calc_J_dot(q::Vector{T}, dq::Vector{T}) where T
+function calc_dJ(q::Vector{T}, dq::Vector{T}) where T
     J1_dot(q, dq), J2_dot(q, dq), J3_dot(q, dq), J4_dot(q, dq)
 end
 
