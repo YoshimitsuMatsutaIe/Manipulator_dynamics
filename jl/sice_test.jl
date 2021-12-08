@@ -376,8 +376,85 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
     fig = plot(
         fig_q, fig_dq, fig_ddq, fig_desired_ddq, fig_u, fig_error, fig_dis_to_obs,
         layout=(7, 1),
-        size=(500, 1400)
+        size=(500, 1800)
     )
+    savefig(fig, "sice_simple.png")
+
+
+    # アニメ作成
+    function draw_arm(i)
+        arm = [
+            [0.0, 0.0],
+            data.x1[i],
+            data.x2[i],
+            data.x3[i],
+            data.x4[i]
+        ]
+
+        x, y = split_vec_of_arrays(arm)
+        fig = plot(
+            x, y,
+            marker=:circle,
+            aspect_ratio = 1,
+            xlabel = "X[m]", ylabel = "Y[m]",
+        )
+
+        scatter!(
+            fig,
+            [xd[1]], [xd[2]],
+            markershape=:star6,
+        )
+
+        x, y = split_vec_of_arrays(xo)
+        scatter!(
+            fig,
+            x, y
+        )
+
+        x_max = 4.1
+        x_min = -4.1
+        y_max = 4.1
+        y_min = -4.1
+        max_range = max(x_max-x_min, y_max-y_min)*0.5
+        x_mid = (x_max + x_min) / 2
+        y_mid = (y_max + y_min) / 2
+
+    
+        plot!(
+            fig,
+            xlims=(x_mid-max_range, x_mid+max_range),
+            ylims=(y_mid-max_range, y_mid+max_range),
+            legend = false,
+        )
+
+
+        return fig
+    end
+
+    println("アニメ作成中...")
+    # 枚数決める
+    #println(data.t)
+    epoch_max = 100
+    epoch = length(data.t)
+    if epoch < epoch_max
+        step = 1
+    else
+        step = div(epoch, epoch_max)
+    end
+
+    #println(step)
+
+    anim = Animation()
+    @gif for i in 1:step:length(data.q)
+        _fig = draw_arm(i)
+        frame(anim, _fig)
+    end
+
+
+    gif(anim, "sice_animation.gif", fps = 60)
+    
+    println("アニメ作成完了")
+
 end
 
 
