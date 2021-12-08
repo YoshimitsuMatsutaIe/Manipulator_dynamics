@@ -244,7 +244,6 @@ function run()
     plot!(
         fig, circle(), seriestype=[:shape,], lw=0.5,
         legend=false, fillalpha=0.2, aspect_ratio=1,
-    
     )
 
     fig2 = plot(t, x, label="_x", legend=:outerright)

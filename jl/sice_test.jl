@@ -87,33 +87,33 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
+function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
 
 
     # rmpのパラメータ
     attractor = RMPfromGDSAttractor(
-        max_speed = 1.0,
+        max_speed = 2.0,
         gain = 5.0,
-        f_alpha = 1.0,
+        f_alpha = 0.15,
         sigma_alpha = 1.0,
         sigma_gamma = 1.0,
         wu = 5.0,
         wl = 1.0,
-        alpha = 1.0,
-        epsilon = 0.5,
+        alpha = 0.15,
+        epsilon = 0.05,
     )
 
     obs_avoidance = RMPfromGDSCollisionAvoidance(
-        rw = 0.2,
+        rw = 0.8,
         sigma = 1.0,
         alpha = 5.0,
     )
 
     jl_avoidance = RMPfromGDSJointLimitAvoidance(
-        gamma_p = 1.0,
-        gamma_d = 1.0,
+        gamma_p = 0.05,
+        gamma_d = 0.01,
         lambda = 1.0,
-        sigma = 1.0,
+        sigma = 0.1,
     )
 
     # 初期値
@@ -130,6 +130,7 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
     # 障害物
     xo = [
         [1.5, 1.0],
+        [1.5, 0.6]
     ]
     t = range(0.0, TIME_SPAN, step=Δt)
 
@@ -338,7 +339,7 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
     plot!(fig_dq, data.t, x, label="_w1")
     plot!(fig_dq, data.t, y, label="_w2")
     plot!(fig_dq, data.t, z, label="_w3")
-    plot!(fig_dq, data.t, w, label="w_4")
+    plot!(fig_dq, data.t, w, label="_w4")
 
     x, y, z, w = split_vec_of_arrays(data.ddq)
     fig_ddq = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
@@ -361,6 +362,19 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
     plot!(fig_u, data.t, z, label="_u3")
     plot!(fig_u, data.t, w, label="_u4")
 
+
+    f0 = norm.(data.f0)
+    f1 = norm.(data.f1)
+    f2 = norm.(data.f2)
+    f3 = norm.(data.f3)
+    f4 = norm.(data.f4)
+    fig_f = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    plot!(fig_f, data.t, f0, label="roo")
+    plot!(fig_f, data.t, f1, label="_f1")
+    plot!(fig_f, data.t, f2, label="_f2")
+    plot!(fig_f, data.t, f3, label="_f3")
+    plot!(fig_f, data.t, f4, label="_f4")
+
     fig_error = plot(
         data.t, data.error,
         label="err",
@@ -376,9 +390,9 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
     )
 
     fig = plot(
-        fig_q, fig_dq, fig_ddq, fig_desired_ddq, fig_u, fig_error, fig_dis_to_obs,
-        layout=(7, 1),
-        size=(500, 1800)
+        fig_q, fig_dq, fig_ddq, fig_desired_ddq, fig_u, fig_f, fig_error, fig_dis_to_obs,
+        layout=(8, 1),
+        size=(500, 2000)
     )
     savefig(fig, "sice_simple.png")
 
@@ -433,30 +447,30 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
 
         # rmpも描画
 
-        scale = 1.0
+        scale = 10.0
 
-        f = [data.x1[i], data.x1[i] .+ data.f1[i]]
+        f = [data.x1[i], data.x1[i] .+ data.f1[i] .* scale]
         x, y = split_vec_of_arrays(f)
         plot!(
             fig,
             x, y
         )
 
-        f = [data.x2[i], data.x2[i] .+ data.f2[i]]
+        f = [data.x2[i], data.x2[i] .+ data.f2[i] .* scale]
         x, y = split_vec_of_arrays(f)
         plot!(
             fig,
             x, y
         )
 
-        f = [data.x3[i], data.x3[i] .+ data.f3[i]]
+        f = [data.x3[i], data.x3[i] .+ data.f3[i] .* scale]
         x, y = split_vec_of_arrays(f)
         plot!(
             fig,
             x, y
         )
 
-        f = [data.x4[i], data.x4[i] .+ data.f4[i]]
+        f = [data.x4[i], data.x4[i] .+ data.f4[i] .* scale]
         x, y = split_vec_of_arrays(f)
         plot!(
             fig,
@@ -474,6 +488,8 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
 
         # end
 
+        id = findall(x->x==true, data.jl[i])
+        plot!(fig, title = string(round(data.t[i], digits=2)) * "[s]" * ", " * string(id))
         return fig
     end
 
