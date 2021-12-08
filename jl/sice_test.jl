@@ -7,6 +7,7 @@ using LinearAlgebra
 
 include("./sice_kinematics.jl")
 include("./sice_robot_dynamics.jl")
+include("./rmp.jl")
 
 using .SiceKinematics
 using .SiceDynamics
@@ -64,6 +65,16 @@ struct Data{T}
     dJ2::Vector{Matrix{T}}
     dJ3::Vector{Matrix{T}}
     dJ4::Vector{Matrix{T}}
+    f0::Vector{Vector{T}}
+    f1::Vector{Vector{T}}
+    f2::Vector{Vector{T}}
+    f3::Vector{Vector{T}}
+    f4::Vector{Vector{T}}
+    M0::Vector{Matrix{T}}
+    M1::Vector{Matrix{T}}
+    M2::Vector{Matrix{T}}
+    M3::Vector{Matrix{T}}
+    M4::Vector{Matrix{T}}
     error::Vector{T}
     min_dit_to_obs::Vector{T}
     jl::Vector{BitVector}
@@ -76,8 +87,9 @@ end
 """全部実行"""
 function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
 
-    # TIME_SPAN = 10.0
-    # Δt = 0.01
+
+    # rmpのパラメータ
+    gl = 
 
     # 初期値
     q₀ = zeros(T, 4)
@@ -117,6 +129,16 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
         Vector{Matrix{T}}(undef, length(t)),
         Vector{Matrix{T}}(undef, length(t)),
         Vector{Matrix{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
         Vector{T}(undef, length(t)),
         Vector{T}(undef, length(t)),
         Vector{BitVector}(undef, length(t)),
@@ -142,6 +164,18 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
     data.dx3[1] = data.J3[1] * data.dq[1]
     data.dx4[1] = data.J4[1] * data.dq[1]
 
+    data.f0[1] = zero(q₀)
+    data.f1[1] = zeros(T, 2)
+    data.f2[1] = zeros(T, 2)
+    data.f3[1] = zeros(T, 2)
+    data.f4[1] = zeros(T, 2)
+
+    data.M0[1] = zeros(T, 4, 4)
+    data.M1[1] = zeros(T, 2, 2)
+    data.M2[1] = zeros(T, 2, 2)
+    data.M3[1] = zeros(T, 2, 2)
+    data.M4[1] = zeros(T, 2, 2)
+
     data.error[1] = norm(data.x4[1] - xd)
     data.min_dit_to_obs[1] = calc_min_dis_to_obs(
         [data.x1[1], data.x2[1], data.x3[1], data.x4[1]],
@@ -152,15 +186,50 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
     data.Fc[1] = zero(u₀)
 
 
-    # # ぐるぐる回す
-    # for i in 1:length(data.t)-1
+    # ぐるぐる回す
+    for i in 1:length(data.t)-1
+        # 状態を更新
+        data.q[i+1] = data.q[i] .+ data.dq[i] .* Δt
+        data.dq[i+1] = data.dq[i] .+ data.ddq[i] .*Δt
+
+        data.x1[i+1], data.x2[i+1], data.x3[i+1], data.x4[i+1] = calc_x(data.q[i+1])
+        data.J1[i+1], data.J2[i+1], data.J3[i+1], data.J4[i+1] = calc_J(data.q[i+1])
+        data.dJ1[i+1], data.dJ2[i+1], data.dJ3[i+1], data.dJ4[i+1] = calc_dJ(data.q[i+1], data.dq[i+1])
+
+        data.dx1[i+1] = data.J1[i+1] * data.dq[i+1]
+        data.dx2[i+1] = data.J2[i+1] * data.dq[i+1]
+        data.dx3[i+1] = data.J3[i+1] * data.dq[i+1]
+        data.dx4[i+1] = data.J4[i+1] * data.dq[i+1]
+
+        data.f0[1] = zero(q₀)
+        data.f1[1] = zeros(T, 2)
+        data.f2[1] = zeros(T, 2)
+        data.f3[1] = zeros(T, 2)
+        data.f4[1] = zeros(T, 2)
+    
+        data.M0[1] = zeros(T, 4, 4)
+        data.M1[1] = zeros(T, 2, 2)
+        data.M2[1] = zeros(T, 2, 2)
+        data.M3[1] = zeros(T, 2, 2)
+        data.M4[1] = zeros(T, 2, 2)
+    
+        data.error[1] = norm(data.x4[1] - xd)
+        data.min_dit_to_obs[1] = calc_min_dis_to_obs(
+            [data.x1[1], data.x2[1], data.x3[1], data.x4[1]],
+            xo
+        )
+        data.jl[1] = check_JointLimitation(q₀)
+        data.F_distur[1] = zero(u₀)
+        data.Fc[1] = zero(u₀)
+        # rmpを計算
 
 
 
 
 
 
-    # end
+
+    end
 
 
 
