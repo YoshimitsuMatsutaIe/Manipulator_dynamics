@@ -1,4 +1,8 @@
 
+x0=Matrix([[l1*cos(q1(t))], [l1*sin(q1(t))]])
+x1=Matrix([[l1*cos(q1(t)) + l2*cos(q1(t) + q2(t))], [l1*sin(q1(t)) + l2*sin(q1(t) + q2(t))]])
+x2=Matrix([[l1*cos(q1(t)) + l2*cos(q1(t) + q2(t)) + l3*cos(q1(t) + q2(t) + q3(t))], [l1*sin(q1(t)) + l2*sin(q1(t) + q2(t)) + l3*sin(q1(t) + q2(t) + q3(t))]])
+x3=Matrix([[l1*cos(q1(t)) + l2*cos(q1(t) + q2(t)) + l3*cos(q1(t) + q2(t) + q3(t)) + l4*cos(q1(t) + q2(t) + q3(t) + q4(t))], [l1*sin(q1(t)) + l2*sin(q1(t) + q2(t)) + l3*sin(q1(t) + q2(t) + q3(t)) + l4*sin(q1(t) + q2(t) + q3(t) + q4(t))]])
 J0=Matrix([[-l1*sin(a1), 0, 0, 0], [l1*cos(a1), 0, 0, 0]])
 J1=Matrix([[-l1*sin(a1) - l2*sin(a1 + a2), -l2*sin(a1 + a2), 0, 0], [l1*cos(a1) + l2*cos(a1 + a2), l2*cos(a1 + a2), 0, 0]])
 J2=Matrix([[-l1*sin(a1) - l2*sin(a1 + a2) - l3*sin(a1 + a2 + a3), -l2*sin(a1 + a2) - l3*sin(a1 + a2 + a3), -l3*sin(a1 + a2 + a3), 0], [l1*cos(a1) + l2*cos(a1 + a2) + l3*cos(a1 + a2 + a3), l2*cos(a1 + a2) + l3*cos(a1 + a2 + a3), l3*cos(a1 + a2 + a3), 0]])
