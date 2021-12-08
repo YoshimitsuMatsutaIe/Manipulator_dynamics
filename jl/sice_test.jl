@@ -26,11 +26,13 @@ function split_vec_of_arrays(u)
     VectorOfSimilarVectors
 end
 
-function calc_min_dis_to_obs(xs::Vector{Vector{T}}, xo::Vector{T}) where T
+function calc_min_dis_to_obs(xs::Vector{Vector{T}}, xos::Vector{Vector{T}}) where T
 
-    d = Vector{T}(undef, length(xs))
+    d = Matrix{T}(undef, length(xs), length(xos))
     for (i, x) in enumerate(xs)
-        d[i] = norm(x - xo)
+        for (j, xo) in enumerate(xos)
+            d[i, j] = norm(x - xo)
+        end
     end
     
     return minimum(d)
@@ -85,7 +87,7 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=0.1, Δt::T=0.01) where T
+function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
 
 
     # rmpのパラメータ
@@ -211,6 +213,9 @@ function run_simulation(TIME_SPAN::T=0.1, Δt::T=0.01) where T
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
+        #println("i = ", i)
+
+
         # 状態を更新
         data.q[i+1] = data.q[i] .+ data.dq[i] .* Δt
         data.dq[i+1] = data.dq[i] .+ data.ddq[i] .*Δt
@@ -270,33 +275,46 @@ function run_simulation(TIME_SPAN::T=0.1, Δt::T=0.01) where T
         root_f = data.f0[i+1]
         root_M = data.M0[i+1]
 
-        _rf, _rM = pullbacked_rmp(data.f1[i+1], data.M1[i+1], data.J1[i+1], data.dJ1[i+1], data.dx1[i+1])
+        _rf, _rM = pullbacked_rmp(data.f1[i+1], data.M1[i+1], data.J1[i+1], data.dJ1[i+1], data.dq[i+1])
         @. root_f += _rf
         @. root_M += _rM
 
-        _rf, _rM = pullbacked_rmp(data.f2[i+1], data.M2[i+1], data.J2[i+1], data.dJ2[i+1], data.dx2[i+1])
+        _rf, _rM = pullbacked_rmp(data.f2[i+1], data.M2[i+1], data.J2[i+1], data.dJ2[i+1], data.dq[i+1])
         @. root_f += _rf
         @. root_M += _rM
 
-        _rf, _rM = pullbacked_rmp(data.f3[i+1], data.M3[i+1], data.J3[i+1], data.dJ3[i+1], data.dx3[i+1])
+        _rf, _rM = pullbacked_rmp(data.f3[i+1], data.M3[i+1], data.J3[i+1], data.dJ3[i+1], data.dq[i+1])
         @. root_f += _rf
         @. root_M += _rM
 
-        _rf, _rM = pullbacked_rmp(data.f4[i+1], data.M4[i+1], data.J4[i+1], data.dJ4[i+1], data.dx4[i+1])
+        _rf, _rM = pullbacked_rmp(data.f4[i+1], data.M4[i+1], data.J4[i+1], data.dJ4[i+1], data.dq[i+1])
         @. root_f += _rf
         @. root_M += _rM
 
         # resolve演算
         data.desired_ddq[i+1] = pinv(root_M) * root_f
 
-        data.error[1] = norm(data.x4[1] - xd)
-        data.min_dit_to_obs[1] = calc_min_dis_to_obs(
-            [data.x1[1], data.x2[1], data.x3[1], data.x4[1]],
-            xo
+        data.u[i+1] = calc_torque(data.q[i+1], data.dq[i+1], data.desired_ddq[i+1])
+
+        data.F_distur[i+1] = zero(u₀)
+        data.Fc[i+1] = zero(u₀)
+
+        data.ddq[i+1] = calc_real_ddq(
+            u = data.u[i+1],
+            q = data.q[i+1],
+            dq = data.dq[i+1],
+            F = zero(data.dq[i+1]),
+            Fc = zeros(T, 2),
+            Jend = data.J4[i+1],
         )
-        data.jl[1] = check_JointLimitation(q₀)
-        data.F_distur[1] = zero(u₀)
-        data.Fc[1] = zero(u₀)
+
+        data.error[i+1] = norm(data.x4[i+1] - xd)
+        data.min_dit_to_obs[i+1] = calc_min_dis_to_obs(
+            [data.x1[i+1], data.x2[i+1], data.x3[i+1], data.x4[i+1]],
+            xo,
+        )
+        data.jl[i+1] = check_JointLimitation(data.q[i+1])
+
 
 
 
@@ -304,24 +322,62 @@ function run_simulation(TIME_SPAN::T=0.1, Δt::T=0.01) where T
 
 
 
+    # グラフ化
 
+    x, y, z, w = split_vec_of_arrays(data.q)
+    fig_q = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    plot!(fig_q, data.t, x, label="_q1")
+    plot!(fig_q, data.t, y, label="_q2")
+    plot!(fig_q, data.t, z, label="_q3")
+    plot!(fig_q, data.t, w, label="_q4")
 
-    # xi = [x1, x2, x3, x4]
+    x, y, z, w = split_vec_of_arrays(data.dq)
+    fig_dq = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    plot!(fig_dq, data.t, x, label="_w1")
+    plot!(fig_dq, data.t, y, label="_w2")
+    plot!(fig_dq, data.t, z, label="_w3")
+    plot!(fig_dq, data.t, w, label="w_4")
 
+    x, y, z, w = split_vec_of_arrays(data.ddq)
+    fig_ddq = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    plot!(fig_ddq, data.t, x, label="_a1")
+    plot!(fig_ddq, data.t, y, label="_a2")
+    plot!(fig_ddq, data.t, z, label="_a3")
+    plot!(fig_ddq, data.t, w, label="_a4")
 
-    # xs = [[0.0, 0.0]]
-    # for x in xi
-    #     push!(xs, x(q))
-    # end
+    x, y, z, w = split_vec_of_arrays(data.desired_ddq)
+    fig_desired_ddq = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    plot!(fig_desired_ddq, data.t, x, label="a*1")
+    plot!(fig_desired_ddq, data.t, y, label="a*2")
+    plot!(fig_desired_ddq, data.t, z, label="a*3")
+    plot!(fig_desired_ddq, data.t, w, label="a*4")
 
-    # x, y = split_vec_of_arrays(xs)
-    # plot(x, y)
+    x, y, z, w = split_vec_of_arrays(data.u)
+    fig_u = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    plot!(fig_u, data.t, x, label="_u1")
+    plot!(fig_u, data.t, y, label="_u2")
+    plot!(fig_u, data.t, z, label="_u3")
+    plot!(fig_u, data.t, w, label="_u4")
 
-    # scatter!([xd[1]], [xd[2]])
+    fig_error = plot(
+        data.t, data.error,
+        label="err",
+        xlim=(0, TIME_SPAN), ylim=(0, maximum(data.error)),
+        legend=:outerright,
+    )
 
+    fig_dis_to_obs = plot(
+        data.t, data.min_dit_to_obs,
+        label="obs",
+        xlim=(0, TIME_SPAN), ylim=(0, maximum(data.min_dit_to_obs)),
+        legend=:outerright,
+    )
 
-
-
+    fig = plot(
+        fig_q, fig_dq, fig_ddq, fig_desired_ddq, fig_u, fig_error, fig_dis_to_obs,
+        layout=(7, 1),
+        size=(500, 1400)
+    )
 end
 
 

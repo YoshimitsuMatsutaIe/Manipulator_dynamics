@@ -124,7 +124,7 @@ function calc_real_ddq(;
 
     # println(F)
 
-    inv(M(q)) * (u .+ F .- (C_and_(q, dq))) |> vec
+    inv(M(q)) * (u .+ F .- (C_and_G(q, dq))) |> vec
 end
 
 end
