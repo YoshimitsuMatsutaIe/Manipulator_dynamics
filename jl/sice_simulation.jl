@@ -4,6 +4,7 @@ using StaticArrays
 using ArraysOfArrays
 using Parameters
 using LinearAlgebra
+using Random
 
 include("./sice_kinematics.jl")
 include("./sice_robot_dynamics.jl")
@@ -299,14 +300,16 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
 
         data.u[i+1] = calc_torque(data.q[i+1], data.dq[i+1], data.desired_ddq[i+1])
 
-        data.F_distur[i+1] = zero(u₀)
+        #data.F_distur[i+1] = zero(u₀)
+        data.F_distur[i+1] = rand(T, 4)*0.1
+
         data.Fc[i+1] = zero(u₀)
 
         data.ddq[i+1] = calc_real_ddq(
             u = data.u[i+1],
             q = data.q[i+1],
             dq = data.dq[i+1],
-            F = zero(data.dq[i+1]),
+            F = data.F_distur[i+1],
             Fc = zeros(T, 2),
             Jend = data.J4[i+1],
         )
