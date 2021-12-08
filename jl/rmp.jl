@@ -483,8 +483,8 @@ end
 function ξ(q::Vector{T}, dq::Vector{T}, q_max::Vector{T}, q_min::Vector{T}, sigma::T) where T
     
     #z = Vector{T}(undef, 7)
-    z = zeros(T, 7)
     dim = length(q)
+    z = zero(q)
 
     for i in 1:dim
         z[i] = 1/2 * _dadq(q[i], dq[i], q_max[i], q_min[i], sigma) * dq[i]^2

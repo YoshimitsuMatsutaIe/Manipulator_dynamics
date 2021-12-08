@@ -85,11 +85,34 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
+function run_simulation(TIME_SPAN::T=0.1, Δt::T=0.01) where T
 
 
     # rmpのパラメータ
-    gl = 
+    attractor = RMPfromGDSAttractor(
+        max_speed = 1.0,
+        gain = 5.0,
+        f_alpha = 1.0,
+        sigma_alpha = 1.0,
+        sigma_gamma = 1.0,
+        wu = 5.0,
+        wl = 1.0,
+        alpha = 1.0,
+        epsilon = 0.5,
+    )
+
+    obs_avoidance = RMPfromGDSCollisionAvoidance(
+        rw = 0.1,
+        sigma = 1.0,
+        alpha = 1.0,
+    )
+
+    jl_avoidance = RMPfromGDSJointLimitAvoidance(
+        gamma_p = 1.0,
+        gamma_d = 1.0,
+        lambda = 1.0,
+        sigma = 1.0,
+    )
 
     # 初期値
     q₀ = zeros(T, 4)
@@ -103,7 +126,7 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
     xd = [1.0, 1.0]
 
     # 障害物
-    xo = [2.0, 2.0]
+    xo = [[2.0, 2.0]]
     t = range(0.0, TIME_SPAN, step=Δt)
 
     data = Data(
@@ -201,18 +224,71 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
         data.dx3[i+1] = data.J3[i+1] * data.dq[i+1]
         data.dx4[i+1] = data.J4[i+1] * data.dq[i+1]
 
-        data.f0[1] = zero(q₀)
-        data.f1[1] = zeros(T, 2)
-        data.f2[1] = zeros(T, 2)
-        data.f3[1] = zeros(T, 2)
-        data.f4[1] = zeros(T, 2)
-    
-        data.M0[1] = zeros(T, 4, 4)
-        data.M1[1] = zeros(T, 2, 2)
-        data.M2[1] = zeros(T, 2, 2)
-        data.M3[1] = zeros(T, 2, 2)
-        data.M4[1] = zeros(T, 2, 2)
-    
+
+
+        # rmpを計算
+
+        # rmpをセット
+        # root
+        data.f0[i+1], data.M0[i+1] = get_natural(
+            jl_avoidance, data.q[i+1], data.dq[i+1], q_max, q_min, q₀
+        )
+        data.f1[i+1] = zeros(T, 2)
+        data.f2[i+1] = zeros(T, 2)
+        data.f3[i+1] = zeros(T, 2)
+        data.f4[i+1] = zeros(T, 2)
+        data.M1[i+1] = zeros(T, 2, 2)
+        data.M2[i+1] = zeros(T, 2, 2)
+        data.M3[i+1] = zeros(T, 2, 2)
+        data.M4[i+1] = zeros(T, 2, 2)
+
+
+        for o in xo
+            f, M = get_natural(obs_avoidance, data.x1[i+1], data.dx1[i+1], o)
+            @. data.f1[i+1] += f
+            @. data.M1[i+1] += M
+
+            f, M = get_natural(obs_avoidance, data.x2[i+1], data.dx2[i+1], o)
+            @. data.f2[i+1] += f
+            @. data.M2[i+1] += M
+
+            f, M = get_natural(obs_avoidance, data.x3[i+1], data.dx3[i+1], o)
+            @. data.f3[i+1] += f
+            @. data.M3[i+1] += M
+
+            f, M = get_natural(obs_avoidance, data.x4[i+1], data.dx4[i+1], o)
+            @. data.f4[i+1] += f
+            @. data.M4[i+1] += M
+        end
+
+        f, M = get_natural(attractor, data.x4[i+1], data.dx4[i+1], xd)
+        @. data.f4[i+1] += f
+        @. data.M4[i+1] += M
+
+
+        # pullback演算
+        root_f = data.f0[i+1]
+        root_M = data.M0[i+1]
+
+        _rf, _rM = pullbacked_rmp(data.f1[i+1], data.M1[i+1], data.J1[i+1], data.dJ1[i+1], data.dx1[i+1])
+        @. root_f += _rf
+        @. root_M += _rM
+
+        _rf, _rM = pullbacked_rmp(data.f2[i+1], data.M2[i+1], data.J2[i+1], data.dJ2[i+1], data.dx2[i+1])
+        @. root_f += _rf
+        @. root_M += _rM
+
+        _rf, _rM = pullbacked_rmp(data.f3[i+1], data.M3[i+1], data.J3[i+1], data.dJ3[i+1], data.dx3[i+1])
+        @. root_f += _rf
+        @. root_M += _rM
+
+        _rf, _rM = pullbacked_rmp(data.f4[i+1], data.M4[i+1], data.J4[i+1], data.dJ4[i+1], data.dx4[i+1])
+        @. root_f += _rf
+        @. root_M += _rM
+
+        # resolve演算
+        data.desired_ddq[i+1] = pinv(root_M) * root_f
+
         data.error[1] = norm(data.x4[1] - xd)
         data.min_dit_to_obs[1] = calc_min_dis_to_obs(
             [data.x1[1], data.x2[1], data.x3[1], data.x4[1]],
@@ -221,11 +297,6 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
         data.jl[1] = check_JointLimitation(q₀)
         data.F_distur[1] = zero(u₀)
         data.Fc[1] = zero(u₀)
-        # rmpを計算
-
-
-
-
 
 
 
