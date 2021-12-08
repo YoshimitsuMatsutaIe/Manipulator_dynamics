@@ -3,6 +3,7 @@ using Plots
 using StaticArrays
 using ArraysOfArrays
 using Parameters
+using LinearAlgebra
 
 include("./sice_kinematics.jl")
 include("./sice_robot_dynamics.jl")
@@ -40,8 +41,8 @@ function check_JointLimitation(q::Vector{T}) where T
 end
 
 """実験データ"""
-@with_kw struct Data{T}
-    t::Vector{T}
+struct Data{T}
+    t::StepRangeLen{T}
     q::Vector{Vector{T}}
     dq::Vector{Vector{T}}
     ddq::Vector{Vector{T}}
@@ -73,13 +74,13 @@ end
 
 
 """全部実行"""
-function run_simulation()
+function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
 
-    TIME_SPAN = 10.0
-    Δt = 0.01
+    # TIME_SPAN = 10.0
+    # Δt = 0.01
 
     # 初期値
-    q₀ = [0.0, 0.0, 0.0, 0.0]
+    q₀ = zeros(T, 4)
     dq₀ = zero(q₀)
     ddq₀ = zero(q₀)
     desired_ddq₀ = zero(q₀)
@@ -94,33 +95,33 @@ function run_simulation()
     t = range(0.0, TIME_SPAN, step=Δt)
 
     data = Data(
-        t = t,
-        q = Vector{typeof(q₀)}(undef, length(t)),
-        dq = Vector{typeof(dq₀)}(undef, length(t)),
-        ddq = Vector{typeof(ddq₀)}(undef, length(t)),
-        desired_ddq = Vector{typeof(desired_ddq₀)}(undef, length(t)),
-        u = Vector{typeof(u₀)}(undef, length(t)),
-        x1 = Vector{typeof(xd)}(undef, length(t)),
-        x2 = Vector{typeof(xd)}(undef, length(t)),
-        x3 = Vector{typeof(xd)}(undef, length(t)),
-        x4 = Vector{typeof(xd)}(undef, length(t)),
-        dx1 = Vector{typeof(xd)}(undef, length(t)),
-        dx2 = Vector{typeof(xd)}(undef, length(t)),
-        dx3 = Vector{typeof(xd)}(undef, length(t)),
-        dx4 = Vector{typeof(xd)}(undef, length(t)),
-        J1 = Vector{Matrix{typeof(q₀[1])}}(undef, length(t)),
-        J2 = Vector{Matrix{typeof(q₀[1])}}(undef, length(t)),
-        J3 = Vector{Matrix{typeof(q₀[1])}}(undef, length(t)),
-        J4 = Vector{Matrix{typeof(q₀[1])}}(undef, length(t)),
-        dJ1 = Vector{Matrix{typeof(q₀[1])}}(undef, length(t)),
-        dJ2 = Vector{Matrix{typeof(q₀[1])}}(undef, length(t)),
-        dJ3 = Vector{Matrix{typeof(q₀[1])}}(undef, length(t)),
-        dJ4 = Vector{Matrix{typeof(q₀[1])}}(undef, length(t)),
-        error = Vector{typeof(q₀[1])}(undef, length(t)),
-        min_dis_to_obs = Vector{typeof(q₀[1])}(undef, length(t)),
-        jl = Vector{BitVector}(undef, length(t)),
-        F_distur =  Vector{typeof(u₀)}(undef, length(t)),
-        Fc =  Vector{typeof(xd)}(undef, length(t)),
+        t,
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{Matrix{T}}(undef, length(t)),
+        Vector{T}(undef, length(t)),
+        Vector{T}(undef, length(t)),
+        Vector{BitVector}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
+        Vector{Vector{T}}(undef, length(t)),
     )
 
 
@@ -136,10 +137,10 @@ function run_simulation()
     data.J1[1], data.J2[1], data.J3[1], data.J4[1] = calc_J(q₀)
     data.dJ1[1], data.dJ2[1], data.dJ3[1], data.dJ4[1] = calc_dJ(q₀, dq₀)
 
-    data.dx1[1] = dafa.J1[1] * data.dq[1]
-    data.dx2[1] = dafa.J2[1] * data.dq[1]
-    data.dx3[1] = dafa.J3[1] * data.dq[1]
-    data.dx4[1] = dafa.J4[1] * data.dq[1]
+    data.dx1[1] = data.J1[1] * data.dq[1]
+    data.dx2[1] = data.J2[1] * data.dq[1]
+    data.dx3[1] = data.J3[1] * data.dq[1]
+    data.dx4[1] = data.J4[1] * data.dq[1]
 
     data.error[1] = norm(data.x4[1] - xd)
     data.min_dit_to_obs[1] = calc_min_dis_to_obs(
@@ -148,7 +149,7 @@ function run_simulation()
     )
     data.jl[1] = check_JointLimitation(q₀)
     data.F_distur[1] = zero(u₀)
-    daa.Fc[1] = zero(u₀)
+    data.Fc[1] = zero(u₀)
 
 
     # # ぐるぐる回す
