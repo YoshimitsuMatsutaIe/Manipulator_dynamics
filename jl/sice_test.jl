@@ -104,9 +104,9 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
     )
 
     obs_avoidance = RMPfromGDSCollisionAvoidance(
-        rw = 0.1,
+        rw = 0.2,
         sigma = 1.0,
-        alpha = 1.0,
+        alpha = 5.0,
     )
 
     jl_avoidance = RMPfromGDSJointLimitAvoidance(
@@ -128,7 +128,9 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
     xd = [1.0, 1.0]
 
     # 障害物
-    xo = [[2.0, 2.0]]
+    xo = [
+        [1.5, 1.0],
+    ]
     t = range(0.0, TIME_SPAN, step=Δt)
 
     data = Data(
@@ -425,8 +427,52 @@ function run_simulation(TIME_SPAN::T=10.0, Δt::T=0.01) where T
             xlims=(x_mid-max_range, x_mid+max_range),
             ylims=(y_mid-max_range, y_mid+max_range),
             legend = false,
+            size=(600, 600),
         )
 
+
+        # rmpも描画
+
+        scale = 1.0
+
+        f = [data.x1[i], data.x1[i] .+ data.f1[i]]
+        x, y = split_vec_of_arrays(f)
+        plot!(
+            fig,
+            x, y
+        )
+
+        f = [data.x2[i], data.x2[i] .+ data.f2[i]]
+        x, y = split_vec_of_arrays(f)
+        plot!(
+            fig,
+            x, y
+        )
+
+        f = [data.x3[i], data.x3[i] .+ data.f3[i]]
+        x, y = split_vec_of_arrays(f)
+        plot!(
+            fig,
+            x, y
+        )
+
+        f = [data.x4[i], data.x4[i] .+ data.f4[i]]
+        x, y = split_vec_of_arrays(f)
+        plot!(
+            fig,
+            x, y
+        )
+
+        # function make_metric_cicle(i, M, q_global)
+        #     e = eigen(M)
+        #     axis_len = 1 / sqrt.(e.Vector) * 0.1
+        #     max_len = maximum(axis_len)
+        #     scale = minimum(2/max_len, 1)
+        #     M_xis_len = axis_len .* scale
+        #     angle = atan(e.Vector[2], e.Vector[1]) + q_global |>
+        #     rad2deg
+
+        # end
 
         return fig
     end
