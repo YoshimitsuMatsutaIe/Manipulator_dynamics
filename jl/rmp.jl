@@ -652,14 +652,14 @@ function f(p::RMPfromGDSImpedance{T}, y, yd, ye, dy, M) where T
 
     alpha = sigmoid(norm(e_d), p.a)
 
-    return ∇potential_I(p, y, yd, ye) .-
-    (D_tilde_d .+ alpha .* D_tilde_e) * dy #.-
+    return M * (-∇potential_I(p, y, yd, ye) .- (D_tilde_d .+ alpha .* D_tilde_e) * dy) #.-
     #ξ(p, y, yd, ye, dy)
 end
 
 """"""
 function get_natural(p::RMPfromGDSImpedance{T}, y, yd, ye, dy) where T
     #println("呼ばれた！")
+    #println(sigmoid(norm(y-yd), p.a))
     M = inertia_matrix(p, y, yd, ye, dy)
     return f(p, y, yd, ye, dy, M), M
 end

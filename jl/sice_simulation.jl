@@ -107,7 +107,7 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=0.2, Δt::T=0.001) where T
+function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.001) where T
 
     # 初期値
     q₀ = q_neutral
@@ -135,7 +135,7 @@ function run_simulation(TIME_SPAN::T=0.2, Δt::T=0.001) where T
     # box_center = [2.0, 0.5]
 
     circle = (
-        r = 0.5, x = 2.0, y = 0.5, K = 10.0, D = 10.0,
+        r = 0.5, x = 2.0, y = 0.5, K = 1.0, D = 10.0,
     )  # 円の物体の情報
 
 
@@ -169,7 +169,7 @@ function run_simulation(TIME_SPAN::T=0.2, Δt::T=0.001) where T
 
     # インピーダンス特性の決定
     zeta_d = 0.8  # 所望の減衰係数
-    omega_d = 10.0
+    omega_d = 1.0
     dd = 10.0
 
     de = circle.D
@@ -189,7 +189,7 @@ function run_simulation(TIME_SPAN::T=0.2, Δt::T=0.001) where T
         P_d = Matrix{T}(I, 2, 2) * kd,
         D_e = Matrix{T}(I, 2, 2) * kd,
         P_e = Matrix{T}(I, 2, 2) * ke,
-        a=10.0,
+        a=5.0,
         eta_d=1.0,
         eta_e=1.0,
         f_alpha=0.15,
@@ -290,7 +290,7 @@ function run_simulation(TIME_SPAN::T=0.2, Δt::T=0.001) where T
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
-        println("t = ", data.t[i])
+        #println("t = ", data.t[i])
 
 
         # 状態を更新
@@ -348,7 +348,7 @@ function run_simulation(TIME_SPAN::T=0.2, Δt::T=0.001) where T
         # @. data.M4[i+1] += M
         # #println("attractor = ", f)
 
-        f, M = get_natural(impedance, data.x4[i+1], data.dx4[i+1], xd, xe)  # インピーダンス
+        f, M = get_natural(impedance, data.x4[i+1], xd, xe, data.dx4[i+1])  # インピーダンス
         @. data.f4[i+1] += f
         @. data.M4[i+1] += M
         #println("attractor = ", f)
