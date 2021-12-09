@@ -57,6 +57,7 @@ function Fc_from_cicle(
         return zero(x)
     else
         return @. -K * (x - center) - D * dx
+    end
 end
 
 
@@ -99,7 +100,7 @@ struct Data{T}
     min_dit_to_obs::Vector{T}
     jl::Vector{BitVector}
     F_distur::Vector{Vector{T}}  # トルクに入る外乱
-    Fc::Vector{Vector{T}}  # 対象から受ける力（i.e. 対象が受ける力 = -Fc）
+    Fc::Vector{Vector{T}}  # 対象に与えた力（i.e. 対象が受ける力 = -Fc）
 end
 
 
@@ -143,7 +144,7 @@ function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
     F_distur₀ = zero(q₀)
 
     # 目標値
-    xd = [2.0, 1.0]
+    xd = [2.0, 1.0-0.05]
 
     # 障害物
     xo = [
@@ -157,7 +158,7 @@ function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
     # box_center = [2.0, 0.5]
 
     circle = (
-        r = 0.5, x = 2.0, y = 0.5, K = 100, D = 10,
+        r = 0.5, x = 2.0, y = 0.5, K = 100.0, D = 10.0,
     )  # 円の物体の情報
 
 
@@ -334,7 +335,10 @@ function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
         data.F_distur[i+1] = zero(u₀)  # 外乱無し
         #data.F_distur[i+1] = rand(T, 4)*0.1
 
-        data.Fc[i+1] = zero(u₀)
+        data.Fc[i+1] = Fc_from_cicle(
+            data.x4[i+1], data.dx4[i+1],
+            [circle.x, circle.y], circle.r, circle.K, circle.D
+        )
 
         data.ddq[i+1] = calc_real_ddq(
             u = data.u[i+1],
@@ -422,6 +426,14 @@ function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
         legend=:outerright,
     )
 
+    Fcs = norm.(data.Fc)
+    fig_Fc = plot(
+        data.t, Fcs,
+        label="_Fc", ylabel="Fc",
+        xlim=(0, TIME_SPAN), ylim=(0, maximum(Fcs)),
+        legend=:outerright,
+    )
+
     fig_dis_to_obs = plot(
         data.t, data.min_dit_to_obs,
         label="obs", ylabel="min dis to obs",
@@ -430,8 +442,10 @@ function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
     )
 
     fig = plot(
-        fig_q, fig_dq, fig_ddq, fig_desired_ddq, fig_u, fig_f, fig_error, fig_dis_to_obs,
-        layout=(8, 1),
+        fig_q, fig_dq, fig_ddq,
+        fig_desired_ddq, fig_u, fig_f,
+        fig_error, fig_Fc, fig_dis_to_obs,
+        layout=(9, 1),
         size=(500, 2000)
     )
     savefig(fig, "sice_simple.png")
