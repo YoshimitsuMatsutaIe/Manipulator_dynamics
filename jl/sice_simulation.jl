@@ -45,6 +45,22 @@ function check_JointLimitation(q::Vector{T}) where T
     return (q .< q_min) .| (q_max .< q)
 end
 
+"""円物体が与える外力"""
+function Fc_from_cicle(
+    x::Vector{T}, dx::Vector{T},
+    center::Vector{T}, r::T,
+    K::T, D::T
+    ) where T
+    s = norm(x .- center)
+
+    if s >= r
+        return zero(x)
+    else
+        return @. -K * (x - center) - D * dx
+end
+
+
+
 """実験データ"""
 struct Data{T}
     t::StepRangeLen{T}
@@ -83,7 +99,7 @@ struct Data{T}
     min_dit_to_obs::Vector{T}
     jl::Vector{BitVector}
     F_distur::Vector{Vector{T}}  # トルクに入る外乱
-    Fc::Vector{Vector{T}}  # 対象に与えた力
+    Fc::Vector{Vector{T}}  # 対象から受ける力（i.e. 対象が受ける力 = -Fc）
 end
 
 
@@ -136,11 +152,13 @@ function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
     ] .* 100
 
     # 対象物
-    box_l = 2.0
-    box_h = 1.0
-    box_center = [2.0, 0.5]
+    # box_l = 2.0
+    # box_h = 1.0
+    # box_center = [2.0, 0.5]
 
-
+    circle = (
+        r = 0.5, x = 2.0, y = 0.5, K = 100, D = 10,
+    )  # 円の物体の情報
 
 
 
@@ -422,15 +440,17 @@ function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
     # アニメ作成
 
     # 少し準備
-    # box_line = (
-    #     x = [box_center[1]-box_l/2, box_center[1]+box_l/2, box_center[1]+box_l/2, box_center[1]-box_l/2],
-    #     y = [box_center[2]-box_h/2, box_center[2]-box_h/2, box_center[2]+box_h/2, box_center[2]+box_h/2],
-    # )
-
     """箱の形"""
     function rectangle(w, h, x, y)
         Shape(x .+ [-w/2,w/2,w/2,-w/2], y .+ [-h/2,-h/2,h/2,h/2])
     end
+
+    """楕円"""
+    function ellipse(x, y, w, h)
+        ang = range(0, 2π, length = 60)
+        Shape(w*sin.(ang).+x, h*cos.(ang).+y)
+    end
+
 
     """1フレームを描写"""
     function draw_frame(i)
@@ -463,8 +483,8 @@ function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
         )
 
         # 対象物
-        plot!(rectangle(box_l, box_h, box_center[1], box_center[2]), opacity=.5)
-
+        #plot!(rectangle(box_l, box_h, box_center[1], box_center[2]), opacity=.5)
+        plot!(ellipse(circle.x, circle.y, circle.r, circle.r), opacity=.5)
 
         x_max = 4.1
         x_min = -4.1
