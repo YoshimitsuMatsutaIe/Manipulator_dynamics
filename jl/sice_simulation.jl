@@ -1,3 +1,4 @@
+"""siceのシミュレーション"""
 
 using Plots
 using StaticArrays
