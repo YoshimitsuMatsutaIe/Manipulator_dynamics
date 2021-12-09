@@ -609,7 +609,7 @@ function ξ(p::RMPfromGDSImpedance{T}, e_d, e_e, dy) where T
     # 第一項を計算
     #A = Matrix{T}(undef, 3, 3)
     A = zeros(T, dim, dim)
-    for i in 1:3
+    for i in 1:length(e_d)
         _M(y) = inertia_matrix(p, e_d, e_E)[:, i]
         _jacobian_M = ForwardDiff.jacobian(_M, y)
         #println(_jacobian_M)
@@ -640,9 +640,11 @@ function f(p::RMPfromGDSImpedance{T}, e_d, e_e, dy, M) where T
 end
 
 """"""
-function get_natural(p::RMPfromGDSImpedance{T}, x, dx, x₀) where T
-    M = inertia_matrix(x, p, x₀)
-    return f(p, x, dx, x₀, M), M
+function get_natural(p::RMPfromGDSImpedance{T}, x, dx, xg, xe) where T
+    e_d = x - xg
+    e_e = x - xe
+    M = inertia_matrix(p, e_d, e_e)
+    return f(p, e_d, e_e, dx, M), M
 end
 
 

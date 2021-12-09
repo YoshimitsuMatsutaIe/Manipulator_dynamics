@@ -15,9 +15,9 @@ using .SiceKinematics
 using .SiceDynamics
 
 
-const q_min = [-5/4*pi+pi/2, -5/4*pi, -5/4*pi, -5/4*pi]
-const q_max = [5/4*pi+pi/2, 5/4*pi, 5/4*pi, 5/4*pi]
-const q_neutral = [pi/2, 0.0, 0.0, 0.0]
+const q_min = [-5/4π+1/2π, -5/4π, -5/4π, -5/4π]
+const q_max = [5/4π+1/2π, 5/4π, 5/4π, 5/4π]
+const q_neutral = [1/2π, 0.0, 0.0, 0.0]
 
 
 function split_vec_of_arrays(u)
@@ -106,7 +106,7 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=360.0, Δt::T=0.01) where T
+function run_simulation(TIME_SPAN::T=20.0, Δt::T=0.001) where T
 
 
     # rmpのパラメータ
@@ -262,7 +262,10 @@ function run_simulation(TIME_SPAN::T=360.0, Δt::T=0.01) where T
     )
     data.jl[1] = check_JointLimitation(q₀)
     data.F_distur[1] = zero(u₀)
-    data.Fc[1] = zero(u₀)
+    data.Fc[1] = Fc_from_cicle(
+        data.x4[1], data.dx4[1],
+        [circle.x, circle.y], circle.r, circle.K, circle.D
+    )
 
 
     # ぐるぐる回す
@@ -320,11 +323,15 @@ function run_simulation(TIME_SPAN::T=360.0, Δt::T=0.01) where T
             @. data.M4[i+1] += M
         end
 
-        f, M = get_natural(attractor, data.x4[i+1], data.dx4[i+1], xd)  # アトラクタ
+        # f, M = get_natural(attractor, data.x4[i+1], data.dx4[i+1], xd)  # アトラクタ
+        # @. data.f4[i+1] += f
+        # @. data.M4[i+1] += M
+        # #println("attractor = ", f)
+
+        f, M = get_natural(impedance, data.x4[i+1], data.dx4[i+1], xd)  # インピーダンス
         @. data.f4[i+1] += f
         @. data.M4[i+1] += M
         #println("attractor = ", f)
-
 
         # pullback演算
         root_f = data.f0[i+1]
@@ -445,13 +452,24 @@ function run_simulation(TIME_SPAN::T=360.0, Δt::T=0.01) where T
         legend=:outerright,
     )
 
-    Fcs = norm.(data.Fc)
+    # # 物体に与えた力をノルムでplot
+    # Fcs = norm.(data.Fc)
+    # fig_Fc = plot(
+    #     data.t, Fcs,
+    #     label="_Fc", ylabel="Fc",
+    #     xlim=(0, TIME_SPAN), ylim=(0, maximum(Fcs)),
+    #     legend=:outerright,
+    # )
+
+    println(data.Fc[3])
+    x, y = split_vec_of_arrays(data.Fc)
     fig_Fc = plot(
-        data.t, Fcs,
         label="_Fc", ylabel="Fc",
-        xlim=(0, TIME_SPAN), ylim=(0, maximum(Fcs)),
+        xlim=(0, TIME_SPAN),
         legend=:outerright,
     )
+    plot!(fig_Fc, data.t, x, label="Fcx")
+    plot!(fig_Fc, data.t, y, label="Fcy")
 
     fig_dis_to_obs = plot(
         data.t, data.min_dit_to_obs,
@@ -465,7 +483,7 @@ function run_simulation(TIME_SPAN::T=360.0, Δt::T=0.01) where T
         fig_desired_ddq, fig_u, fig_f,
         fig_error, fig_Fc, fig_dis_to_obs,
         layout=(9, 1),
-        size=(500, 2000)
+        size=(500, 2200)
     )
     savefig(fig, "sice_simple.png")
 

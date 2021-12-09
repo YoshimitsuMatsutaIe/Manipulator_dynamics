@@ -123,7 +123,7 @@ function calc_real_ddq(;
     _Fc = transpose(Jend) * Fc
     @. F += _Fc
 
-    println(F)
+    #println(F)
 
     inv(M(q)) * (u .+ F .- (C_and_G(q, dq))) |> vec
 end
