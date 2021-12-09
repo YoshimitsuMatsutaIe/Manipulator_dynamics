@@ -62,6 +62,7 @@ end
 
 
 
+
 """実験データ"""
 struct Data{T}
     t::StepRangeLen{T}
@@ -106,7 +107,7 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=3.0, Δt::T=0.001) where T
+function run_simulation(TIME_SPAN::T=0.2, Δt::T=0.001) where T
 
     # 初期値
     q₀ = q_neutral
@@ -167,15 +168,27 @@ function run_simulation(TIME_SPAN::T=3.0, Δt::T=0.001) where T
     )
 
     # インピーダンス特性の決定
-    ζd = 0.8  # 所望の減衰係数
+    zeta_d = 0.8  # 所望の減衰係数
+    omega_d = 10.0
+    dd = 10.0
+
+    de = circle.D
+    ke = circle.K
+
+    md = (de + dd)/(2*omega_d*zeta_d)
+    kd = (-ke*zeta_d + omega_d*(de + dd)/2)/zeta_d
+
+    println("md = ", md)
+    println("kd = ", kd)
+    println("dd = ", dd)
 
 
     impedance = RMPfromGDSImpedance(
-        M_d = Matrix{T}(I, 2, 2),
-        D_d = Matrix{T}(I, 2, 2),
-        P_d = Matrix{T}(I, 2, 2),
-        D_e = Matrix{T}(I, 2, 2),
-        P_e = Matrix{T}(I, 2, 2) * circle.K,
+        M_d = Matrix{T}(I, 2, 2) * md,
+        D_d = Matrix{T}(I, 2, 2) * kd,
+        P_d = Matrix{T}(I, 2, 2) * kd,
+        D_e = Matrix{T}(I, 2, 2) * kd,
+        P_e = Matrix{T}(I, 2, 2) * ke,
         a=10.0,
         eta_d=1.0,
         eta_e=1.0,
