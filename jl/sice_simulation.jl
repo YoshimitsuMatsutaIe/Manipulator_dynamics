@@ -107,7 +107,7 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=500.0, Δt::T=0.001) where T
+function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true) where T
 
     # 初期値
     q₀ = q_neutral
@@ -122,13 +122,13 @@ function run_simulation(TIME_SPAN::T=500.0, Δt::T=0.001) where T
     #xd = [2.0, 1.0].- [0.0, 0.01]
 
     # コンプライアンス中心
-    xe = xd .- [0.0, 0.01]
+    xe = xd .- [0.0, 0.005]
 
     # 障害物
     xo = [
         [1.9, 2.0],
         [2.1, 2.0]
-    ]
+    ] * 1000
 
     # 対象物
     # box_l = 2.0
@@ -143,22 +143,12 @@ function run_simulation(TIME_SPAN::T=500.0, Δt::T=0.001) where T
 
 
     # rmpのパラメータ
-    attractor = RMPfromGDSAttractor(
-        max_speed = 2.0,
-        gain = 10.0,
-        f_alpha = 0.15,
-        sigma_alpha = 1.0,
-        sigma_gamma = 1.0,
-        wu = 5.0,
-        wl = 1.0,
-        alpha = 0.15,
-        epsilon = 0.05,
-    )
+
 
     obs_avoidance = RMPfromGDSCollisionAvoidance(
-        rw = 1.0,
+        rw = 0.3,
         sigma = 1.0,
-        alpha = 5.0,
+        alpha = 2.0,
     )
 
     jl_avoidance = RMPfromGDSJointLimitAvoidance(
@@ -168,39 +158,55 @@ function run_simulation(TIME_SPAN::T=500.0, Δt::T=0.001) where T
         sigma = 0.1,
     )
 
-    # インピーダンス特性の決定
-    zeta_d = 0.8  # 所望の減衰係数
-    omega_d = 1.0
-    dd = 10.0
+    if isImpedance
+        # インピーダンス特性の決定
+        zeta_d = 0.9  # 所望の減衰係数
+        omega_d = 10.0
+        dd = 1.0
 
-    de = circle.D
-    ke = circle.K
+        de = circle.D
+        ke = circle.K
 
-    md = (de + dd)/(2*omega_d*zeta_d)
-    kd = (-ke*zeta_d + omega_d*(de + dd)/2)/zeta_d
+        md = (de + dd)/(2*omega_d*zeta_d)
+        kd = (-ke*zeta_d + omega_d*(de + dd)/2)/zeta_d
 
-    println("md = ", md)
-    println("kd = ", kd)
-    println("dd = ", dd)
+        println("md = ", md)
+        println("kd = ", kd)
+        println("dd = ", dd)
 
 
-    impedance = RMPfromGDSImpedance(
-        M_d = Matrix{T}(I, 2, 2) * md,
-        D_d = Matrix{T}(I, 2, 2) * kd,
-        P_d = Matrix{T}(I, 2, 2) * kd,
-        D_e = Matrix{T}(I, 2, 2) * kd,
-        P_e = Matrix{T}(I, 2, 2) * ke,
-        a=5.0,
-        eta_d=1.0,
-        eta_e=1.0,
-        f_alpha=0.15,
-        sigma_alpha=1.0,
-        sigma_gamma=1.0,
-        wu=5.0,
-        wl=1.0,
-        alpha=0.15,
-        epsilon=0.05,
-    )
+        impedance = RMPfromGDSImpedance(
+            M_d = Matrix{T}(I, 2, 2) * md,
+            D_d = Matrix{T}(I, 2, 2) * kd,
+            P_d = Matrix{T}(I, 2, 2) * kd,
+            D_e = Matrix{T}(I, 2, 2) * kd,
+            P_e = Matrix{T}(I, 2, 2) * ke,
+            a=10.0,
+            eta_d=1.0,
+            eta_e=1.0,
+            f_alpha=0.15,
+            sigma_alpha=1.0,
+            sigma_gamma=1.0,
+            wu=5.0,
+            wl=1.0,
+            alpha=0.15,
+            epsilon=0.05,
+        )
+
+    else
+        attractor = RMPfromGDSAttractor(
+            max_speed = 2.0,
+            gain = 10.0,
+            f_alpha = 0.15,
+            sigma_alpha = 1.0,
+            sigma_gamma = 1.0,
+            wu = 5.0,
+            wl = 1.0,
+            alpha = 0.15,
+            epsilon = 0.05,
+        )
+
+    end
 
 
 
@@ -344,14 +350,16 @@ function run_simulation(TIME_SPAN::T=500.0, Δt::T=0.001) where T
             @. data.M4[i+1] += M
         end
 
-        f, M = get_natural(attractor, data.x4[i+1], data.dx4[i+1], xd)  # アトラクタ
+        if isImpedance
+            f, M = get_natural(impedance, data.x4[i+1], xd, xe, data.dx4[i+1])  # インピーダンス
+        else
+            f, M = get_natural(attractor, data.x4[i+1], data.dx4[i+1], xd)  # アトラクタ
+        end
         @. data.f4[i+1] += f
         @. data.M4[i+1] += M
         #println("attractor = ", f)
 
-        # f, M = get_natural(impedance, data.x4[i+1], xd, xe, data.dx4[i+1])  # インピーダンス
-        # @. data.f4[i+1] += f
-        # @. data.M4[i+1] += M
+
         # #println("attractor = ", f)
 
         # pullback演算
@@ -506,7 +514,14 @@ function run_simulation(TIME_SPAN::T=500.0, Δt::T=0.001) where T
         layout=(9, 1),
         size=(500, 2200)
     )
-    savefig(fig, "sice_simple_original.png")
+
+    if isImpedance
+        name = "sice_simple_proposed.png"
+    else
+        name = "sice_simple_conventional.png"
+    end
+
+    savefig(fig, name)
 
 
     # アニメ作成
@@ -644,13 +659,21 @@ function run_simulation(TIME_SPAN::T=500.0, Δt::T=0.001) where T
     end
 
 
-    gif(anim, "sice_animation_original.gif", fps = 60)
+    if isImpedance
+        name = "sice_animation_proposed.gif"
+    else
+        name = "sice_animation_conventional.gif"
+    end
+
+    gif(anim, name, fps = 60)
     
     println("アニメ作成完了")
 
+    return data
 end
 
 
 
-
-@time run_simulation()
+println("実行中...")
+@time data = run_simulation()
+println("実行終了!!")
