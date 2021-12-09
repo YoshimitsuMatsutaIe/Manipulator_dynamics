@@ -15,9 +15,9 @@ using .SiceKinematics
 using .SiceDynamics
 
 
-const q_min = [-5/4*pi, -5/4*pi, -5/4*pi, -5/4*pi]
-const q_max = [5/4*pi, 5/4*pi, 5/4*pi, 5/4*pi]
-
+const q_min = [-5/4*pi+pi/2, -5/4*pi, -5/4*pi, -5/4*pi]
+const q_max = [5/4*pi+pi/2, 5/4*pi, 5/4*pi, 5/4*pi]
+const q_neutral = [pi/2, 0.0, 0.0, 0.0]
 
 
 function split_vec_of_arrays(u)
@@ -89,13 +89,13 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
+function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
 
 
     # rmpのパラメータ
     attractor = RMPfromGDSAttractor(
         max_speed = 2.0,
-        gain = 5.0,
+        gain = 10.0,
         f_alpha = 0.15,
         sigma_alpha = 1.0,
         sigma_gamma = 1.0,
@@ -119,7 +119,7 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
     )
 
     # 初期値
-    q₀ = zeros(T, 4)
+    q₀ = q_neutral
     dq₀ = zero(q₀)
     ddq₀ = zero(q₀)
     desired_ddq₀ = zero(q₀)
@@ -127,14 +127,25 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
     F_distur₀ = zero(q₀)
 
     # 目標値
-    xd = [1.0, 1.0]
+    xd = [2.0, 1.0]
 
     # 障害物
     xo = [
         [1.5, 1.0],
         [1.5, 0.6]
-    ]
-    t = range(0.0, TIME_SPAN, step=Δt)
+    ] .* 100
+
+    # 対象物
+    box_l = 2.0
+    box_h = 1.0
+    box_center = [2.0, 0.5]
+
+
+
+
+
+
+    t = range(0.0, TIME_SPAN, step=Δt)  # 時間列
 
     data = Data(
         t,
@@ -241,7 +252,7 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
         # rmpをセット
         # root
         data.f0[i+1], data.M0[i+1] = get_natural(
-            jl_avoidance, data.q[i+1], data.dq[i+1], q_max, q_min, q₀
+            jl_avoidance, data.q[i+1], data.dq[i+1], q_max, q_min, q_neutral
         )
         data.f1[i+1] = zeros(T, 2)
         data.f2[i+1] = zeros(T, 2)
@@ -271,9 +282,10 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
             @. data.M4[i+1] += M
         end
 
-        f, M = get_natural(attractor, data.x4[i+1], data.dx4[i+1], xd)
+        f, M = get_natural(attractor, data.x4[i+1], data.dx4[i+1], xd)  # アトラクタ
         @. data.f4[i+1] += f
         @. data.M4[i+1] += M
+        #println("attractor = ", f)
 
 
         # pullback演算
@@ -301,8 +313,8 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
 
         data.u[i+1] = calc_torque(data.q[i+1], data.dq[i+1], data.desired_ddq[i+1])
 
-        #data.F_distur[i+1] = zero(u₀)
-        data.F_distur[i+1] = rand(T, 4)*0.1
+        data.F_distur[i+1] = zero(u₀)  # 外乱無し
+        #data.F_distur[i+1] = rand(T, 4)*0.1
 
         data.Fc[i+1] = zero(u₀)
 
@@ -316,6 +328,7 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
         )
 
         data.error[i+1] = norm(data.x4[i+1] - xd)
+        #println("error = ", data.error[i+1])
         data.min_dit_to_obs[i+1] = calc_min_dis_to_obs(
             [data.x1[i+1], data.x2[i+1], data.x3[i+1], data.x4[i+1]],
             xo,
@@ -332,35 +345,35 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
     # グラフ化
 
     x, y, z, w = split_vec_of_arrays(data.q)
-    fig_q = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    fig_q = plot(xlim=(0, TIME_SPAN), legend=:outerright, ylabel="q")
     plot!(fig_q, data.t, x, label="_q1")
     plot!(fig_q, data.t, y, label="_q2")
     plot!(fig_q, data.t, z, label="_q3")
     plot!(fig_q, data.t, w, label="_q4")
 
     x, y, z, w = split_vec_of_arrays(data.dq)
-    fig_dq = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    fig_dq = plot(xlim=(0, TIME_SPAN), legend=:outerright, ylabel="dq")
     plot!(fig_dq, data.t, x, label="_w1")
     plot!(fig_dq, data.t, y, label="_w2")
     plot!(fig_dq, data.t, z, label="_w3")
     plot!(fig_dq, data.t, w, label="_w4")
 
     x, y, z, w = split_vec_of_arrays(data.ddq)
-    fig_ddq = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    fig_ddq = plot(xlim=(0, TIME_SPAN), legend=:outerright, ylabel="ddq")
     plot!(fig_ddq, data.t, x, label="_a1")
     plot!(fig_ddq, data.t, y, label="_a2")
     plot!(fig_ddq, data.t, z, label="_a3")
     plot!(fig_ddq, data.t, w, label="_a4")
 
     x, y, z, w = split_vec_of_arrays(data.desired_ddq)
-    fig_desired_ddq = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    fig_desired_ddq = plot(xlim=(0, TIME_SPAN), legend=:outerright, ylabel="desired_ddq")
     plot!(fig_desired_ddq, data.t, x, label="a*1")
     plot!(fig_desired_ddq, data.t, y, label="a*2")
     plot!(fig_desired_ddq, data.t, z, label="a*3")
     plot!(fig_desired_ddq, data.t, w, label="a*4")
 
     x, y, z, w = split_vec_of_arrays(data.u)
-    fig_u = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    fig_u = plot(xlim=(0, TIME_SPAN), legend=:outerright, ylabel="u")
     plot!(fig_u, data.t, x, label="_u1")
     plot!(fig_u, data.t, y, label="_u2")
     plot!(fig_u, data.t, z, label="_u3")
@@ -372,23 +385,28 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
     f2 = norm.(data.f2)
     f3 = norm.(data.f3)
     f4 = norm.(data.f4)
-    fig_f = plot(xlim=(0, TIME_SPAN), legend=:outerright,)
+    _fs = [0.0]
+    f_max = maximum(append!(_fs, f0, f1, f2, f3, f4))
+    fig_f = plot(
+        xlim=(0, TIME_SPAN), ylim=(0, f_max),
+        legend=:outerright, ylabel="f"
+    )
     plot!(fig_f, data.t, f0, label="roo")
     plot!(fig_f, data.t, f1, label="_f1")
     plot!(fig_f, data.t, f2, label="_f2")
     plot!(fig_f, data.t, f3, label="_f3")
-    plot!(fig_f, data.t, f4, label="_f4")
+    plot!(fig_f, data.t, f4, label="_ee")
 
     fig_error = plot(
         data.t, data.error,
-        label="err",
+        label="err", ylabel="error",
         xlim=(0, TIME_SPAN), ylim=(0, maximum(data.error)),
         legend=:outerright,
     )
 
     fig_dis_to_obs = plot(
         data.t, data.min_dit_to_obs,
-        label="obs",
+        label="obs", ylabel="min dis to obs",
         xlim=(0, TIME_SPAN), ylim=(0, maximum(data.min_dit_to_obs)),
         legend=:outerright,
     )
@@ -402,7 +420,20 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
 
 
     # アニメ作成
-    function draw_arm(i)
+
+    # 少し準備
+    # box_line = (
+    #     x = [box_center[1]-box_l/2, box_center[1]+box_l/2, box_center[1]+box_l/2, box_center[1]-box_l/2],
+    #     y = [box_center[2]-box_h/2, box_center[2]-box_h/2, box_center[2]+box_h/2, box_center[2]+box_h/2],
+    # )
+
+    """箱の形"""
+    function rectangle(w, h, x, y)
+        Shape(x .+ [-w/2,w/2,w/2,-w/2], y .+ [-h/2,-h/2,h/2,h/2])
+    end
+
+    """1フレームを描写"""
+    function draw_frame(i)
         arm = [
             [0.0, 0.0],
             data.x1[i],
@@ -430,6 +461,10 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
             fig,
             x, y
         )
+
+        # 対象物
+        plot!(rectangle(box_l, box_h, box_center[1], box_center[2]), opacity=.5)
+
 
         x_max = 4.1
         x_min = -4.1
@@ -512,7 +547,7 @@ function run_simulation(TIME_SPAN::T=60.0, Δt::T=0.01) where T
 
     anim = Animation()
     @gif for i in 1:step:length(data.q)
-        _fig = draw_arm(i)
+        _fig = draw_frame(i)
         frame(anim, _fig)
     end
 
