@@ -56,7 +56,7 @@ function Fc_from_cicle(
     if s >= r
         return zero(x)
     else
-        return @. -K * (x - center) - D * dx
+        return @. K * (x - center) + D * dx
     end
 end
 
@@ -106,7 +106,7 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
+function run_simulation(TIME_SPAN::T=360.0, Δt::T=0.01) where T
 
 
     # rmpのパラメータ
@@ -135,6 +135,25 @@ function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
         sigma = 0.1,
     )
 
+    impedance = RMPfromGDSImpedance(
+        M_d = Matrix{T}(I, 2, 2),
+        D_d = Matrix{T}(I, 2, 2),
+        P_d = Matrix{T}(I, 2, 2),
+        D_e = Matrix{T}(I, 2, 2),
+        P_e = Matrix{T}(I, 2, 2),
+        a=10.0,
+        eta_d=1.0,
+        eta_e=1.0,
+        f_alpha=0.15,
+        sigma_alpha=1.0,
+        sigma_gamma=1.0,
+        wu=5.0,
+        wl=1.0,
+        alpha=0.15,
+        epsilon=0.05,
+    )
+
+
     # 初期値
     q₀ = q_neutral
     dq₀ = zero(q₀)
@@ -158,7 +177,7 @@ function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
     # box_center = [2.0, 0.5]
 
     circle = (
-        r = 0.5, x = 2.0, y = 0.5, K = 100.0, D = 10.0,
+        r = 0.5, x = 2.0, y = 0.5, K = 10.0, D = 10.0,
     )  # 円の物体の情報
 
 
@@ -345,7 +364,7 @@ function run_simulation(TIME_SPAN::T=30.0, Δt::T=0.01) where T
             q = data.q[i+1],
             dq = data.dq[i+1],
             F = data.F_distur[i+1],
-            Fc = zeros(T, 2),
+            Fc = data.Fc[i+1],
             Jend = data.J4[i+1],
         )
 
