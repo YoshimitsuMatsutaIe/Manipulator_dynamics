@@ -122,7 +122,7 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
     #xd = [2.0, 1.0].- [0.0, 0.01]
 
     # コンプライアンス中心
-    xe = xd .- [0.0, 0.005]
+    xe = xd .- [0.0, 0.05]
 
     # 障害物
     xo = [
@@ -160,9 +160,9 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
 
     if isImpedance
         # インピーダンス特性の決定
-        zeta_d = 0.9  # 所望の減衰係数
-        omega_d = 10.0
-        dd = 1.0
+        zeta_d = 0.8  # 所望の減衰係数
+        omega_d = 2.0
+        dd = 10.0
 
         de = circle.D
         ke = circle.K
@@ -181,7 +181,7 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
             P_d = Matrix{T}(I, 2, 2) * kd,
             D_e = Matrix{T}(I, 2, 2) * kd,
             P_e = Matrix{T}(I, 2, 2) * ke,
-            a=10.0,
+            a=1.0,
             eta_d=1.0,
             eta_e=1.0,
             f_alpha=0.15,
