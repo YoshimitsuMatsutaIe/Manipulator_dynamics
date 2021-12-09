@@ -15,9 +15,9 @@ using .SiceKinematics
 using .SiceDynamics
 
 
-const q_min = [-5/4π+1/2π, -5/4π, -5/4π, -5/4π]
-const q_max = [5/4π+1/2π, 5/4π, 5/4π, 5/4π]
-const q_neutral = [1/2π, 0.0, 0.0, 0.0]
+const q_min = [(-5/4)π+(1/2)π, (-5/4)π, (-5/4)π, (-5/4)π]
+const q_max = [(5/4)π+(1/2)π, (5/4)π, (5/4)π, (5/4)π]
+const q_neutral = [(1/2)π, 0.0, 0.0, 0.0]
 
 
 function split_vec_of_arrays(u)
@@ -106,7 +106,38 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=20.0, Δt::T=0.001) where T
+function run_simulation(TIME_SPAN::T=3.0, Δt::T=0.001) where T
+
+    # 初期値
+    q₀ = q_neutral
+    dq₀ = zero(q₀)
+    ddq₀ = zero(q₀)
+    desired_ddq₀ = zero(q₀)
+    u₀ = zero(q₀)
+    F_distur₀ = zero(q₀)
+
+    # 目標値
+    xd = [2.0, 1.0]
+
+    # コンプライアンス中心
+    xe = xd .- [0.0, 0.01]
+
+    # 障害物
+    xo = [
+        [1.5, 1.0],
+        [1.5, 0.6]
+    ] .* 100
+
+    # 対象物
+    # box_l = 2.0
+    # box_h = 1.0
+    # box_center = [2.0, 0.5]
+
+    circle = (
+        r = 0.5, x = 2.0, y = 0.5, K = 10.0, D = 10.0,
+    )  # 円の物体の情報
+
+
 
 
     # rmpのパラメータ
@@ -135,12 +166,16 @@ function run_simulation(TIME_SPAN::T=20.0, Δt::T=0.001) where T
         sigma = 0.1,
     )
 
+    # インピーダンス特性の決定
+    ζd = 0.8  # 所望の減衰係数
+
+
     impedance = RMPfromGDSImpedance(
         M_d = Matrix{T}(I, 2, 2),
         D_d = Matrix{T}(I, 2, 2),
         P_d = Matrix{T}(I, 2, 2),
         D_e = Matrix{T}(I, 2, 2),
-        P_e = Matrix{T}(I, 2, 2),
+        P_e = Matrix{T}(I, 2, 2) * circle.K,
         a=10.0,
         eta_d=1.0,
         eta_e=1.0,
@@ -152,34 +187,6 @@ function run_simulation(TIME_SPAN::T=20.0, Δt::T=0.001) where T
         alpha=0.15,
         epsilon=0.05,
     )
-
-
-    # 初期値
-    q₀ = q_neutral
-    dq₀ = zero(q₀)
-    ddq₀ = zero(q₀)
-    desired_ddq₀ = zero(q₀)
-    u₀ = zero(q₀)
-    F_distur₀ = zero(q₀)
-
-    # 目標値
-    xd = [2.0, 1.0-0.05]
-
-    # 障害物
-    xo = [
-        [1.5, 1.0],
-        [1.5, 0.6]
-    ] .* 100
-
-    # 対象物
-    # box_l = 2.0
-    # box_h = 1.0
-    # box_center = [2.0, 0.5]
-
-    circle = (
-        r = 0.5, x = 2.0, y = 0.5, K = 10.0, D = 10.0,
-    )  # 円の物体の情報
-
 
 
 
@@ -270,7 +277,7 @@ function run_simulation(TIME_SPAN::T=20.0, Δt::T=0.001) where T
 
     # ぐるぐる回す
     for i in 1:length(data.t)-1
-        #println("i = ", i)
+        println("t = ", data.t[i])
 
 
         # 状態を更新
@@ -328,7 +335,7 @@ function run_simulation(TIME_SPAN::T=20.0, Δt::T=0.001) where T
         # @. data.M4[i+1] += M
         # #println("attractor = ", f)
 
-        f, M = get_natural(impedance, data.x4[i+1], data.dx4[i+1], xd)  # インピーダンス
+        f, M = get_natural(impedance, data.x4[i+1], data.dx4[i+1], xd, xe)  # インピーダンス
         @. data.f4[i+1] += f
         @. data.M4[i+1] += M
         #println("attractor = ", f)
