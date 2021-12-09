@@ -107,7 +107,7 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.001) where T
+function run_simulation(TIME_SPAN::T=500.0, Δt::T=0.001) where T
 
     # 初期値
     q₀ = q_neutral
@@ -119,15 +119,16 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.001) where T
 
     # 目標値
     xd = [2.0, 1.0]
+    #xd = [2.0, 1.0].- [0.0, 0.01]
 
     # コンプライアンス中心
     xe = xd .- [0.0, 0.01]
 
     # 障害物
     xo = [
-        [1.5, 1.0],
-        [1.5, 0.6]
-    ] .* 100
+        [1.9, 2.0],
+        [2.1, 2.0]
+    ]
 
     # 対象物
     # box_l = 2.0
@@ -155,7 +156,7 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.001) where T
     )
 
     obs_avoidance = RMPfromGDSCollisionAvoidance(
-        rw = 0.8,
+        rw = 1.0,
         sigma = 1.0,
         alpha = 5.0,
     )
@@ -343,15 +344,15 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.001) where T
             @. data.M4[i+1] += M
         end
 
-        # f, M = get_natural(attractor, data.x4[i+1], data.dx4[i+1], xd)  # アトラクタ
-        # @. data.f4[i+1] += f
-        # @. data.M4[i+1] += M
-        # #println("attractor = ", f)
-
-        f, M = get_natural(impedance, data.x4[i+1], xd, xe, data.dx4[i+1])  # インピーダンス
+        f, M = get_natural(attractor, data.x4[i+1], data.dx4[i+1], xd)  # アトラクタ
         @. data.f4[i+1] += f
         @. data.M4[i+1] += M
         #println("attractor = ", f)
+
+        # f, M = get_natural(impedance, data.x4[i+1], xd, xe, data.dx4[i+1])  # インピーダンス
+        # @. data.f4[i+1] += f
+        # @. data.M4[i+1] += M
+        # #println("attractor = ", f)
 
         # pullback演算
         root_f = data.f0[i+1]
@@ -505,7 +506,7 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.001) where T
         layout=(9, 1),
         size=(500, 2200)
     )
-    savefig(fig, "sice_simple.png")
+    savefig(fig, "sice_simple_original.png")
 
 
     # アニメ作成
@@ -643,7 +644,7 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.001) where T
     end
 
 
-    gif(anim, "sice_animation.gif", fps = 60)
+    gif(anim, "sice_animation_original.gif", fps = 60)
     
     println("アニメ作成完了")
 
