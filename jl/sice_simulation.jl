@@ -63,8 +63,8 @@ end
 
 
 function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
-    R = 1.0
-    alpha = 1e-5
+    R = 0.4
+    alpha = 0.01#1e-5
     eta = 0.0
     epsilon = 0.2
 
@@ -72,16 +72,16 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     dz_vec = dx
 
 
-    # ## マルチロボットの安全距離付きタスク写像 ###
-    # z = norm(z_vec)/R - 1
-    # J = 1/norm(z_vec) * (z_vec)' / R
-    # dJ = (dz_vec' * (-1/norm(z_vec)^3 * (z_vec) * (z_vec)' + 1/norm(z_vec) * Matrix{T}(I, 2, 2))) / R
+    ## マルチロボットの安全距離付きタスク写像 ###
+    z = norm(z_vec)/R - 1
+    J = 1/norm(z_vec) * (z_vec)' / R
+    dJ = (dz_vec' * (-1/norm(z_vec)^3 * (z_vec) * (z_vec)' + 1/norm(z_vec) * Matrix{T}(I, 2, 2))) / R
     
-    ### 普通の障害物との距離関数のタスク写像 ###
-    z = norm(z_vec)
-    dz = (1/z .* dot((z_vec), (dz_vec)))[1]
-    J = 1/z * (z_vec)'
-    dJ = -z^(-2) .* (dz_vec' .- ((z_vec)' .* dz))
+    # ### 普通の障害物との距離関数のタスク写像 ###
+    # z = norm(z_vec)
+    # dz = (1/z .* dot((z_vec), (dz_vec)))[1]
+    # J = 1/z * (z_vec)'
+    # dJ = -z^(-2) .* (dz_vec' .- ((z_vec)' .* dz))
 
 
     dz = J * dx
@@ -186,10 +186,12 @@ function run_simulation(;
     end
 
     # 障害物
-    xo = [
-        [1.5, 0.5],
-        [2.5, 0.5]
-    ] #.* 1000000
+    # xo = [
+    #     [1.5, 0.5],
+    #     [2.5, 0.5]
+    # ] #.* 1000000
+
+    xo = [[2.0, 2.5]] .* 1000
 
     # 対象物
     # box_l = 2.0
