@@ -56,11 +56,66 @@ function Fc_from_cicle(
     if s >= r
         return zero(x)
     else
-        return @. K * (x - center) + D * dx
+        n = (x - center) / s  # 力の方向
+        return @. K * (r-s) .* n .+ D * dx
     end
 end
 
 
+function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
+    R = 1.0
+    alpha = 1e-5
+    eta = 0.0
+    epsilon = 0.2
+
+    z_vec = (x - o)
+    dz_vec = dx
+
+
+    # ## マルチロボットの安全距離付きタスク写像 ###
+    # z = norm(z_vec)/R - 1
+    # J = 1/norm(z_vec) * (z_vec)' / R
+    # dJ = (dz_vec' * (-1/norm(z_vec)^3 * (z_vec) * (z_vec)' + 1/norm(z_vec) * Matrix{T}(I, 2, 2))) / R
+    
+    ### 普通の障害物との距離関数のタスク写像 ###
+    z = norm(z_vec)
+    dz = (1/z .* dot((z_vec), (dz_vec)))[1]
+    J = 1/z * (z_vec)'
+    dJ = -z^(-2) .* (dz_vec' .- ((z_vec)' .* dz))
+
+
+    dz = J * dx
+
+    if z < 0
+        w = 1.0e10
+        grad_w = 0.0
+    else
+        w = 1 / z^4
+        grad_w = -4 / z^5
+    end
+    
+    u = epsilon + min(0.0, dz) * dz
+    g = w * u
+    
+    grad_u = 2 * min(0.0, dz)
+    grad_phi = alpha * w * grad_w
+    xi = 1/2 * dz^2 * u * grad_w
+
+    _M = g + 1/2 * dz * w * grad_u
+    M = min(max(_M, -1e5), 1e5)
+
+    Bx_dot = eta * g * dz
+    
+    _f = - grad_phi - xi -Bx_dot
+    f = min(max(_f, -1e10), 1e10)
+    
+
+    pulled_f = J' * (f .- M * dJ * dx)[1]
+
+    pulled_M = J' * M * J
+
+    return pulled_f, pulled_M
+end
 
 
 """実験データ"""
@@ -107,7 +162,9 @@ end
 
 
 """全部実行"""
-function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true) where T
+function run_simulation(;
+    TIME_SPAN::T=40.0, Δt::T=0.01, isImpedance::Bool=false
+    ) where T
 
     # 初期値
     q₀ = q_neutral
@@ -117,18 +174,22 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
     u₀ = zero(q₀)
     F_distur₀ = zero(q₀)
 
-    # 目標値
-    xd = [2.0, 1.0]
-    #xd = [2.0, 1.0].- [0.0, 0.01]
 
-    # コンプライアンス中心
-    xe = xd .- [0.0, 0.05]
+    # 目標値とコンプライアンス中心
+    xd_true = [2.0, 1.0]
+    if isImpedance
+        xd = xd_true
+        xe = xd .- [0.0, 0.05]
+    else
+        xd = xd_true .- [0.0, 0.05]
+        xe = nothing
+    end
 
     # 障害物
     xo = [
-        [1.9, 2.0],
-        [2.1, 2.0]
-    ] * 1000
+        [1.5, 0.5],
+        [2.5, 0.5]
+    ] #.* 1000000
 
     # 対象物
     # box_l = 2.0
@@ -136,7 +197,7 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
     # box_center = [2.0, 0.5]
 
     circle = (
-        r = 0.5, x = 2.0, y = 0.5, K = 1.0, D = 10.0,
+        r = 0.5, x = 2.0, y = 0.5, K = 1.0, D = 1.0,
     )  # 円の物体の情報
 
 
@@ -146,22 +207,22 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
 
 
     obs_avoidance = RMPfromGDSCollisionAvoidance(
-        rw = 0.3,
+        rw = 1.5,
         sigma = 1.0,
         alpha = 2.0,
     )
 
     jl_avoidance = RMPfromGDSJointLimitAvoidance(
-        gamma_p = 0.05,
-        gamma_d = 0.01,
+        gamma_p = 0.01,
+        gamma_d = 0.05,
         lambda = 1.0,
         sigma = 0.1,
     )
 
     if isImpedance
         # インピーダンス特性の決定
-        zeta_d = 0.8  # 所望の減衰係数
-        omega_d = 2.0
+        zeta_d = 0.9  # 所望の減衰係数
+        omega_d = 1.0
         dd = 10.0
 
         de = circle.D
@@ -177,20 +238,20 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
 
         impedance = RMPfromGDSImpedance(
             M_d = Matrix{T}(I, 2, 2) * md,
-            D_d = Matrix{T}(I, 2, 2) * kd,
+            D_d = Matrix{T}(I, 2, 2) * dd,
             P_d = Matrix{T}(I, 2, 2) * kd,
-            D_e = Matrix{T}(I, 2, 2) * kd,
+            D_e = Matrix{T}(I, 2, 2) * de,
             P_e = Matrix{T}(I, 2, 2) * ke,
-            a=1.0,
+            a=1000.0,
             eta_d=1.0,
             eta_e=1.0,
             f_alpha=0.15,
             sigma_alpha=1.0,
             sigma_gamma=1.0,
             wu=5.0,
-            wl=1.0,
+            wl=0.1,
             alpha=0.15,
-            epsilon=0.05,
+            epsilon=0.5,
         )
 
     else
@@ -201,9 +262,9 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
             sigma_alpha = 1.0,
             sigma_gamma = 1.0,
             wu = 5.0,
-            wl = 1.0,
+            wl = 0.1,
             alpha = 0.15,
-            epsilon = 0.05,
+            epsilon = 0.5,
         )
 
     end
@@ -282,7 +343,9 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
     data.M3[1] = zeros(T, 2, 2)
     data.M4[1] = zeros(T, 2, 2)
 
-    data.error[1] = norm(data.x4[1] - xd)
+    #data.error[1] = norm(data.x4[1] - xd)
+    data.error[1] = norm(data.x4[1] - [circle.x, circle.y]) - circle.r  # 円物体のとき
+
     data.min_dit_to_obs[1] = calc_min_dis_to_obs(
         [data.x1[1], data.x2[1], data.x3[1], data.x4[1]],
         xo
@@ -333,25 +396,44 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
 
 
         for o in xo
-            f, M = get_natural(obs_avoidance, data.x1[i+1], data.dx1[i+1], o)
+
+            # multi robotのやつ
+            f, M = multi_avoidance_rmp(data.x1[i+1], data.dx1[i+1], o)
             @. data.f1[i+1] += f
             @. data.M1[i+1] += M
 
-            f, M = get_natural(obs_avoidance, data.x2[i+1], data.dx2[i+1], o)
+            f, M = multi_avoidance_rmp(data.x2[i+1], data.dx2[i+1], o)
             @. data.f2[i+1] += f
             @. data.M2[i+1] += M
 
-            f, M = get_natural(obs_avoidance, data.x3[i+1], data.dx3[i+1], o)
+            f, M = multi_avoidance_rmp(data.x3[i+1], data.dx3[i+1], o)
             @. data.f3[i+1] += f
             @. data.M3[i+1] += M
 
-            f, M = get_natural(obs_avoidance, data.x4[i+1], data.dx4[i+1], o)
+            f, M = multi_avoidance_rmp(data.x4[i+1], data.dx4[i+1], o)
             @. data.f4[i+1] += f
             @. data.M4[i+1] += M
+
+
+            # f, M = get_natural(obs_avoidance, data.x1[i+1], data.dx1[i+1], o)
+            # @. data.f1[i+1] += f
+            # @. data.M1[i+1] += M
+
+            # f, M = get_natural(obs_avoidance, data.x2[i+1], data.dx2[i+1], o)
+            # @. data.f2[i+1] += f
+            # @. data.M2[i+1] += M
+
+            # f, M = get_natural(obs_avoidance, data.x3[i+1], data.dx3[i+1], o)
+            # @. data.f3[i+1] += f
+            # @. data.M3[i+1] += M
+
+            # f, M = get_natural(obs_avoidance, data.x4[i+1], data.dx4[i+1], o)
+            # @. data.f4[i+1] += f
+            # @. data.M4[i+1] += M
         end
 
         if isImpedance
-            f, M = get_natural(impedance, data.x4[i+1], xd, xe, data.dx4[i+1])  # インピーダンス
+            f, M = get_natural(impedance, data.x4[i+1], xd, xe, data.dx4[i+1], [circle.x, circle.y], circle.r)  # インピーダンス
         else
             f, M = get_natural(attractor, data.x4[i+1], data.dx4[i+1], xd)  # アトラクタ
         end
@@ -404,7 +486,8 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
             Jend = data.J4[i+1],
         )
 
-        data.error[i+1] = norm(data.x4[i+1] - xd)
+        #data.error[i+1] = norm(data.x4[i+1] - xd)
+        data.error[i+1] = norm(data.x4[i+1] - [circle.x, circle.y]) - circle.r  # 円物体のとき
         #println("error = ", data.error[i+1])
         data.min_dit_to_obs[i+1] = calc_min_dis_to_obs(
             [data.x1[i+1], data.x2[i+1], data.x3[i+1], data.x4[i+1]],
@@ -477,7 +560,9 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
     fig_error = plot(
         data.t, data.error,
         label="err", ylabel="error",
-        xlim=(0, TIME_SPAN), ylim=(0, maximum(data.error)),
+        xlim=(0, TIME_SPAN),
+        #ylim=(0, maximum(data.error)),
+        ylim=(minimum(data.error), 0.005),
         legend=:outerright,
     )
 
@@ -516,9 +601,9 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
     )
 
     if isImpedance
-        name = "sice_simple_proposed.png"
+        name = "fig/sice_simple_proposed.png"
     else
-        name = "sice_simple_conventional.png"
+        name = "fig/sice_simple_conventional.png"
     end
 
     savefig(fig, name)
@@ -559,9 +644,27 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
 
         scatter!(
             fig,
-            [xd[1]], [xd[2]],
+            [xd_true[1]], [xd_true[2]],
+            label="xd_true",
             markershape=:star6,
         )
+
+        scatter!(
+            fig,
+            [xd[1]], [xd[2]],
+            label="xd_true",
+            markershape=:star6,
+        )
+
+        if !isnothing(xe)
+            scatter!(
+                fig,
+                [xe[1]], [xe[2]],
+                label="xe",
+                markershape=:star6,
+            )
+        end
+
 
         x, y = split_vec_of_arrays(xo)
         scatter!(
@@ -634,9 +737,17 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
 
         # end
 
+        fig_2 = plot(fig, xlim=(1.8, 2.2), ylim=(0.8, 1.2))
+
+        fig_i = plot(
+            fig, fig_2,
+            layout=(2,1),
+            size=(600,1200)
+        )
+
         id = findall(x->x==true, data.jl[i])
-        plot!(fig, title = string(round(data.t[i], digits=2)) * "[s]" * ", " * string(id))
-        return fig
+        plot!(fig_i, title = string(round(data.t[i], digits=2)) * "[s]" * ", " * string(id))
+        return fig_i
     end
 
     println("アニメ作成中...")
@@ -660,20 +771,32 @@ function run_simulation(TIME_SPAN::T=1000.0, Δt::T=0.01, isImpedance::Bool=true
 
 
     if isImpedance
-        name = "sice_animation_proposed.gif"
+        name = "fig/sice_animation_proposed.gif"
     else
-        name = "sice_animation_conventional.gif"
+        name = "fig/sice_animation_conventional.gif"
     end
 
     gif(anim, name, fps = 60)
     
     println("アニメ作成完了")
 
-    return data
+    # return data,
+    # fig_q, fig_dq, fig_ddq,
+    # fig_desired_ddq, fig_u, fig_f,
+    # fig_error, fig_Fc, fig_dis_to_obs
 end
 
 
 
 println("実行中...")
-@time data = run_simulation()
+# @time data,
+# fig_q, fig_dq, fig_ddq,
+# fig_desired_ddq, fig_u, fig_f,
+# fig_error, fig_Fc, fig_dis_to_obs = run_simulation()
+
+
+for i in (true, false)
+    @time run_simulation(isImpedance=i)
+end
+
 println("実行終了!!")

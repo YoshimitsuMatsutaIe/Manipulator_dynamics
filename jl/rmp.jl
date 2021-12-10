@@ -571,7 +571,7 @@ hat(x) = x / norm(x)
 
 
 """インピーダンスポテンシャルの勾配"""
-function ∇potential_I(p::RMPfromGDSImpedance{T}, y, yd, ye) where T
+function ∇potential_I(p::RMPfromGDSImpedance{T}, y, yd, ye, alpha) where T
     #println("勾配！！")
 
     e_d = y - yd
@@ -581,12 +581,13 @@ function ∇potential_I(p::RMPfromGDSImpedance{T}, y, yd, ye) where T
     P_tilde_e = inv_M_d * p.P_e
     P_tilde_d = inv_M_d * p.P_d
 
-    alpha = sigmoid(norm(e_d), p.a)
 
     t1 = -(1-alpha)*alpha .* hat(e_d) .* soft_max(norm(e_d), p.eta_d)
     t2 = (1-alpha) * s_alpha(e_d, p.eta_d) .* hat(e_d)
     t3 = (1-alpha)*alpha .* hat(e_e) .* soft_max(norm(e_e), p.eta_e)
     t4 = alpha * s_alpha(e_e, p.eta_e) .* hat(e_e)
+
+    #t1 = t3 = zero(t2)
 
     t1 .+ 
     P_tilde_d * t2 .+ 
@@ -597,22 +598,22 @@ end
 
 
 """インピーダンスRMPの慣性行列"""
-function inertia_matrix(p::RMPfromGDSImpedance{T}, y, yd, ye, dy) where T
+function inertia_matrix(p::RMPfromGDSImpedance{T}, y, yd, ye, dy, alpha) where T
     e_d = y - yd
     e_e = y - ye
     dim = length(y)
-    ∇pot = ∇potential_I(p, y, yd, ye)
+    ∇pot = ∇potential_I(p, y, yd, ye, alpha)
     α = α_or_γ(e_d, p.sigma_alpha)
     return w(e_d, p.sigma_gamma, p.wu, p.wl) .* ((1-α) .* ∇pot * ∇pot' .+ (α + p.epsilon).*Matrix{T}(I, dim, dim))
 end
 
 """力用"""
-function xMx(p::RMPfromGDSImpedance{T}, y, yd, ye, dy) where T
-    dy' * inertia_matrix(p, y, yd, ye, dy) * dy
+function xMx(p::RMPfromGDSImpedance{T}, y, yd, ye, dy, alpha) where T
+    dy' * inertia_matrix(p, y, yd, ye, dy, alpha) * dy
 end
 
 """曲率項"""
-function ξ(p::RMPfromGDSImpedance{T}, y, yd, ye, dy) where T
+function ξ(p::RMPfromGDSImpedance{T}, y, yd, ye, dy, alpha) where T
     # 第一項を計算
     #A = Matrix{T}(undef, 3, 3)
     e_d = y - yd
@@ -622,7 +623,7 @@ function ξ(p::RMPfromGDSImpedance{T}, y, yd, ye, dy) where T
     A = zeros(T, dim, dim)
     for i in 1:length(e_d)
         println("kyokuritu i = ", i)
-        _M(y) = inertia_matrix(p, y, yd, ye, dy)[:, i]
+        _M(y) = inertia_matrix(p, y, yd, ye, dy, alpha)[:, i]
         _jacobian_M = ForwardDiff.jacobian(_M, y)
         #println(_jacobian_M)
         A[:, i] = _jacobian_M * dy
@@ -630,14 +631,14 @@ function ξ(p::RMPfromGDSImpedance{T}, y, yd, ye, dy) where T
     A *= dy
 
     # 第二項を計算
-    _xMx(y) = xMx(p, y, yd, ye)
+    _xMx(y) = xMx(p, y, yd, ye, dy, alpha)
     B = 1/2 .* ForwardDiff.gradient(_xMx, y)  # 便利
     
     return A .- B
 end
 
 """fromGDSのアトラクター力"""
-function f(p::RMPfromGDSImpedance{T}, y, yd, ye, dy, M) where T
+function f(p::RMPfromGDSImpedance{T}, y, yd, ye, dy, M, alpha) where T
     e_d = y - yd
     e_e = y - ye
     inv_M_d = inv(p.M_d)
@@ -650,18 +651,19 @@ function f(p::RMPfromGDSImpedance{T}, y, yd, ye, dy, M) where T
 
     #return M * (-p.gain .* soft_normal(z, p.f_alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
 
-    alpha = sigmoid(norm(e_d), p.a)
 
-    return M * (-∇potential_I(p, y, yd, ye) .- (D_tilde_d .+ alpha .* D_tilde_e) * dy) #.-
+    return M * (-∇potential_I(p, y, yd, ye, alpha) .- (D_tilde_d .+ alpha .* D_tilde_e) * dy) #.-
     #ξ(p, y, yd, ye, dy)
 end
 
 """"""
-function get_natural(p::RMPfromGDSImpedance{T}, y, yd, ye, dy) where T
+function get_natural(p::RMPfromGDSImpedance{T}, y, yd, ye, dy, center, r) where T
     #println("呼ばれた！")
-    #println(sigmoid(norm(y-yd), p.a))
-    M = inertia_matrix(p, y, yd, ye, dy)
-    return f(p, y, yd, ye, dy, M), M
+    s = r - norm(y-center)
+    alpha = sigmoid(s, p.a)
+    #println(alpha)
+    M = inertia_matrix(p, y, yd, ye, dy, alpha)
+    return f(p, y, yd, ye, dy, M, alpha), M
 end
 
 
