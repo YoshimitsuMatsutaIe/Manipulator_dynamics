@@ -163,7 +163,7 @@ end
 
 """全部実行"""
 function run_simulation(;
-    TIME_SPAN::T=40.0, Δt::T=0.01, isImpedance::Bool=false
+    TIME_SPAN::T=20.0, Δt::T=0.01, isImpedance::Bool=false
     ) where T
 
     # 初期値
@@ -174,14 +174,24 @@ function run_simulation(;
     u₀ = zero(q₀)
     F_distur₀ = zero(q₀)
 
+    
+    circle = (
+        r = 0.5, x = 2.0, y = 0.5, K = 1.0, D = 1.0,
+    )  # 円の物体の情報
+
+
+    # 発生させたい力
+    Fc_desired = 0.05  # [N]
+    Δx = Fc_desired / circle.K
 
     # 目標値とコンプライアンス中心
     xd_true = [2.0, 1.0]
+
     if isImpedance
         xd = xd_true
-        xe = xd .- [0.0, 0.05]
+        xe = xd .- [0.0, Δx]
     else
-        xd = xd_true .- [0.0, 0.05]
+        xd = xd_true .- [0.0, Δx]
         xe = nothing
     end
 
@@ -198,9 +208,6 @@ function run_simulation(;
     # box_h = 1.0
     # box_center = [2.0, 0.5]
 
-    circle = (
-        r = 0.5, x = 2.0, y = 0.5, K = 1.0, D = 1.0,
-    )  # 円の物体の情報
 
 
 
@@ -224,8 +231,8 @@ function run_simulation(;
     if isImpedance
         # インピーダンス特性の決定
         zeta_d = 0.9  # 所望の減衰係数
-        omega_d = 1.0
-        dd = 10.0
+        omega_d = 2.0
+        dd = 4.0
 
         de = circle.D
         ke = circle.K
@@ -244,13 +251,13 @@ function run_simulation(;
             P_d = Matrix{T}(I, 2, 2) * kd,
             D_e = Matrix{T}(I, 2, 2) * de,
             P_e = Matrix{T}(I, 2, 2) * ke,
-            a=1000.0,
+            a=100.0,
             eta_d=1.0,
             eta_e=1.0,
             f_alpha=0.15,
             sigma_alpha=1.0,
             sigma_gamma=1.0,
-            wu=5.0,
+            wu=10.0,
             wl=0.1,
             alpha=0.15,
             epsilon=0.5,
@@ -258,12 +265,12 @@ function run_simulation(;
 
     else
         attractor = RMPfromGDSAttractor(
-            max_speed = 2.0,
+            max_speed = 6.0,
             gain = 10.0,
             f_alpha = 0.15,
             sigma_alpha = 1.0,
             sigma_gamma = 1.0,
-            wu = 5.0,
+            wu = 10.0,
             wl = 0.1,
             alpha = 0.15,
             epsilon = 0.5,
@@ -436,6 +443,26 @@ function run_simulation(;
 
         if isImpedance
             f, M = get_natural(impedance, data.x4[i+1], xd, xe, data.dx4[i+1], [circle.x, circle.y], circle.r)  # インピーダンス
+
+            # 対象物表面との距離を測る
+            n_surface = hat(data.x4[i+1] .- [circle.x, circle.y])  # 表面との法線ベクトル
+            d_surface = norm(data.x4[i+1] .- [circle.x, circle.y]) - circle.r  # 表面との距離
+            
+            if d_surface < 0
+                f_damp = zero(f)
+                M_damp = zero(f)
+            else
+                #println("d = ", d_surface)
+                a_damp = 0.01 / (d_surface/1.0 + 1e-3) * norm(data.dx4[i+1])
+                f_damp = a_damp * n_surface
+                #println("f = ", norm(f_damp))
+                M_damp = Matrix{T}(I, 2, 2)
+
+                @. f += f_damp
+                @. M += M_damp
+            end
+
+
         else
             f, M = get_natural(attractor, data.x4[i+1], data.dx4[i+1], xd)  # アトラクタ
         end

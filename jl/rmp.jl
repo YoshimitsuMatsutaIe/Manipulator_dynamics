@@ -652,8 +652,11 @@ function f(p::RMPfromGDSImpedance{T}, y, yd, ye, dy, M, alpha) where T
     #return M * (-p.gain .* soft_normal(z, p.f_alpha) .- damp .* dx) .- ξ(p, x, dx, x₀)
 
 
-    return M * (-∇potential_I(p, y, yd, ye, alpha) .- (D_tilde_d .+ alpha .* D_tilde_e) * dy) #.-
+    z = M * (-∇potential_I(p, y, yd, ye, alpha) .- (D_tilde_d .+ alpha .* D_tilde_e) * dy) #.-
     #ξ(p, y, yd, ye, dy)
+
+    
+    return z
 end
 
 """"""
