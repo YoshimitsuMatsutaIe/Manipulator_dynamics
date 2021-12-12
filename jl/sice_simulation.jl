@@ -163,7 +163,7 @@ end
 
 """全部実行"""
 function run_simulation(;
-    TIME_SPAN::T=20.0, Δt::T=0.01, isImpedance::Bool=false
+    TIME_SPAN::T=15.0, Δt::T=0.01, isImpedance::Bool=false
     ) where T
 
     # 初期値
@@ -251,7 +251,7 @@ function run_simulation(;
             P_d = Matrix{T}(I, 2, 2) * kd,
             D_e = Matrix{T}(I, 2, 2) * de,
             P_e = Matrix{T}(I, 2, 2) * ke,
-            a=100.0,
+            a=1.0,
             eta_d=1.0,
             eta_e=1.0,
             f_alpha=0.15,
@@ -453,7 +453,7 @@ function run_simulation(;
                 M_damp = zero(f)
             else
                 #println("d = ", d_surface)
-                a_damp = 0.01 / (d_surface/1.0 + 1e-3) * norm(data.dx4[i+1])
+                a_damp = 0.8 / (d_surface/1.0 + 1e-3) * norm(data.dx4[i+1])
                 f_damp = a_damp * n_surface
                 #println("f = ", norm(f_damp))
                 M_damp = Matrix{T}(I, 2, 2)
@@ -534,35 +534,35 @@ function run_simulation(;
     # グラフ化
 
     x, y, z, w = split_vec_of_arrays(data.q)
-    fig_q = plot(xlim=(0, TIME_SPAN), legend=:outerright, ylabel="q")
+    fig_q = plot(xlim=(0, TIME_SPAN), legend=:outerright)
     plot!(fig_q, data.t, x, label="_q1")
     plot!(fig_q, data.t, y, label="_q2")
     plot!(fig_q, data.t, z, label="_q3")
     plot!(fig_q, data.t, w, label="_q4")
 
     x, y, z, w = split_vec_of_arrays(data.dq)
-    fig_dq = plot(xlim=(0, TIME_SPAN), legend=:outerright, ylabel="dq")
+    fig_dq = plot(xlim=(0, TIME_SPAN), legend=:outerright)
     plot!(fig_dq, data.t, x, label="_w1")
     plot!(fig_dq, data.t, y, label="_w2")
     plot!(fig_dq, data.t, z, label="_w3")
     plot!(fig_dq, data.t, w, label="_w4")
 
     x, y, z, w = split_vec_of_arrays(data.ddq)
-    fig_ddq = plot(xlim=(0, TIME_SPAN), legend=:outerright, ylabel="ddq")
+    fig_ddq = plot(xlim=(0, TIME_SPAN), legend=:outerright)
     plot!(fig_ddq, data.t, x, label="_a1")
     plot!(fig_ddq, data.t, y, label="_a2")
     plot!(fig_ddq, data.t, z, label="_a3")
     plot!(fig_ddq, data.t, w, label="_a4")
 
     x, y, z, w = split_vec_of_arrays(data.desired_ddq)
-    fig_desired_ddq = plot(xlim=(0, TIME_SPAN), legend=:outerright, ylabel="desired_ddq")
+    fig_desired_ddq = plot(xlim=(0, TIME_SPAN), legend=:outerright)
     plot!(fig_desired_ddq, data.t, x, label="a*1")
     plot!(fig_desired_ddq, data.t, y, label="a*2")
     plot!(fig_desired_ddq, data.t, z, label="a*3")
     plot!(fig_desired_ddq, data.t, w, label="a*4")
 
     x, y, z, w = split_vec_of_arrays(data.u)
-    fig_u = plot(xlim=(0, TIME_SPAN), legend=:outerright, ylabel="u")
+    fig_u = plot(xlim=(0, TIME_SPAN), legend=:outerright)
     plot!(fig_u, data.t, x, label="_u1")
     plot!(fig_u, data.t, y, label="_u2")
     plot!(fig_u, data.t, z, label="_u3")
@@ -578,7 +578,7 @@ function run_simulation(;
     f_max = maximum(append!(_fs, f0, f1, f2, f3, f4))
     fig_f = plot(
         xlim=(0, TIME_SPAN), ylim=(0, f_max),
-        legend=:outerright, ylabel="f"
+        legend=:outerright,
     )
     plot!(fig_f, data.t, f0, label="roo")
     plot!(fig_f, data.t, f1, label="_f1")
@@ -588,7 +588,7 @@ function run_simulation(;
 
     fig_error = plot(
         data.t, data.error,
-        label="err", ylabel="error",
+        label="err",
         xlim=(0, TIME_SPAN),
         #ylim=(0, maximum(data.error)),
         ylim=(minimum(data.error), 0.005),
@@ -604,19 +604,48 @@ function run_simulation(;
     #     legend=:outerright,
     # )
 
-    println(data.Fc[3])
     x, y = split_vec_of_arrays(data.Fc)
     fig_Fc = plot(
-        label="_Fc", ylabel="Fc",
         xlim=(0, TIME_SPAN),
         legend=:outerright,
     )
+    plot!(fig_Fc, data.t, norm.(data.Fc), label="nFc")
     plot!(fig_Fc, data.t, x, label="Fcx")
     plot!(fig_Fc, data.t, y, label="Fcy")
 
+
+    s = Vector{T}(undef, length(t))
+    ds = Vector{T}(undef, length(t))
+    for i in 1:length(t)
+        s[i] = norm(data.x4[i] .- [circle.x, circle.y]) - circle.r
+        ds[i] = 1/s[i] * dot((data.x4[i] .- [circle.x, circle.y]), data.dx4[i])
+    end
+
+    fig_s = plot(
+        data.t, s, label="__s",
+        xlim=(0, TIME_SPAN),
+        legend=:outerright,
+    )
+    fig_ds = plot(
+        data.t, ds, label="_ds",
+        xlim=(0, TIME_SPAN),
+        legend=:outerright,
+    )
+
+    fig_ee_dx = plot(
+        data.t, norm.(data.dx4),
+        label="dx4",
+        xlim=(0, TIME_SPAN),
+        legend=:outerright,
+    )
+    x, y = split_vec_of_arrays(data.dx4)
+    plot!(fig_ee_dx, data.t, x, label="_dx")
+    plot!(fig_ee_dx, data.t, y, label="_dy")
+
+
     fig_dis_to_obs = plot(
         data.t, data.min_dit_to_obs,
-        label="obs", ylabel="min dis to obs",
+        label="obs",
         xlim=(0, TIME_SPAN), ylim=(0, maximum(data.min_dit_to_obs)),
         legend=:outerright,
     )
@@ -624,9 +653,10 @@ function run_simulation(;
     fig = plot(
         fig_q, fig_dq, fig_ddq,
         fig_desired_ddq, fig_u, fig_f,
-        fig_error, fig_Fc, fig_dis_to_obs,
-        layout=(9, 1),
-        size=(500, 2200)
+        fig_error, fig_Fc, fig_s, fig_ds, fig_ee_dx,
+        fig_dis_to_obs,
+        layout=(6, 2),
+        size=(1200, 2000)
     )
 
     if isImpedance
