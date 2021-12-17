@@ -1,22 +1,34 @@
 using Plots
 
-eta = 1
-a = 10
-
-sig(x) = 1/(1+exp(-a*x))
-pot(x) = 1/eta * log(exp(eta*x)+exp(-eta*x))
-
-xd = 2
-
-pot_2(x) = (sig(x-xd))*pot(x-xd) + (1-sig(x-xd))*pot(x)
 
 
-pot_3(x) = 
+x1 = 0  # 外力平衡位置
+x2 = 0.5  # 目標位置（物体表面）
 
 
 
-plot(xlim=(0,6), ylim=(0,5))
-plot!(x -> pot(x), label="Pe")
-plot!(x -> pot(x-xd), label="Pd")
-plot!(x -> pot_2(x))
-plot!(x -> sig(x-xd), label="sig")
+a = 20
+b = x2^2 / 4
+c = 0
+
+
+function df(x)
+    return a*((x - x2/2)^2-b)^2
+end
+
+function f(x)
+    return 1/5*a*(x-x2/2)^5 -2/3*a*b*(x-x2/2)^3 + (a*b^2)*(x-x2/2) - offset(x)
+end
+
+function offset(x)
+    1/5*a*(-x2/2)^5 -2/3*a*b*(-x2/2)^3 + (a*b^2)*(-x2/2)
+end
+
+x = -0.5:0.01:5
+
+fs = f.(x)
+dfs = df.(x)
+
+
+plot(x, dfs, label="grad_pot", aspect_ratio=1, xlim=(-0.5,4), ylim=(-1,2))
+plot!(x, fs, label="pot")
