@@ -572,7 +572,8 @@ hat(x) = x / norm(x)
 
 """インピーダンスポテンシャルの勾配"""
 function ∇potential_I(p::RMPfromGDSImpedance{T}, y, yd, ye, alpha) where T
-    #println("勾配！！")
+    
+    # 古い方
 
     e_d = y - yd
     e_e = y - ye
@@ -593,7 +594,34 @@ function ∇potential_I(p::RMPfromGDSImpedance{T}, y, yd, ye, alpha) where T
     P_tilde_d * t2 .+ 
     t3 .+ 
     P_tilde_e * t4
+
+
+    # # 新しい方
+    # inv_M_d = inv(p.M_d)
+    # P_tilde_e = inv_M_d * p.P_e
+    # P_tilde_d = inv_M_d * p.P_d
+
+    # e_d = y - yd
+    # e_e = y - ye
+
+    # x2 = norm(yd - ye)
+
+    # y = y - ye
+
+    # a = 0.5
+    # b = x2^2 / 4
+
+    # function df(x)
+    #     return a*((x - x2/2)^2-b)^2
+    # end
+
+    # println(df(norm(y)))
+    # return P_tilde_e .* df(norm(y)) * hat(y)
+
 end
+
+
+
 
 
 
