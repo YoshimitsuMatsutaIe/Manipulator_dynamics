@@ -6,6 +6,7 @@ using ArraysOfArrays
 using Parameters
 using LinearAlgebra
 using Random
+using LaTeXStrings
 
 include("./sice_kinematics.jl")
 include("./sice_robot_dynamics.jl")
@@ -15,8 +16,8 @@ using .SiceKinematics
 using .SiceDynamics
 
 
-const q_min = [(-5/4)π+(1/2)π, (-5/4)π, (-5/4)π, (-5/4)π]
-const q_max = [(5/4)π+(1/2)π, (5/4)π, (5/4)π, (5/4)π]
+const q_min = [(-3/4)π+(1/2)π, (-3/4)π, (-3/4)π, (-3/4)π]
+const q_max = [(3/4)π+(1/2)π, (3/4)π, (3/4)π, (3/4)π]
 const q_neutral = [(1/2)π, 0.0, 0.0, 0.0]
 
 
@@ -63,7 +64,7 @@ end
 
 
 function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
-    R = 0.4
+    R = 0.3
     alpha = 0.01#1e-5
     eta = 0.0
     epsilon = 0.2
@@ -72,16 +73,16 @@ function multi_avoidance_rmp(x::Vector{T}, dx::Vector{T}, o::Vector{T}) where T
     dz_vec = dx
 
 
-    ## マルチロボットの安全距離付きタスク写像 ###
-    z = norm(z_vec)/R - 1
-    J = 1/norm(z_vec) * (z_vec)' / R
-    dJ = (dz_vec' * (-1/norm(z_vec)^3 * (z_vec) * (z_vec)' + 1/norm(z_vec) * Matrix{T}(I, 2, 2))) / R
+    # ## マルチロボットの安全距離付きタスク写像 ###
+    # z = norm(z_vec)/R - 1
+    # J = 1/norm(z_vec) * (z_vec)' / R
+    # dJ = (dz_vec' * (-1/norm(z_vec)^3 * (z_vec) * (z_vec)' + 1/norm(z_vec) * Matrix{T}(I, 2, 2))) / R
     
-    # ### 普通の障害物との距離関数のタスク写像 ###
-    # z = norm(z_vec)
-    # dz = (1/z .* dot((z_vec), (dz_vec)))[1]
-    # J = 1/z * (z_vec)'
-    # dJ = -z^(-2) .* (dz_vec' .- ((z_vec)' .* dz))
+    ### 普通の障害物との距離関数のタスク写像 ###
+    z = norm(z_vec)
+    dz = (1/z .* dot((z_vec), (dz_vec)))[1]
+    J = 1/z * (z_vec)'
+    dJ = -z^(-2) .* (dz_vec' .- ((z_vec)' .* dz))
 
 
     dz = J * dx
@@ -163,7 +164,7 @@ end
 
 """全部実行"""
 function run_simulation(;
-    TIME_SPAN::T=15.0, Δt::T=0.01, isImpedance::Bool=false
+    TIME_SPAN::T=20.0, Δt::T=0.0001, isImpedance::Bool=false
     ) where T
 
     # 初期値
@@ -216,9 +217,9 @@ function run_simulation(;
 
 
     obs_avoidance = RMPfromGDSCollisionAvoidance(
-        rw = 1.5,
+        rw = 1.0,
         sigma = 1.0,
-        alpha = 2.0,
+        alpha = 1.0,
     )
 
     jl_avoidance = RMPfromGDSJointLimitAvoidance(
@@ -265,7 +266,7 @@ function run_simulation(;
 
     else
         attractor = RMPfromGDSAttractor(
-            max_speed = 6.0,
+            max_speed = 3.3,
             gain = 10.0,
             f_alpha = 0.15,
             sigma_alpha = 1.0,
@@ -612,6 +613,7 @@ function run_simulation(;
     plot!(fig_Fc, data.t, norm.(data.Fc), label="nFc")
     plot!(fig_Fc, data.t, x, label="Fcx")
     plot!(fig_Fc, data.t, y, label="Fcy")
+    plot!(fig_Fc, ylim=(-0.06, 0.08))
 
 
     s = Vector{T}(undef, length(t))
@@ -809,37 +811,64 @@ function run_simulation(;
         return fig_i
     end
 
-    println("アニメ作成中...")
-    # 枚数決める
-    #println(data.t)
-    epoch_max = 100
-    epoch = length(data.t)
-    if epoch < epoch_max
-        step = 1
-    else
-        step = div(epoch, epoch_max)
-    end
+    # println("アニメ作成中...")
+    # # 枚数決める
+    # #println(data.t)
+    # epoch_max = 100
+    # epoch = length(data.t)
+    # if epoch < epoch_max
+    #     step = 1
+    # else
+    #     step = div(epoch, epoch_max)
+    # end
 
-    #println(step)
+    # #println(step)
 
-    anim = Animation()
-    @gif for i in 1:step:length(data.q)
-        _fig = draw_frame(i)
-        frame(anim, _fig)
-    end
+    # anim = Animation()
+    # @gif for i in 1:step:length(data.q)
+    #     _fig = draw_frame(i)
+    #     frame(anim, _fig)
+    # end
 
 
-    if isImpedance
-        name = "fig/sice_animation_proposed.gif"
-    else
-        name = "fig/sice_animation_conventional.gif"
-    end
+    # if isImpedance
+    #     name = "fig/sice_animation_proposed.gif"
+    # else
+    #     name = "fig/sice_animation_conventional.gif"
+    # end
 
-    gif(anim, name, fps = 60)
+    # gif(anim, name, fps = 60)
     
-    println("アニメ作成完了")
+    # println("アニメ作成完了")
 
-    # return data,
+
+
+    ### sice用のグラフ作成 ###
+    fig_error = plot(
+        data.t, data.error,
+        label=L"||x - x_g||",
+        xlabel=L"Time [s]",
+        ylabel=L"Position Error [m]",
+        xlim=(0, TIME_SPAN),
+        ylim=(0.00, maximum(data.error)),
+    )
+    plot!(size=(400, 200))
+
+    savefig(fig_error, "error.png")
+
+    x, y = split_vec_of_arrays(data.Fc)
+    fig_Fc = plot(
+        xlim=(0, TIME_SPAN),
+    )
+    plot!(fig_Fc, data.t, norm.(data.Fc), label=L"F_c")
+    plot!(ylabel = L"Applied Force [N]")
+    plot!(xlabel = L"Time [s]")
+    plot!(fig_Fc, ylim=(0.0, 0.10))
+    plot!(size=(400, 200))
+
+    savefig(fig_Fc, "Fc.png")
+
+    return data
     # fig_q, fig_dq, fig_ddq,
     # fig_desired_ddq, fig_u, fig_f,
     # fig_error, fig_Fc, fig_dis_to_obs
@@ -854,8 +883,7 @@ println("実行中...")
 # fig_error, fig_Fc, fig_dis_to_obs = run_simulation()
 
 
-for i in (true, false)
-    @time run_simulation(isImpedance=i)
-end
+@time data_pro = run_simulation(isImpedance=true)
+#@time data_con = run_simulation(isImpedance=false)
 
 println("実行終了!!")
