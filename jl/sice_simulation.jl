@@ -884,6 +884,6 @@ println("実行中...")
 
 
 @time data_pro = run_simulation(isImpedance=true)
-#@time data_con = run_simulation(isImpedance=false)
+@time data_con = run_simulation(isImpedance=false)
 
 println("実行終了!!")
