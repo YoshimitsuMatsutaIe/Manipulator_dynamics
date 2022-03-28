@@ -2,8 +2,8 @@ sim_param :
   isLeft : True
   isWithMass : False
   saveRmpData : True
-  TIME_SPAN : 500.0
-  TIME_INTERVAL : 0.0001
+  TIME_SPAN : 60.0
+  TIME_INTERVAL : 0.01
 rmp_param : 
   -  # 1
     goal_attractor : # None
@@ -102,37 +102,37 @@ env_param :
       z : 1.2
   obstacle :
     -
-      name : 'plane'
-      data : 
-        x : -0.05
+      # name : 'plane'
+      # data : 
+      #   x : -0.05
+      #   y : -0.8
+      #   z : 1.2
+      #   lx : 0.5
+      #   ly : 0.5
+      #   alpha : 0.0
+      #   beta : 90.0
+      #   gamma : 0.0
+      #   n : 100
+      name : 'cylinder'
+      data :
+        r : 0.1
+        L : 2.0
+        x : 0.25
         y : -0.8
-        z : 1.2
-        lx : 0.5
-        ly : 0.5
+        z : 100.0
+        n : 100
+        alpha : 0.0
+        beta : 0.0
+        gamma : 0.0
+    -
+      name : 'cylinder'
+      data:
+        r : 0.1
+        L : 1.0
+        x : 0.25
+        y : -0.8
+        z : 1.0
+        n : 100
         alpha : 0.0
         beta : 90.0
         gamma : 0.0
-        n : 100
-      # name : 'cylinder'
-      # data :
-      #   r : 0.1
-      #   L : 1.0
-      #   x : 0.25
-      #   y : -0.8
-      #   z : 100.0
-      #   n : 1
-      #   alpha : 0.0
-      #   beta : 0.0
-      #   gamma : 0.0
-    # -
-    #   name : 'cylinder'
-    #   data:
-    #     r : 0.1
-    #     L : 1.0
-    #     x : 0.25
-    #     y : -0.8
-    #     z : 1.0
-    #     n : 1
-    #     alpha : 0.0
-    #     beta : 90.0
-    #     gamma : 0.0
